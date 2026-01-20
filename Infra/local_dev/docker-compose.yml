@@ -1,0 +1,57 @@
+services:
+  backend:
+    build:
+      context: ../../
+      dockerfile: ./Infra/local_dev/backend.Dockerfile
+    volumes:
+      - ../../backend:/app
+      - ~/.gradle:/root/.gradle  # 의존성 캐시 유지
+    ports:
+      - "8080:8080"
+      - "5005:5005"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/roundydb
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=redis
+    working_dir: /app                 # 컨테이너의 작업 디렉토리 지정
+    tty: true                         # 컨테이너 종료 방지
+    stdin_open: true
+    command: ./gradlew bootRun
+    depends_on:
+      - mysql
+      - redis
+  frontend:
+    build:
+      context: ../../
+      dockerfile: ./Infra/local_dev/frontend.Dockerfile
+    volumes:
+      - ../../frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    tty: true
+    stdin_open: true
+    # Vite를 도커에서 실행할 때 필수 설정
+    command: >
+      sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql_data:
