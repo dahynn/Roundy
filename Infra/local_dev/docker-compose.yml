@@ -17,7 +17,8 @@ services:
     working_dir: /app                 # 컨테이너의 작업 디렉토리 지정
     tty: true                         # 컨테이너 종료 방지
     stdin_open: true
-    command: ./gradlew bootRun
+    command: >
+      sh -c "sleep 15 && ./gradlew bootRun"
     depends_on:
       - mysql
       - redis
