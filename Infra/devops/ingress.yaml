@@ -5,9 +5,16 @@ metadata:
   namespace: devops
   annotations:
     kubernetes.io/ingress.class: "traefik"
+    cert-manager.io/cluster-issuer: "letsencrypt-cert"
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    # traefik.ingress.kubernetes.io/router.middlewares: devops-admin-whitelist@kubernetescrd
 spec:
+  tls:
+    - hosts:
+      - i14a701.p.ssafy.io
+      secretName: tls-cert
   rules:
-  - host:
+  - host: i14a701.p.ssafy.io
     http:
       paths:
       - path: /jenkins
@@ -17,3 +24,10 @@ spec:
             name: jenkins-server-svc
             port:
               number: 8889
+      - path: /argocd
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 8888
