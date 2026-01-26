@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.Util;
+package com.ssafya701.roundy.user.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;

@@ -1,11 +1,8 @@
-package com.ssafya701.roundy.Repository;
+package com.ssafya701.roundy.user.repository;
 
-import com.ssafya701.roundy.Entity.Preference;
-import com.ssafya701.roundy.Entity.User;
+import com.ssafya701.roundy.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {

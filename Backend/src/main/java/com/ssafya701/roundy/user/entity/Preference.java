@@ -1,6 +1,6 @@
-package com.ssafya701.roundy.Entity;
+package com.ssafya701.roundy.user.entity;
 
-import com.ssafya701.roundy.Enums.PreferenceType;
+import com.ssafya701.roundy.user.enums.PreferenceType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

@@ -1,10 +1,10 @@
-package com.ssafya701.roundy.Entity;
+package com.ssafya701.roundy.user.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.ssafya701.roundy.Enums.GenderType;
-import com.ssafya701.roundy.Enums.UserRole;
-import com.ssafya701.roundy.Enums.UserStatus;
+import com.ssafya701.roundy.user.enums.GenderType;
+import com.ssafya701.roundy.user.enums.UserRole;
+import com.ssafya701.roundy.user.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

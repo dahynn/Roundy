@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.Entity;
+package com.ssafya701.roundy.user.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

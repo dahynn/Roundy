@@ -1,6 +1,6 @@
-package com.ssafya701.roundy.Config;
+package com.ssafya701.roundy.user.config;
 
-import com.ssafya701.roundy.Security.JwtAuthenticationFilter;
+import com.ssafya701.roundy.user.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

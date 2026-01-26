@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.Enums;
+package com.ssafya701.roundy.user.enums;
 
 public enum PreferenceType {
     RELATIONSHIP_GOAL, // 선호 관계

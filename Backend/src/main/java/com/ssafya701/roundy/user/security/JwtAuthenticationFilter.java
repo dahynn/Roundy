@@ -1,7 +1,7 @@
-package com.ssafya701.roundy.Security;
+package com.ssafya701.roundy.user.security;
 
-import com.ssafya701.roundy.Repository.UserRepository;
-import com.ssafya701.roundy.Util.JwtUtil;
+import com.ssafya701.roundy.user.repository.UserRepository;
+import com.ssafya701.roundy.user.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
