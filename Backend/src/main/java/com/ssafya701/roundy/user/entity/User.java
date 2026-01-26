@@ -1,19 +1,12 @@
 package com.ssafya701.roundy.user.entity;
 
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ssafya701.roundy.user.enums.GenderType;
 import com.ssafya701.roundy.user.enums.UserRole;
 import com.ssafya701.roundy.user.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter
@@ -21,30 +14,28 @@ import java.util.List;
 @Table(name = "users")
 public class User {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    // 카카오에서 받아온 정보
+    @Column(unique = true, nullable = false)
     private Long kakaoId;
 
-    @JsonIgnore
-    @Column(unique = true)
-    private String email;
-
-    @Column(nullable = false)
     private String name;
-
-    private String nickname;
+    private String email;
 
     @Enumerated(EnumType.STRING)
     private GenderType gender;
 
-    private LocalDate birthDate;
+    private Integer birthYear;
+    private String birthDay; // MMDD 형식
 
+    // 회원가입에서 추가 정보
+    private String profileImageUrl; // EC2 저장 경로 or URL
+    private String nickName;
     private String mbti;
 
-    private String profilePhotoUrl;
-    private String verificationPhotoUrl;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
@@ -52,60 +43,33 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserPreference> userPreferences = new ArrayList<>();
-
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
     @Builder
-    public User(Long kakaoId, String email, String name, GenderType gender, LocalDate birthDate, UserStatus status, UserRole role) {
+    public User(Long kakaoId, String name, String email, GenderType gender, Integer birthYear, String birthDay, UserRole role, UserStatus status) {
         this.kakaoId = kakaoId;
-        this.email = email;
         this.name = name;
+        this.email = email;
         this.gender = gender;
-        this.birthDate = birthDate;
-        this.status = status;
+        this.birthYear = birthYear;
+        this.birthDay = birthDay;
         this.role = role;
+        this.status = status;
     }
 
-
-    public void updateProfile(String nickname, GenderType gender, LocalDate birthDate, String mbti, String profilePhotoUrl) {
-        this.nickname = nickname;
+    public void signUp(String nickName, GenderType gender, Integer birthYear, String birthDay, String mbti, String profileImageUrl) {
+        this.nickName = nickName;
         this.gender = gender;
-        this.birthDate = birthDate;
+        this.birthYear = birthYear;
+        this.birthDay = birthDay;
         this.mbti = mbti;
-        this.profilePhotoUrl = profilePhotoUrl;
-        // 상태 변경 로직
+        if (profileImageUrl != null) {
+            this.profileImageUrl = profileImageUrl;
+        }
+
+        this.status = UserStatus.JOINED;
+
     }
 
-    // 2단계: 취향 정보 입력 -> VALID
-    public void addUserPreference(UserPreference userPreference) {
-        this.userPreferences.add(userPreference);
-        userPreference.assignUser(this);
-    }
-
-    // 3단계: 얼굴 인증 완료 -> APPROVED (서비스 이용 가능)
-    public void approveFaceAuth(String verificationPhotoUrl) {
-        this.verificationPhotoUrl = verificationPhotoUrl;
-        this.status = UserStatus.APPROVED;
-    }
-
-
-
-    public void clearPreferences() {
-        this.userPreferences.clear();
-    }
-
-    public String calculateNextStep() {
-        return switch (this.status) {
-            case JOINED -> "PROFILE";
-            case VALID -> "FACE_AUTH";
-            case APPROVED -> "MAIN";
-            default -> "LOGIN";
-        };
+    public void updateStatus(UserStatus newStatus) {
+        this.status = newStatus;
     }
 }

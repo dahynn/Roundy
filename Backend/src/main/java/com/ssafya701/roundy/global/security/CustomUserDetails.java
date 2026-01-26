@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.security;
+package com.ssafya701.roundy.global.security;
 
 import com.ssafya701.roundy.user.entity.User;
 import lombok.Getter;

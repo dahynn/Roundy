@@ -1,5 +1,6 @@
 package com.ssafya701.roundy.user.entity;
 
+import com.ssafya701.roundy.preference.entity.Preference;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
