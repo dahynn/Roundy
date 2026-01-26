@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.user.controller;
 
-import com.ssafya701.roundy.user.dto.UserSignUpRequest;
+import com.ssafya701.roundy.global.common.CommonResponse;
+import com.ssafya701.roundy.user.dto.request.UserSignUpRequest;
 import com.ssafya701.roundy.user.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +17,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
     @Value("${app.frontend-url}")
-    private String frontendUrl; // http://localhost:3000
+    private String frontendUrl;
 
     @Value("${kakao.client-id}")
     private String kakaoClientId;
@@ -31,8 +32,8 @@ public class UserController {
     @Value("${kakao.redirect-uri}")
     private String kakaoRedirectUri;
 
-    // 1. 카카오 로그인 페이지로 리다이렉트 (프론트 버튼 클릭 시)
-    @GetMapping("/kakao/page")
+    // 카카오 로그인
+    @GetMapping("/login")
     public void redirectToKakao(HttpServletResponse response) throws IOException {
         String url = "https://kauth.kakao.com/oauth/authorize?client_id=" + kakaoClientId
                 + "&redirect_uri=" + kakaoRedirectUri
@@ -40,7 +41,8 @@ public class UserController {
         response.sendRedirect(url);
     }
 
-    // 2. 카카오 콜백 (백엔드 처리 -> 프론트로 리다이렉트)
+    // 이건 프론트에서 처리할 필요 없음
+    // TODO: Swagger 에서 hidden 처리 하기
     @GetMapping("/kakao/callback")
     public void kakaoCallback(@RequestParam String code, HttpServletResponse response) throws IOException {
         String token = userService.kakaoLogin(code);
@@ -48,16 +50,22 @@ public class UserController {
         response.sendRedirect(frontendUrl + "/auth/callback?token=" + token);
     }
 
-    // 3. 회원가입 (폼 제출)
+    // 회원가입
     @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> signUp(
             @RequestPart("data") UserSignUpRequest request,
-            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "file") MultipartFile file,
             @AuthenticationPrincipal Long userId
     ) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("프로필 사진은 필수입니다.");
+        }
+
         String newToken = userService.signUp(userId, request, file);
+
         Map<String, String> result = new HashMap<>();
         result.put("accessToken", newToken);
-        return ResponseEntity.ok(result);
+
+        return ResponseEntity.ok(CommonResponse.ofSuccess(result));
     }
 }

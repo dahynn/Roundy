@@ -1,7 +1,7 @@
 package com.ssafya701.roundy.user.service;
 
-import com.ssafya701.roundy.user.dto.KakaoTokenResponse;
-import com.ssafya701.roundy.user.dto.KakaoUserInfoResponse;
+import com.ssafya701.roundy.user.dto.response.KakaoTokenResponse;
+import com.ssafya701.roundy.user.dto.response.KakaoUserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

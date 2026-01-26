@@ -17,33 +17,33 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final Key key;
-    private final long accessTokenValidityInMilliseconds;
+    private final long validTime;
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,
-                            @Value("${jwt.expiration-time}") long validityInMilliseconds) {
+                            @Value("${jwt.expiration-time}") long validTime) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.accessTokenValidityInMilliseconds = validityInMilliseconds;
+        this.validTime = validTime;
     }
 
-    // 토큰 생성 (User pk, Role, Status 포함)
+    // 토큰 생성
     public String createToken(Long userId, UserRole role, UserStatus status) {
         Claims claims = Jwts.claims().setSubject(String.valueOf(userId));
         claims.put("role", role);
         claims.put("status", status);
 
         Date now = new Date();
-        Date validity = new Date(now.getTime() + accessTokenValidityInMilliseconds);
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
-                .setExpiration(validity)
+                .setExpiration(new Date(now.getTime() + validTime))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     // 토큰에서 User ID 추출
+    // TODO : 이 부분 이해하기
     public Long getUserId(String token) {
         return Long.parseLong(Jwts.parserBuilder()
                 .setSigningKey(key)

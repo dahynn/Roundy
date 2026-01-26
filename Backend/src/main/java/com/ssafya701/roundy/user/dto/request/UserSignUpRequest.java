@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.dto;
+package com.ssafya701.roundy.user.dto.request;
 
 import com.ssafya701.roundy.user.enums.GenderType;
 import lombok.Data;
