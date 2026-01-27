@@ -1,7 +1,6 @@
 package com.ssafya701.roundy.chatmessage.service;
 
-import com.ssafya701.roundy.chatmessage.dto.ChatMessageRequest;
-import com.ssafya701.roundy.chatmessage.dto.ChatMessageResponse;
+import com.ssafya701.roundy.chatmessage.dto.ChatMessageDto;
 import com.ssafya701.roundy.chatmessage.entity.ChatMessage;
 import com.ssafya701.roundy.chatmessage.enums.MsgType;
 import com.ssafya701.roundy.chatmessage.repository.ChatMessageRepository;
@@ -38,7 +37,7 @@ public class ChatMessageService {
      * @throws BusinessLogicException 존재하지 않는 방이거나, 종료된(TERMINATED) 방일 경우 발생
      */
     @Transactional
-    public ChatMessageResponse sendMessage(Long matchId, Long senderId, ChatMessageRequest request) {
+    public ChatMessageDto.Response sendMessage(Long matchId, Long senderId, ChatMessageDto.Request request) {
 
         // 매칭 정보 유효성 검증
         Match match = matchRepository.findById(matchId)
@@ -60,7 +59,7 @@ public class ChatMessageService {
                 .matchId(matchId)
                 .senderId(senderId)
                 .receiverId(receiverId)
-                .content(request.getContent())
+                .content(request.content())
                 .msgType(MsgType.TALK)
                 .build();
 
@@ -69,7 +68,7 @@ public class ChatMessageService {
         // Match 테이블의 마지막 메시지(미리보기 정보) 업데이트
         match.updateLastMessage(savedMessage.getContent(), LocalDateTime.now());
 
-        return ChatMessageResponse.from(savedMessage);
+        return ChatMessageDto.Response.from(savedMessage);
     }
 
     /**
@@ -80,7 +79,7 @@ public class ChatMessageService {
      * @param size          조회할 메시지 개수 (초기 진입 시 사용)
      * @return 메시지 리스트 (시간순 정렬)
      */
-    public List<ChatMessageResponse> getMessages(Long matchId, Long lastMessageId, int size) {
+    public List<ChatMessageDto.Response> getMessages(Long matchId, Long lastMessageId, int size) {
 
         List<ChatMessage> messages;
 
@@ -99,7 +98,7 @@ public class ChatMessageService {
         }
 
         return messages.stream()
-                .map(ChatMessageResponse::from)
+                .map(ChatMessageDto.Response::from)
                 .collect(Collectors.toList());
 
     }

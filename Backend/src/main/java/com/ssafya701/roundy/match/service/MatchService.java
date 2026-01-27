@@ -1,7 +1,7 @@
 package com.ssafya701.roundy.match.service;
 
 import com.ssafya701.roundy.global.error.BusinessLogicException;
-import com.ssafya701.roundy.match.dto.MatchResponse;
+import com.ssafya701.roundy.match.dto.MatchDto;
 import com.ssafya701.roundy.match.entity.Match;
 import com.ssafya701.roundy.match.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,9 @@ public class MatchService {
      * @param userId 현재 로그인한 사용자 ID
      * @return 최신 메시지 순으로 정렬된 매칭 응답 DTO 리스트
      */
-    public List<MatchResponse> getMyMatches(Long userId) {
+    public List<MatchDto.Response> getMyMatches(Long userId) {
         return matchRepository.findMyMatches(userId).stream()
-                .map(match -> MatchResponse.from(match, userId))
+                .map(match -> MatchDto.Response.from(match, userId))
                 .collect(Collectors.toList());
     }
 
