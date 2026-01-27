@@ -33,7 +33,7 @@ public class RoomRegistry {
     public RoomState getOrCreateRoom(String roomId, RotationMode mode, String openViduSessionId) {
         return rooms.computeIfAbsent(roomId, id -> {
             log.info("새로운 방 생성: roomId={}, mode={}, sessionId={}", roomId, mode, openViduSessionId);
-            
+
             // TODO: [DB 연동] DB에서 조회한 male_max, female_max를 RoomState에 전달
             return new RoomState(roomId, mode, openViduSessionId);
         });

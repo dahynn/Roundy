@@ -42,7 +42,7 @@ dependencies {
 	// 테스트용 H2 데이터베이스
 	testRuntimeOnly 'com.h2database:h2'
 	
-	// 테스트 의존성 (TODO : 삭제확인
+	// 테스트 의존성
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
 	testImplementation 'org.awaitility:awaitility:4.2.0'
