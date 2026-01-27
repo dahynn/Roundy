@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = '사용자ID'
-        REPO_NAME = 'frontend-repo'
+        DOCKER_USER = 'smj100394'
+        REPO_NAME = 'roundy_front'
         IMAGE_TAG = "${DOCKER_USER}/${REPO_NAME}:${BUILD_NUMBER}"
-        DOCKER_HUB_CREDS = 'docker-hub-id'
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
     }
 
     stages {
@@ -28,7 +28,7 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    docker.withRegistry('', DOCKER_HUB_CREDS) {
+                    docker.withRegistry('', DOCKERHUB_CREDENTIALS_ID) {
                         sh "docker push ${IMAGE_TAG}"
                         sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
                         sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
