@@ -1,0 +1,54 @@
+pipeline {
+    agent any
+
+    environment {
+        // Docker Hub 사용자명과 레포지토리 이름 설정
+        DOCKER_USER = '사용자ID' 
+        REPO_NAME = 'backend-repo'
+        IMAGE_TAG = "${DOCKER_USER}/${REPO_NAME}:${BUILD_NUMBER}"
+        // Jenkins에 등록한 Docker Hub Credentials ID
+        DOCKER_HUB_CREDS = 'docker-hub-id'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // GitLab에서 소스 코드를 가져옵니다.
+                checkout scm
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    // Backend 폴더 내부의 Dockerfile을 사용하여 빌드
+                    dir('Backend') {
+                        sh "docker build -t ${IMAGE_TAG} ."
+                    }
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    // Jenkins Credentials를 사용하여 Docker Hub 로그인 및 푸시
+                    docker.withRegistry('', DOCKER_HUB_CREDS) {
+                        sh "docker push ${IMAGE_TAG}"
+                        // 최신 버전 표시를 위해 latest 태그도 함께 푸시
+                        sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
+                        sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                // EC2 용량 관리를 위해 빌드에 사용된 로컬 이미지 삭제
+                sh "docker rmi ${IMAGE_TAG}"
+                sh "docker rmi ${DOCKER_USER}/${REPO_NAME}:latest"
+            }
+        }
+    }
+}
