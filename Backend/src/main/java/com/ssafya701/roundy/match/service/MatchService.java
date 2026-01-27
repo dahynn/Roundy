@@ -58,6 +58,25 @@ public class MatchService {
         // 상태 변경 (이탈 처리)
         match.terminateChat(userId);
 
+        /**
+         * 양쪽 모두 나간 경우
+         * */
+        // 양쪽 모두 나갔는지 확인
+        if (match.getMaleLeftAt() != null && match.getFemaleLeftAt() != null) {
+
+            // 연관된 메시지 데이터 영구 삭제
+            chatMessageRepository.deleteAllByMatchId(matchId);
+
+            // 매칭 데이터 영구 삭제
+            matchRepository.delete(match);
+
+            //
+            return MatchDto.LeaveResponse.from(match);
+        }
+
+        /**
+         * 한 명만 나간 경우
+         * */
         // 시스템 메시지 생성 (상대방에게 알림)
         Long receiverId = match.getMaleId().equals(userId) ? match.getFemaleId() : match.getMaleId();
 
@@ -73,11 +92,6 @@ public class MatchService {
 
         // 마지막 메시지 업데이트 (목록에서 "대화 종료" 확인용)
         match.updateLastMessage(systemMessage.getContent(), systemMessage.getCreatedAt());
-
-        // 양쪽 모두 이탈 시 Soft Delete (완전 삭제 대기 상태)
-        if (match.getMaleLeftAt() != null && match.getFemaleLeftAt() != null) {
-            match.markAsDeleted();
-        }
 
         return MatchDto.LeaveResponse.from(match);
     }

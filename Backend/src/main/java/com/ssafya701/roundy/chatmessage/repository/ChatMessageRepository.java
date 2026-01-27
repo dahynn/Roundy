@@ -3,6 +3,9 @@ package com.ssafya701.roundy.chatmessage.repository;
 import com.ssafya701.roundy.chatmessage.entity.ChatMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -19,5 +22,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      * 마지막으로 받은 메시지(lastMessageId)를 기준으로 그 이후의 신규 메시지만 오름차순으로 반환
      * */
     List<ChatMessage> findByMatchIdAndIdGreaterThanOrderByIdAsc(Long matchId, Long lastMessageId);
+
+    /**
+     * 사용자가 모두 나간 특정 방의 메시지 전체 삭제
+     * */
+    void deleteAllByMatchId(Long matchId);
 
 }
