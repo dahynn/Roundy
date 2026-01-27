@@ -1,6 +1,6 @@
 package com.ssafya701.roundy.webrtc.initializer;
 
-import com.ssafya701.roundy.webrtc.config.OpenViduProperties;
+import com.ssafya701.roundy.config.OpenViduProperties;
 import com.ssafya701.roundy.webrtc.service.OpenViduHealthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.webrtc.config;
+package com.ssafya701.roundy.config;
 
 import lombok.Getter;
 import lombok.Setter;
