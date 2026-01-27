@@ -41,31 +41,36 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build npm') {
             steps {
                 container('node') {
-                    sh "npm install"
-                    sh "npm run build"
+                    dir('Frontend') {
+                        sh "npm install"
+                        sh "npm run build"
+                    }
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push Docker Image') {
             steps {
                 container('docker') {
-                    sh "docker build -t ${IMAGE_TAG} ."
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('', DOCKERHUB_CREDENTIALS_ID) {
-                        sh "docker build -t ${IMAGE_TAG} ."
-                        sh "docker push ${IMAGE_TAG}"
-                        sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
-                        sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", 
+                                                      passwordVariable: 'DOCKER_PASSWORD', 
+                                                      usernameVariable: 'DOCKER_USERNAME')]) {
+                        dir('Frontend') {
+                            script {
+                                sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                                
+                                sh "docker build -t ${IMAGE_TAG} ."
+                                sh "docker push ${IMAGE_TAG}"
+                                
+                                sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
+                                sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
+                                
+                                sh "docker logout"
+                            }
+                        }
                     }
                 }
             }
