@@ -19,7 +19,7 @@ pipeline {
             steps {
                 script {
                     dir('Frontend') {
-                        sh "docker build -t ${IMAGE_TAG} ."
+                        sh "sudo docker build -t ${IMAGE_TAG} ."
                     }
                 }
             }
@@ -29,9 +29,9 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('', DOCKERHUB_CREDENTIALS_ID) {
-                        sh "docker push ${IMAGE_TAG}"
-                        sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
-                        sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
+                        sh "sudo docker push ${IMAGE_TAG}"
+                        sh "sudo docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
+                        sh "sudo docker push ${DOCKER_USER}/${REPO_NAME}:latest"
                     }
                 }
             }
@@ -39,8 +39,8 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                sh "docker rmi ${IMAGE_TAG}"
-                sh "docker rmi ${DOCKER_USER}/${REPO_NAME}:latest"
+                sh "sudo docker rmi ${IMAGE_TAG}"
+                sh "sudo docker rmi ${DOCKER_USER}/${REPO_NAME}:latest"
             }
         }
     }
