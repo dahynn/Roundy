@@ -1,7 +1,7 @@
 pipeline {
     agent{
         kubernetes{
-            yaml'''
+            yaml '''
             apiVersion: v1
             kind: Pod
             spec:
@@ -60,8 +60,9 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                container('docker') {
+                script {
                     docker.withRegistry('', DOCKERHUB_CREDENTIALS_ID) {
+                        sh "docker build -t ${IMAGE_TAG} ."
                         sh "docker push ${IMAGE_TAG}"
                         sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
                         sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
