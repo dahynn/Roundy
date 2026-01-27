@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.repository;
+package com.ssafya701.roundy.preference.repository;
 
 import com.ssafya701.roundy.preference.entity.Preference;
 import org.springframework.data.jpa.repository.JpaRepository;
