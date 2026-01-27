@@ -17,18 +17,12 @@ public class KakaoUserInfoResponse {
     @NoArgsConstructor
     public static class KakaoAccount {
         private String email;
-        private Profile profile;
+        private String name;
 
         private String gender;
         private String birthday;
         private String birthyear;
 
-        // 카카오에서 name을 nickname으로 전달해줌
-        // 우리 로직의 nickname과 다른 변수임!!
-        @Data
-        @NoArgsConstructor
-        public static class Profile {
-            private String nickname;
-        }
+
     }
 }

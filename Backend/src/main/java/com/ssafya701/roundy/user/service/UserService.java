@@ -1,18 +1,28 @@
 package com.ssafya701.roundy.user.service;
 
+import com.ssafya701.roundy.global.error.CustomException;
+import com.ssafya701.roundy.global.error.ErrorEnum;
 import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
 import com.ssafya701.roundy.global.util.FileUploader;
-import com.ssafya701.roundy.user.dto.response.KakaoUserInfoResponse;
 import com.ssafya701.roundy.user.dto.request.UserSignUpRequest;
+import com.ssafya701.roundy.user.dto.response.KakaoUserInfoResponse;
 import com.ssafya701.roundy.user.entity.User;
+import com.ssafya701.roundy.user.enums.GenderType;
 import com.ssafya701.roundy.user.enums.UserRole;
 import com.ssafya701.roundy.user.enums.UserStatus;
 import com.ssafya701.roundy.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -21,44 +31,116 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final KakaoService kakaoService;
     private final FileUploader fileUploader;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
     public String kakaoLogin(String code) {
         String kakaoToken = kakaoService.getAccessToken(code);
         KakaoUserInfoResponse userInfo = kakaoService.getUserInfo(kakaoToken);
-        Long kakaoId = userInfo.getId();
 
-        // 없으면 GUEST로 저장, 있으면 조회
-        User user = userRepository.findByKakaoId(kakaoId)
+        // 생일 및 성별 데이터 가공
+        LocalDate birthDate = parseBirthDate(userInfo);
+        GenderType gender = parseGender(userInfo);
+
+        User user = userRepository.findByKakaoId(userInfo.getId())
                 .orElseGet(() -> userRepository.save(User.builder()
-                        .kakaoId(kakaoId)
+                        .kakaoId(userInfo.getId())
                         .email(userInfo.getKakaoAccount().getEmail())
-                        .name(userInfo.getKakaoAccount().getProfile().getNickname())
+                        .name(userInfo.getKakaoAccount().getName() )
+                        .birthDate(birthDate)
+                        .gender(gender)
                         .role(UserRole.GUEST)
-                        .status(UserStatus.JOINED)
+                        .status(UserStatus.JOINED) // 최초 로그인 시 단계
                         .build()));
 
-        return jwtTokenProvider.createToken(user.getId(), user.getRole(), user.getStatus());
+        return issueTokens(user);
+
+
+
+
+    }
+
+    // 회원가입 -> 추가 정보 입력
+    @Transactional
+    public String signUp(Long userId, UserSignUpRequest request, MultipartFile file) {
+        User user = findUserById(userId);
+        String profilePath = fileUploader.upload(file);
+
+
+        user.signUp(request.getNickName(), request.getGender(), request.getBirthDate(), request.getMbti(), profilePath);
+
+        return issueTokens(user);
     }
 
     @Transactional
-    public String signUp(Long userId, UserSignUpRequest request, MultipartFile file) {
+    public void uploadVerificationPhoto(Long userId, MultipartFile file) {
+        User user = findUserById(userId);
+        String verificationUrl = fileUploader.upload(file);
+
+        user.uploadVerificationImage(verificationUrl);
+    }
+
+    // 공통 유저 조회 메서드
+    private User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorEnum.USER_NOT_FOUND));
+    }
+
+    // 생일 파싱 유틸
+    private LocalDate parseBirthDate(KakaoUserInfoResponse userInfo) {
+        String year = userInfo.getKakaoAccount().getBirthyear();
+        String day = userInfo.getKakaoAccount().getBirthday();
+        return (year != null && day != null)
+                ? LocalDate.parse(year + day, DateTimeFormatter.ofPattern("yyyyMMdd")) : null;
+    }
+
+    // 성별 파싱 유틸
+    private GenderType parseGender(KakaoUserInfoResponse userInfo) {
+        String kakaoGender = userInfo.getKakaoAccount().getGender();
+        return (kakaoGender != null)
+                ? (kakaoGender.equalsIgnoreCase("male") ? GenderType.MALE : GenderType.FEMALE) : null;
+    }
+
+    // 토큰재발급
+    @Transactional
+    public String reissueToken(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new CustomException(ErrorEnum.INVALID_TOKEN);
+        }
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
+        String storedRefreshToken = redisTemplate.opsForValue().get("RT:" + userId);
+
+        if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
+            throw new CustomException(ErrorEnum.INVALID_TOKEN);
+        }
+
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저 없음"));
+                .orElseThrow(() -> new CustomException(ErrorEnum.USER_NOT_FOUND));
 
-        String profilePath = fileUploader.upload(file);
+        return jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+    }
 
-        // GUEST -> USER 정보 업데이트
-        user.signUp(
-                request.getNickName(),
-                request.getGender(),
-                request.getBirthYear(),
-                request.getBirthDay(),
-                request.getMbti(),
-                profilePath
-        );
+    // 토큰 발급 공통
+    private String issueTokens(User user) {
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
-        // ROLE 이 USER 로 변경됨에 따라 새 토큰 발급
-        return jwtTokenProvider.createToken(user.getId(), user.getRole(), user.getStatus());
+        redisTemplate.opsForValue().set("RT:" + user.getId(), refreshToken, 14, TimeUnit.DAYS);
+        return accessToken;
+    }
+
+    // 로그아웃
+    @Transactional
+    public void logout(Long userId) {
+        redisTemplate.delete("RT:" + userId);
+    }
+
+    // 회원탈퇴
+    @Transactional
+    public void withdrawUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorEnum.USER_NOT_FOUND));
+        kakaoService.unlink(user.getKakaoId());
+        userRepository.delete(user);
+        redisTemplate.delete("RT:" + userId);
     }
 }

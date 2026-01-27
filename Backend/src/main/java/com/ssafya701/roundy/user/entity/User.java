@@ -7,6 +7,8 @@ import com.ssafya701.roundy.user.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -17,7 +19,6 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 카카오에서 받아온 정보
     @Column(unique = true, nullable = false)
     private Long kakaoId;
 
@@ -26,45 +27,52 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private GenderType gender;
-    private Integer birthYear;
-    private String birthDay; // MMDD 형식
+
+    private LocalDate birthDate;
     private String nickName;
-    private String profileImageUrl; // EC2 저장 경로 or URL
+    private String profileImageUrl;
     private String mbti;
+    private String verificationImageUrl;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 50)
     private UserStatus status;
 
     @Builder
-    public User(Long kakaoId, String name, String email, GenderType gender, Integer birthYear, String birthDay, UserRole role, UserStatus status) {
+    public User(Long kakaoId, String name, String email, GenderType gender, LocalDate birthDate, UserRole role, UserStatus status) {
         this.kakaoId = kakaoId;
         this.name = name;
         this.email = email;
         this.gender = gender;
-        this.birthYear = birthYear;
-        this.birthDay = birthDay;
+        this.birthDate = birthDate;
         this.role = role;
         this.status = status;
     }
 
-    public void signUp(String nickName, GenderType gender, Integer birthYear, String birthDay, String mbti, String profileImageUrl) {
+    // 회원가입: 추가 정보 저장 및 상태 변경
+    public void signUp(String nickName, GenderType gender, LocalDate birthDate, String mbti, String profileImageUrl) {
         this.nickName = nickName;
         this.gender = gender;
-        this.birthYear = birthYear;
-        this.birthDay = birthDay;
+        this.birthDate = birthDate;
         this.mbti = mbti;
         if (profileImageUrl != null) {
             this.profileImageUrl = profileImageUrl;
         }
-
-        this.role = UserRole.USER;
-
+        this.status = UserStatus.JOINED;
     }
 
-    public void updateStatus(UserStatus newStatus) {
-        this.status = newStatus;
+    // 검증용 사진 업로드
+    public void uploadVerificationImage(String verificationImageUrl) {
+        this.verificationImageUrl = verificationImageUrl;
+        this.status = UserStatus.PENDING_VERIFICATION;
+    }
+
+    // 취향 분석 -> 최종 승인
+    public void authorizeUser() {
+        this.role = UserRole.USER;
+        this.status = UserStatus.VALID;
     }
 }

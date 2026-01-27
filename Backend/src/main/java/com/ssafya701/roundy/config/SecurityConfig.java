@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.global.config;
+package com.ssafya701.roundy.config;
 
 import com.ssafya701.roundy.global.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +25,21 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
-                        // 로그인, 회원가입 관련 API는 모두 허용
-                        .requestMatchers("/api/users/**", "/error").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

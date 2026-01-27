@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.global.config;
+package com.ssafya701.roundy.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

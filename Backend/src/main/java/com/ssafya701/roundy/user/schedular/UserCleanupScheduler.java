@@ -24,7 +24,6 @@ public class UserCleanupScheduler {
         // 24시간 전 시간 계산
         LocalDateTime cutOffTime = LocalDateTime.now().minusHours(24);
         // 삭제 실행
-        userRepository.deleteGhostUser(UserRole.GUEST, cutOffTime);
-        log.info("24시간 이상 방치된 회원 삭제");
+        userRepository.deleteByRoleAndCreatedAtBefore(UserRole.GUEST, cutOffTime);
     }
 }
