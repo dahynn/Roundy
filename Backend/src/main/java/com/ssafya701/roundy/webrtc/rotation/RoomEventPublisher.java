@@ -7,6 +7,7 @@ import com.ssafya701.roundy.webrtc.message.outbound.RoundStartMessage;
 import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
+import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ import java.util.Map;
 public class RoomEventPublisher {
     
     private final WsMessageSerializer messageSerializer;
+    private final WebRtcEventLogger eventLogger;
     
     /**
      * ROUND_START 브로드캐스트
@@ -45,6 +47,9 @@ public class RoomEventPublisher {
         broadcastToRoom(room, message);
         log.info("ROUND_START 발행: roomId={}, round={}, duration={}s", 
                 room.getRoomId(), roundNumber, durationSeconds);
+        
+        eventLogger.logRoundStarted(room.getRoomId(), roundNumber, 
+                room.getCurrentRound().getTotalRounds(), durationSeconds, room.getParticipantCount());
     }
     
     /**
@@ -61,6 +66,9 @@ public class RoomEventPublisher {
         
         broadcastToRoom(room, message);
         log.info("ROUND_END 발행: roomId={}, round={}", room.getRoomId(), roundNumber);
+        
+        eventLogger.logRoundEnded(room.getRoomId(), roundNumber, 
+                room.getCurrentRound().getTotalRounds());
     }
     
     /**
@@ -104,6 +112,8 @@ public class RoomEventPublisher {
         
         log.info("PAIR_ASSIGNED 발행 완료: roomId={}, round={}, 참가자 {}명", 
                 room.getRoomId(), roundNumber, participants.size());
+        
+        eventLogger.logPairsAssigned(room.getRoomId(), roundNumber, pairMap);
     }
     
     /**

@@ -3,6 +3,7 @@ package com.ssafya701.roundy.webrtc.openvidu;
 import com.ssafya701.roundy.config.OpenViduProperties;
 import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduSessionResponse;
 import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduTokenResponse;
+import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class OpenViduService {
 
     private final OpenViduClient openViduClient;
     private final OpenViduProperties openViduProperties;
+    private final WebRtcEventLogger eventLogger;
 
     /**
      * 방 ID별 OpenVidu Session ID 캐시
@@ -54,6 +56,8 @@ public class OpenViduService {
             sessionCache.put(roomId, sessionId);
             
             log.info("OpenVidu Session 보장 완료: roomId={}, sessionId={}", roomId, sessionId);
+            eventLogger.logOpenViduSessionCreated(roomId, sessionId);
+            
             return sessionId;
             
         } catch (OpenViduClient.OpenViduClientException e) {
@@ -85,6 +89,8 @@ public class OpenViduService {
             
             log.info("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}", 
                 roomId, userId, response.getId());
+            eventLogger.logOpenViduTokenGenerated(roomId, userId, response.getId());
+            
             return token;
             
         } catch (OpenViduClient.OpenViduClientException e) {

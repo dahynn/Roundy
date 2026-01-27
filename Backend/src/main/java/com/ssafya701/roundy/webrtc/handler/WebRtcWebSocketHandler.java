@@ -14,6 +14,7 @@ import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
+import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final RoomRegistry roomRegistry;
     private final OpenViduService openViduService;
     private final RotationScheduler rotationScheduler;
+    private final WebRtcEventLogger eventLogger;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -47,6 +49,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
 
         log.info("WebSocket 연결 성공: sessionId={}, userId={}, username={}", 
                 session.getId(), userId, username);
+        
+        eventLogger.logConnectionEstablished(session.getId(), userId, username);
     }
 
     @Override
@@ -80,6 +84,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         log.info("WebSocket 연결 종료: sessionId={}, userId={}, status={}", 
                 session.getId(), userId, status);
 
+        eventLogger.logConnectionClosed(session.getId(), userId, status.toString());
+        
         // 세션 ID로 참가자 제거
         roomRegistry.removeParticipantBySessionId(session.getId());
     }
@@ -163,6 +169,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
 
             log.info("방 참가 성공: roomId={}, userId={}, 현재 인원={}", 
                     roomId, userId, room.getParticipantCount());
+            
+            eventLogger.logRoomJoined(roomId, userId, username, room.getParticipantCount());
 
         } catch (OpenViduService.OpenViduServiceException e) {
             log.error("OpenVidu 처리 실패: roomId={}, userId={}", roomId, userId, e);
@@ -208,6 +216,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             );
 
             log.info("방 퇴장 성공: roomId={}, userId={}", roomId, userId);
+            
+            eventLogger.logRoomLeft(roomId, userId, roomRegistry.getParticipantCount(roomId));
 
         } catch (Exception e) {
             log.error("방 퇴장 처리 실패: roomId={}, userId={}", roomId, userId, e);
@@ -230,6 +240,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         );
 
         broadcastMessage(room, roomState);
+        
+        eventLogger.logBroadcast(room.getRoomId(), "ROOM_STATE", room.getParticipantCount());
     }
 
     /**
