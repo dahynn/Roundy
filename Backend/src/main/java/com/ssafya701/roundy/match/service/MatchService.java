@@ -1,5 +1,8 @@
 package com.ssafya701.roundy.match.service;
 
+import com.ssafya701.roundy.chatmessage.entity.ChatMessage;
+import com.ssafya701.roundy.chatmessage.enums.MsgType;
+import com.ssafya701.roundy.chatmessage.repository.ChatMessageRepository;
 import com.ssafya701.roundy.global.error.BusinessLogicException;
 import com.ssafya701.roundy.match.dto.MatchDto;
 import com.ssafya701.roundy.match.entity.Match;
@@ -17,6 +20,7 @@ import java.util.stream.Collectors;
 public class MatchService {
 
     private final MatchRepository matchRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     /**
      * 사용자의 활성화된 쪽지방 목록을 조회
@@ -38,6 +42,44 @@ public class MatchService {
     public Match getMatchById(Long matchId) {
         return matchRepository.findById(matchId)
                 .orElseThrow(() -> new BusinessLogicException("존재하지 않는 쪽지방입니다."));
+    }
+
+    /**
+     * 쪽지방 나가기
+     * 1. 나간 시간 기록 및 방 상태 TERMINATED 변경
+     * 2. 시스템 메시지 전송 ("상대방이 나가서...")
+     * 3. 양쪽 모두 나갔는지 확인 후 Soft Delete 처리
+     */
+    @Transactional
+    public MatchDto.LeaveResponse leaveMatch(Long matchId, Long userId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new BusinessLogicException("존재하지 않는 쪽지방입니다."));
+
+        // 상태 변경 (이탈 처리)
+        match.terminateChat(userId);
+
+        // 시스템 메시지 생성 (상대방에게 알림)
+        Long receiverId = match.getMaleId().equals(userId) ? match.getFemaleId() : match.getMaleId();
+
+        ChatMessage systemMessage = ChatMessage.builder()
+                .matchId(matchId)
+                .senderId(userId)
+                .receiverId(receiverId)
+                .content("상대방이 대화를 종료하여 채팅방이 닫혔습니다.")
+                .msgType(MsgType.SYSTEM)
+                .build();
+
+        chatMessageRepository.save(systemMessage);
+
+        // 마지막 메시지 업데이트 (목록에서 "대화 종료" 확인용)
+        match.updateLastMessage(systemMessage.getContent(), systemMessage.getCreatedAt());
+
+        // 양쪽 모두 이탈 시 Soft Delete (완전 삭제 대기 상태)
+        if (match.getMaleLeftAt() != null && match.getFemaleLeftAt() != null) {
+            match.markAsDeleted();
+        }
+
+        return MatchDto.LeaveResponse.from(match);
     }
 
 }

@@ -31,7 +31,7 @@ public class ChatMessage extends BaseEntity {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "msg_type", nullable = false)
+    @Column(name = "msg_type", nullable = false, length = 20)
     private MsgType msgType;
 
     @Column(name = "is_read")
