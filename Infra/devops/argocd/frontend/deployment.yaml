@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: smj100394/roundy_front:latest
+        image: smj100394/roundy_front:latest 
         ports:
         - containerPort: 80 
         resources:
