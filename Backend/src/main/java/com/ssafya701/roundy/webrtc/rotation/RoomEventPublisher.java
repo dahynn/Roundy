@@ -1,11 +1,10 @@
 package com.ssafya701.roundy.webrtc.rotation;
 
 import com.ssafya701.roundy.webrtc.message.WsMessage;
-import com.ssafya701.roundy.webrtc.message.outbound.PairAssignedMessage;
-import com.ssafya701.roundy.webrtc.message.outbound.RoundEndMessage;
-import com.ssafya701.roundy.webrtc.message.outbound.RoundStartMessage;
+import com.ssafya701.roundy.webrtc.message.outbound.*;
 import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomState;
+import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
 import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
 import lombok.RequiredArgsConstructor;
@@ -162,5 +161,83 @@ public class RoomEventPublisher {
             log.error("메시지 전송 실패: sessionId={}, error={}", 
                     session.getId(), e.getMessage(), e);
         }
+    }
+    
+    // ========== 8단계 Stage 관련 메시지 발행 ==========
+    
+    /**
+     * STAGE_CHANGE 브로드캐스트
+     */
+    public void publishStageChange(RoomState room, Stage stage) {
+        StageChangeMessage message = new StageChangeMessage(
+            room.getRoomId(),
+            stage,
+            stage.getDurationSeconds()
+        );
+        
+        broadcastToRoom(room, message);
+        log.info("STAGE_CHANGE 발행: roomId={}, stage={}, duration={}s", 
+                room.getRoomId(), stage, stage.getDurationSeconds());
+    }
+    
+    /**
+     * SPEAKER_CHANGE 브로드캐스트 (자기소개 발언자 변경)
+     */
+    public void publishSpeakerChange(RoomState room, Long speakerId, int remainingSeconds) {
+        String nickname = room.getParticipant(speakerId)
+                .map(ParticipantState::getNickname)
+                .orElse("Unknown");
+        
+        SpeakerChangeMessage message = new SpeakerChangeMessage(
+            speakerId,
+            nickname,
+            remainingSeconds
+        );
+        
+        broadcastToRoom(room, message);
+        log.info("SPEAKER_CHANGE 발행: userId={}, nickname={}", speakerId, nickname);
+    }
+    
+    /**
+     * MATCH_RESULT 개별 전송
+     */
+    public void publishMatchResult(ParticipantState participant, RoomState.MatchPair matchPair) {
+        MatchResultMessage message = new MatchResultMessage(
+            matchPair.isMatched(),
+            matchPair.getPartnerId(participant.getUserId()),
+            matchPair.getPartnerNickname(participant.getUserId())
+        );
+        
+        sendToParticipant(participant, message);
+        log.debug("MATCH_RESULT 발행: userId={}, matched={}", 
+                participant.getUserId(), matchPair.isMatched());
+    }
+    
+    /**
+     * FACE_REVEAL_START 브로드캐스트
+     */
+    public void publishFaceRevealStart(RoomState room) {
+        FaceRevealStartMessage message = new FaceRevealStartMessage(
+            room.getRoomId(),
+            "매칭된 커플은 얼굴을 공개할 수 있습니다."
+        );
+        
+        broadcastToRoom(room, message);
+        log.info("FACE_REVEAL_START 발행: roomId={}", room.getRoomId());
+    }
+    
+    /**
+     * PARTNER_LEFT 전송 (1:1 대화 중 파트너 이탈)
+     */
+    public void publishPartnerLeft(ParticipantState participant, Long partnerId, String partnerNickname) {
+        PartnerLeftMessage message = new PartnerLeftMessage(
+            partnerId,
+            partnerNickname,
+            "대화 상대가 나갔습니다."
+        );
+        
+        sendToParticipant(participant, message);
+        log.info("PARTNER_LEFT 발행: userId={}, partnerId={}", 
+                participant.getUserId(), partnerId);
     }
 }
