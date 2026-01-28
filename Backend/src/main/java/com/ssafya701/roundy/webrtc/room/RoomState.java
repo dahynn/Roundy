@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.webrtc.room;
 
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
+import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.rotation.RoundInfo;
 import lombok.Getter;
 import lombok.ToString;
@@ -8,6 +9,8 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
 
 /**
  * 방 상태 관리 (메모리)
@@ -31,6 +34,48 @@ public class RoomState {
     private final Map<Long, ParticipantState> participants;
     private final String openViduSessionId;
     private RoundInfo currentRound;
+    
+    // ========== 8단계 로테이션 필드 ==========
+    
+    /**
+     * 현재 진행 중인 스테이지
+     */
+    private Stage currentStage = Stage.WAITING;
+    
+    /**
+     * 스테이지 타이머 (각 Stage 종료 시점에 다음 Stage로 전환)
+     */
+    private ScheduledFuture<?> stageTimer;
+    
+    /**
+     * 첫인상 투표 결과 (투표자 ID -> 대상자 ID)
+     */
+    private final Map<Long, Long> firstVotes = new ConcurrentHashMap<>();
+    
+    /**
+     * 최종 투표 결과 (투표자 ID -> 대상자 ID)
+     */
+    private final Map<Long, Long> finalVotes = new ConcurrentHashMap<>();
+    
+    /**
+     * 게임 뱃지/결과 (사용자 ID -> 뱃지 또는 점수)
+     */
+    private final Map<Long, String> gameBadges = new ConcurrentHashMap<>();
+    
+    /**
+     * 게임 문제 ID (현재 출제된 문제)
+     */
+    private Long currentGameQuestionId;
+    
+    /**
+     * 자기소개 발언 순서 큐
+     */
+    private Queue<Long> speakerQueue = new LinkedList<>();
+    
+    /**
+     * 현재 발언자 ID
+     */
+    private Long currentSpeakerId;
     
     // TODO: [DB 연동] 성별별 인원수 관리 필드 추가
     // private Integer maleCount = 0;
@@ -142,5 +187,227 @@ public class RoomState {
      */
     public boolean isRoundActive() {
         return currentRound != null;
+    }
+    
+    // ========== 8단계 로테이션 메서드 ==========
+    
+    /**
+     * 스테이지 변경
+     */
+    public void setCurrentStage(Stage stage) {
+        this.currentStage = stage;
+    }
+    
+    /**
+     * 스테이지 타이머 설정
+     */
+    public void setStageTimer(ScheduledFuture<?> timer) {
+        // 이전 타이머가 있으면 취소
+        if (this.stageTimer != null && !this.stageTimer.isDone()) {
+            this.stageTimer.cancel(false);
+        }
+        this.stageTimer = timer;
+    }
+    
+    /**
+     * 투표 제출
+     * @param voterId 투표자 사용자 ID
+     * @param targetId 투표 대상 사용자 ID
+     * @param isFinal true: 최종 투표, false: 첫인상 투표
+     */
+    public void submitVote(Long voterId, Long targetId, boolean isFinal) {
+        if (isFinal) {
+            finalVotes.put(voterId, targetId);
+        } else {
+            firstVotes.put(voterId, targetId);
+        }
+    }
+    
+    /**
+     * 게임 답변 제출 (뱃지 부여)
+     * @param userId 사용자 ID
+     * @param badge 부여할 뱃지 (예: "FAST_THINKER", "CREATIVE")
+     */
+    public void submitGameAnswer(Long userId, String badge) {
+        gameBadges.put(userId, badge);
+    }
+    
+    /**
+     * 발언자 큐 초기화 (자기소개 시작 시)
+     */
+    public void initializeSpeakerQueue() {
+        speakerQueue.clear();
+        speakerQueue.addAll(participants.keySet());
+        // 랜덤하게 섞기
+        List<Long> userIds = new ArrayList<>(speakerQueue);
+        Collections.shuffle(userIds);
+        speakerQueue = new LinkedList<>(userIds);
+    }
+    
+    /**
+     * 다음 발언자 지정
+     * @return 다음 발언자 ID, 없으면 null
+     */
+    public Long assignNextSpeaker() {
+        currentSpeakerId = speakerQueue.poll();
+        return currentSpeakerId;
+    }
+    
+    /**
+     * 남은 발언자 수
+     */
+    public int getRemainingspeakers() {
+        return speakerQueue.size();
+    }
+    
+    /**
+     * 다음 스테이지로 전환
+     * @return 다음 스테이지, 마지막 단계인 경우 null
+     */
+    public Stage moveToNextStage() {
+        Stage nextStage = currentStage.getNextStage();
+        if (nextStage != null) {
+            this.currentStage = nextStage;
+        }
+        return nextStage;
+    }
+    
+    /**
+     * 매칭 결과 계산 (쌍방 선택 확인)
+     * @return 매칭 성공한 커플 리스트
+     */
+    public List<MatchPair> calculateMatches() {
+        List<MatchPair> matches = new ArrayList<>();
+        Set<Long> processed = new HashSet<>();
+        
+        for (Map.Entry<Long, Long> entry : finalVotes.entrySet()) {
+            Long userId = entry.getKey();
+            Long targetId = entry.getValue();
+            
+            // 이미 처리된 사용자는 스킵
+            if (processed.contains(userId)) {
+                continue;
+            }
+            
+            // 상대방도 나를 선택했는지 확인 (쌍방 매칭)
+            Long targetChoice = finalVotes.get(targetId);
+            if (targetChoice != null && targetChoice.equals(userId)) {
+                // 매칭 성공!
+                String nickname1 = getParticipant(userId)
+                        .map(ParticipantState::getNickname)
+                        .orElse("Unknown");
+                String nickname2 = getParticipant(targetId)
+                        .map(ParticipantState::getNickname)
+                        .orElse("Unknown");
+                
+                matches.add(new MatchPair(userId, targetId, nickname1, nickname2, true));
+                processed.add(userId);
+                processed.add(targetId);
+            }
+        }
+        
+        return matches;
+    }
+    
+    /**
+     * 특정 사용자의 매칭 결과 조회
+     */
+    public MatchPair getMatchResultForUser(Long userId) {
+        List<MatchPair> matches = calculateMatches();
+        
+        // 매칭 성공한 경우
+        for (MatchPair pair : matches) {
+            if (pair.getUserId1().equals(userId)) {
+                return new MatchPair(
+                    userId, 
+                    pair.getUserId2(), 
+                    pair.getNickname1(), 
+                    pair.getNickname2(), 
+                    true
+                );
+            }
+            if (pair.getUserId2().equals(userId)) {
+                return new MatchPair(
+                    userId, 
+                    pair.getUserId1(), 
+                    pair.getNickname2(), 
+                    pair.getNickname1(), 
+                    true
+                );
+            }
+        }
+        
+        // 매칭 실패
+        String nickname = getParticipant(userId)
+                .map(ParticipantState::getNickname)
+                .orElse("Unknown");
+        return new MatchPair(userId, null, nickname, null, false);
+    }
+    
+    /**
+     * Stage 기반 로테이션 모드 여부
+     * (향후 RotationMode에 STAGE_BASED 추가 시 사용)
+     */
+    public boolean isStageBasedRotation() {
+        // 현재는 currentStage가 WAITING이 아니면 Stage 기반으로 간주
+        return currentStage != Stage.WAITING;
+    }
+    
+    /**
+     * 방 정리 (게임, 투표 데이터 초기화)
+     */
+    public void clearStageData() {
+        firstVotes.clear();
+        finalVotes.clear();
+        gameBadges.clear();
+        speakerQueue.clear();
+        currentSpeakerId = null;
+        currentGameQuestionId = null;
+        
+        if (stageTimer != null && !stageTimer.isDone()) {
+            stageTimer.cancel(false);
+            stageTimer = null;
+        }
+    }
+    
+    /**
+     * 매칭 결과 DTO
+     */
+    @Getter
+    @ToString
+    public static class MatchPair {
+        private final Long userId1;
+        private final Long userId2;
+        private final String nickname1;
+        private final String nickname2;
+        private final boolean isMatched;
+        
+        public MatchPair(Long userId1, Long userId2, String nickname1, String nickname2, boolean isMatched) {
+            this.userId1 = userId1;
+            this.userId2 = userId2;
+            this.nickname1 = nickname1;
+            this.nickname2 = nickname2;
+            this.isMatched = isMatched;
+        }
+        
+        public Long getPartnerId(Long myId) {
+            if (myId.equals(userId1)) {
+                return userId2;
+            }
+            if (myId.equals(userId2)) {
+                return userId1;
+            }
+            return null;
+        }
+        
+        public String getPartnerNickname(Long myId) {
+            if (myId.equals(userId1)) {
+                return nickname2;
+            }
+            if (myId.equals(userId2)) {
+                return nickname1;
+            }
+            return null;
+        }
     }
 }
