@@ -19,6 +19,11 @@ pipeline {
                   volumeMounts:
                   - mountPath: /var/run/docker.sock
                     name: docker-sock
+                - name: git
+                  image: alpine/git:latest
+                  command:
+                  - cat
+                  tty: true
                 volumes:
                 - name: docker-sock
                   hostPath:
@@ -32,6 +37,10 @@ pipeline {
         REPO_NAME = 'roundy_front'
         IMAGE_TAG = "${DOCKER_USER}/${REPO_NAME}:${BUILD_NUMBER}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
+
+        MANIFEST_REPO_URL = 'lab.ssafy.com/s14-webmobile1-sub1/S14P11A701.git'
+        TARGET_BRANCH = 'infra/feat/ci-docker'
+        GIT_CREDENTIALS_ID = 'gitlab'
     }
 
     stages {
@@ -69,6 +78,37 @@ pipeline {
                                 sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
                                 
                                 sh "docker logout"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifest') {
+            steps {
+                container('git') {
+                    script {
+                        withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", 
+                                         passwordVariable: 'GIT_PASSWORD', 
+                                         usernameVariable: 'GIT_USERNAME')]) {
+                            
+                            sh '''
+                                git clone -b ${TARGET_BRANCH} https://${GIT_USERNAME}:${GIT_PASSWORD}@${MANIFEST_REPO_URL} config-repo
+                            '''
+                            
+                            dir('config-repo') {
+                                def filePath = "Infra/devops/argocd/frontend/deployment.yaml"
+                                
+                                sh "sed -i 's|image: ${DOCKER_USER}/${REPO_NAME}:.*|image: ${IMAGE_TAG}|g' ${filePath}"
+                                
+                                sh """
+                                    git config user.email "jenkins@ssafy.com"
+                                    git config user.name "jenkins"
+                                    git add ${filePath}
+                                    git commit -m "Chore: Update frontend image to ${IMAGE_TAG}"
+                                    git push origin ${TARGET_BRANCH}
+                                """
                             }
                         }
                     }

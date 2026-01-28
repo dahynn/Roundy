@@ -39,6 +39,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
 
         MANIFEST_REPO_URL = 'lab.ssafy.com/s14-webmobile1-sub1/S14P11A701.git'
+        TARGET_BRANCH = 'infra/feat/ci-docker'
         GIT_CREDENTIALS_ID = 'gitlab'
     }
 
@@ -93,17 +94,21 @@ pipeline {
                                          usernameVariable: 'GIT_USERNAME')]) {
                             
                             sh '''
-                                git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@''' + "${MANIFEST_REPO_URL} config-repo" + '''
+                                git clone -b ${TARGET_BRANCH} https://${GIT_USERNAME}:${GIT_PASSWORD}@${MANIFEST_REPO_URL} config-repo
                             '''
                             
                             dir('config-repo') {
-                                sh "sed -i 's|image: ${DOCKER_USER}/${REPO_NAME}:.*|image: ${IMAGE_TAG}|g' Infra/devops/argocd/backend/deployment.yaml"
+                                def filePath = "Infra/devops/argocd/backend/deployment.yaml"
                                 
-                                sh "git config user.email 'jenkins@example.com'"
-                                sh "git config user.name 'jenkins'"
-                                sh "git add ."
-                                sh "git commit -m 'Update image to ${IMAGE_TAG} [skip ci]'"
-                                sh "git push origin main"
+                                sh "sed -i 's|image: ${DOCKER_USER}/${REPO_NAME}:.*|image: ${IMAGE_TAG}|g' ${filePath}"
+                                
+                                sh """
+                                    git config user.email "jenkins@ssafy.com"
+                                    git config user.name "jenkins"
+                                    git add ${filePath}
+                                    git commit -m "Chore: Update backend image to ${IMAGE_TAG}"
+                                    git push origin ${TARGET_BRANCH}
+                                """
                             }
                         }
                     }
