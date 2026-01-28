@@ -42,4 +42,14 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(CommonResponse.ofFailure("서버 내부 오류"));
     }
+
+    // user 부분 custom 예외 처리
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<CommonResponse<Void>> handleCustomException(CustomException e) {
+        log.warn("Custom Error: {}", e.getErrorEnum().getMessage());
+
+        return ResponseEntity
+                .status(e.getErrorEnum().getHttpStatus())
+                .body(CommonResponse.ofFailure(e.getErrorEnum().getMessage()));
+    }
 }
