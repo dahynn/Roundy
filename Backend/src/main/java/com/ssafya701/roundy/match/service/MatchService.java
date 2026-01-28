@@ -4,6 +4,8 @@ import com.ssafya701.roundy.chatmessage.entity.ChatMessage;
 import com.ssafya701.roundy.chatmessage.enums.MsgType;
 import com.ssafya701.roundy.chatmessage.repository.ChatMessageRepository;
 import com.ssafya701.roundy.global.error.BusinessLogicException;
+import com.ssafya701.roundy.global.error.CustomException;
+import com.ssafya701.roundy.global.error.ErrorEnum;
 import com.ssafya701.roundy.match.dto.MatchDto;
 import com.ssafya701.roundy.match.entity.Match;
 import com.ssafya701.roundy.match.repository.MatchRepository;
@@ -39,9 +41,15 @@ public class MatchService {
      * @return 매칭 엔티티
      * @throws BusinessLogicException 해당 ID의 매칭이 존재하지 않을 경우 발생
      */
-    public Match getMatchById(Long matchId) {
-        return matchRepository.findById(matchId)
-                .orElseThrow(() -> new BusinessLogicException("존재하지 않는 쪽지방입니다."));
+    public Match getMatchById(Long matchId, Long userId) {
+
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new CustomException(ErrorEnum.MATCH_NOT_FOUND));
+
+        // 접근 권한 검증
+        validateParticipant(match, userId);
+
+        return match;
     }
 
     /**
@@ -53,7 +61,15 @@ public class MatchService {
     @Transactional
     public MatchDto.LeaveResponse leaveMatch(Long matchId, Long userId) {
         Match match = matchRepository.findById(matchId)
-                .orElseThrow(() -> new BusinessLogicException("존재하지 않는 쪽지방입니다."));
+                .orElseThrow(() -> new CustomException(ErrorEnum.MATCH_NOT_FOUND));
+
+        // 참여자 검증
+        validateParticipant(match, userId);
+
+        // 이미 나간 사용자인지 확인
+        if (isUserAlreadyLeft(match, userId)) {
+            throw new BusinessLogicException("이미 종료하거나 나간 대화방입니다.");
+        }
 
         // 상태 변경 (이탈 처리)
         match.terminateChat(userId);
@@ -68,9 +84,9 @@ public class MatchService {
             chatMessageRepository.deleteAllByMatchId(matchId);
 
             // 매칭 데이터 영구 삭제
-            matchRepository.delete(match);
+            // matchRepository.delete(match);
+            match.markAsDeleted();
 
-            //
             return MatchDto.LeaveResponse.from(match);
         }
 
@@ -94,6 +110,24 @@ public class MatchService {
         match.updateLastMessage(systemMessage.getContent(), systemMessage.getCreatedAt());
 
         return MatchDto.LeaveResponse.from(match);
+    }
+
+    /**
+     * 검증 메서드
+     * */
+
+    private void validateParticipant(Match match, Long userId) {
+        if (!match.getMaleId().equals(userId) && !match.getFemaleId().equals(userId)) {
+            throw new CustomException(ErrorEnum.MATCH_ACCESS_DENIED);
+        }
+    }
+
+    private boolean isUserAlreadyLeft(Match match, Long userId) {
+        if (match.getMaleId().equals(userId)) {
+            return match.getMaleLeftAt() != null;
+        } else {
+            return match.getFemaleLeftAt() != null;
+        }
     }
 
 }
