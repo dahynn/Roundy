@@ -2,8 +2,11 @@ package com.ssafya701.roundy.chatmessage.controller;
 
 import com.ssafya701.roundy.chatmessage.dto.ChatMessageDto;
 import com.ssafya701.roundy.chatmessage.service.ChatMessageService;
+import com.ssafya701.roundy.global.auth.PrincipalDetails;
 import com.ssafya701.roundy.global.common.CommonResponse;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,10 +23,13 @@ public class ChatMessageController {
     public CommonResponse<List<ChatMessageDto.Response>> getMessages(
             @PathVariable Long matchId,
             @RequestParam(required = false) Long lastMessageId,
-            @RequestParam(defaultValue = "50") int size
+            @RequestParam(defaultValue = "50") int size,
+            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal
     ) {
 
-        List<ChatMessageDto.Response> responses = chatMessageService.getMessages(matchId, lastMessageId, size);
+        Long userId = principal.getUser().getId();
+
+        List<ChatMessageDto.Response> responses = chatMessageService.getMessages(matchId, userId, lastMessageId, size);
 
         return CommonResponse.ofSuccess(responses);
 
@@ -33,11 +39,11 @@ public class ChatMessageController {
     @PostMapping
     public CommonResponse<ChatMessageDto.Response> sendMessage(
             @PathVariable Long matchId,
-            @RequestBody ChatMessageDto.Request request
+            @RequestBody ChatMessageDto.Request request,
+            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal
     ) {
 
-        // TODO: 로그인 구현이 완료되면 토큰을 통해 현재 로그인한 유저 ID를 가져와야 함
-        Long senderId = 1L; // 임시 하드코딩
+        Long senderId = principal.getUser().getId();
 
         ChatMessageDto.Response response = chatMessageService.sendMessage(matchId, senderId, request);
 

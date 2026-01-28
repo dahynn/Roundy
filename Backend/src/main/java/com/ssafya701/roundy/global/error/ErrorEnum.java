@@ -29,7 +29,12 @@ public enum ErrorEnum {
     KAKAO_UNLINK_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 연결 끊기에 실패했습니다."),
 
     // 온보딩 관련
-    INVALID_PREFERENCE_COUNT(HttpStatus.BAD_REQUEST, "선호도 선택 개수가 올바르지 않습니다.");
+    INVALID_PREFERENCE_COUNT(HttpStatus.BAD_REQUEST, "선호도 선택 개수가 올바르지 않습니다."),
+
+    // 쪽지방 관련
+    MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 쪽지방입니다."),
+    MATCH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 쪽지방에 접근할 권한이 없습니다."),
+    MATCH_TERMINATED(HttpStatus.BAD_REQUEST, "이미 종료된 대화방입니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
