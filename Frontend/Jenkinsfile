@@ -39,7 +39,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
 
         MANIFEST_REPO_URL = 'lab.ssafy.com/s14-webmobile1-sub1/S14P11A701.git'
-        TARGET_BRANCH = 'infra/feat/ci-docker'
+        TARGET_BRANCH = 'infra/prod'
         GIT_CREDENTIALS_ID = 'gitlab'
     }
 
@@ -106,7 +106,7 @@ pipeline {
                                     git config user.email "jenkins@ssafy.com"
                                     git config user.name "jenkins"
                                     git add ${filePath}
-                                    git commit -m "Chore: Update frontend image to ${IMAGE_TAG}"
+                                    git commit -m "Chore: Update frontend image to ${IMAGE_TAG} [skip ci]"
                                     git push origin ${TARGET_BRANCH}
                                 """
                             }
