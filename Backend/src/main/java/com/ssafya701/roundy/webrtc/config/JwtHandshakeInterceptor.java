@@ -1,18 +1,14 @@
 package com.ssafya701.roundy.webrtc.config;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -20,13 +16,10 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
-    private final SecretKey secretKey;
-
-    public JwtHandshakeInterceptor(@Value("${jwt.secret:test-secret-key-for-webrtc-development-minimum-32-bytes}") String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-    }
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public boolean beforeHandshake(
@@ -35,7 +28,25 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes) throws Exception {
 
+        // ========== 테스트용: JWT 검증 비활성화 ==========
+        // TODO: 운영 배포 전 반드시 아래 주석 해제하고 테스트 코드 삭제할 것!
+        
         String query = request.getURI().getQuery();
+        
+        // 테스트용: userId를 쿼리 파라미터에서 직접 추출
+        String userIdParam = extractQueryParam(query, "userId");
+        String usernameParam = extractQueryParam(query, "username");
+        
+        Long userId = userIdParam != null ? Long.parseLong(userIdParam) : 1L;
+        String username = usernameParam != null ? usernameParam : "testUser";
+        
+        attributes.put("userId", userId);
+        attributes.put("username", username);
+        
+        log.warn("🔓 [테스트 모드] JWT 검증 SKIP - userId={}, username={}", userId, username);
+        return true;
+        
+        /* ========== 원래 JWT 검증 로직 (주석 처리) ==========
         if (query == null) {
             log.warn("WebSocket 연결 실패: 쿼리 파라미터 없음");
             return false;
@@ -49,50 +60,32 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         }
 
         try {
-            // TODO: [브랜치 병합] JwtService의 validateAndExtract() 메서드 활용
-            // TokenInfo tokenInfo = jwtService.validateAndExtract(token);
-            // attributes.put("userId", tokenInfo.getUserId());
-            // attributes.put("username", tokenInfo.getUsername());
-            
-            // TODO: [보안 강화] 토큰 블랙리스트 체크
-            // if (tokenBlacklistService.isBlacklisted(token)) {
-            //     log.warn("WebSocket 연결 실패: 블랙리스트에 등록된 토큰");
-            //     return false;
-            // }
-            
-            // TODO: [보안 강화] Rate limiting 체크
-            // String clientIp = getClientIp(request);
-            // if (!rateLimiter.tryAcquire(clientIp)) {
-            //     log.warn("WebSocket 연결 실패: Rate limit 초과, ip={}", clientIp);
-            //     return false;
-            // }
-            
-            // JWT 검증 및 파싱
-            Claims claims = Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-
-            // 사용자 정보를 WebSocket 세션 속성에 저장
-            Long userId = claims.get("userId", Long.class);
-            String username = claims.getSubject();
-
-            if (userId == null || username == null) {
-                log.warn("WebSocket 연결 실패: JWT에 userId 또는 username 없음");
+            // JWT 토큰 검증
+            if (!jwtTokenProvider.validateToken(token)) {
+                log.warn("WebSocket 연결 실패: JWT 토큰 검증 실패");
                 return false;
             }
 
-            attributes.put("userId", userId);
-            attributes.put("username", username);
+            // 사용자 ID 추출
+            Long userId = jwtTokenProvider.getUserId(token);
+            
+            if (userId == null) {
+                log.warn("WebSocket 연결 실패: JWT에 userId 없음");
+                return false;
+            }
 
-            log.info("WebSocket 핸드셰이크 성공: userId={}, username={}", userId, username);
+            // 사용자 정보를 WebSocket 세션 속성에 저장
+            attributes.put("userId", userId);
+            attributes.put("username", String.valueOf(userId)); // username은 userId로 대체
+
+            log.info("WebSocket 핸드셰이크 성공: userId={}", userId);
             return true;
 
         } catch (Exception e) {
             log.warn("WebSocket 연결 실패: JWT 검증 실패 - {}", e.getMessage());
             return false;
         }
+        ========== 원래 JWT 검증 로직 끝 ========== */
     }
 
     @Override
@@ -109,6 +102,19 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         for (String param : params) {
             String[] keyValue = param.split("=", 2);
             if (keyValue.length == 2 && "token".equals(keyValue[0])) {
+                return keyValue[1];
+            }
+        }
+        return null;
+    }
+    
+    // 테스트용: 범용 쿼리 파라미터 추출 메소드
+    private String extractQueryParam(String query, String paramName) {
+        if (query == null) return null;
+        String[] params = query.split("&");
+        for (String param : params) {
+            String[] keyValue = param.split("=", 2);
+            if (keyValue.length == 2 && paramName.equals(keyValue[0])) {
                 return keyValue[1];
             }
         }

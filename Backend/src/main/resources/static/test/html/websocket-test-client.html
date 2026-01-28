@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 테스트 클라이언트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .section {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .status.disconnected {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .status.connected {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .messages {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            word-wrap: break-word;
+        }
+        
+        .message.sent {
+            background: #bee3f8;
+            border-left: 3px solid #3182ce;
+        }
+        
+        .message.received {
+            background: #c6f6d5;
+            border-left: 3px solid #38a169;
+        }
+        
+        .message.error {
+            background: #fed7d7;
+            border-left: 3px solid #e53e3e;
+        }
+        
+        .message.info {
+            background: #fefcbf;
+            border-left: 3px solid #d69e2e;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 WebSocket 테스트 클라이언트</h1>
+            <p>WebRTC WebSocket 연결 테스트 도구</p>
+        </div>
+        
+        <div class="content">
+            <!-- 연결 설정 -->
+            <div class="section">
+                <h3>1️⃣ 연결 설정</h3>
+                <div class="input-group">
+                    <label>서버 URL:</label>
+                    <input type="text" id="serverUrl" value="http://localhost:8080" />
+                </div>
+                <div class="input-group">
+                    <label>사용자 ID:</label>
+                    <input type="number" id="userId" value="1" />
+                </div>
+                <div class="input-group">
+                    <label>사용자 이름:</label>
+                    <input type="text" id="username" value="testUser1" />
+                </div>
+                <button class="btn-primary" onclick="getToken()">JWT 토큰 발급</button>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>JWT 토큰:</label>
+                    <input type="text" id="jwtToken" readonly placeholder="토큰을 먼저 발급하세요" />
+                </div>
+                <button class="btn-success" onclick="connectWebSocket()" id="connectBtn" disabled>WebSocket 연결</button>
+                <button class="btn-danger" onclick="disconnectWebSocket()" id="disconnectBtn" disabled>연결 종료</button>
+            </div>
+            
+            <!-- 연결 상태 -->
+            <div class="section">
+                <h3>📊 연결 상태</h3>
+                <div id="connectionStatus" class="status disconnected">
+                    연결되지 않음
+                </div>
+                <div style="margin-top: 15px;">
+                    <strong>WebSocket URL:</strong>
+                    <pre id="wsUrl">ws://localhost:8080/ws/webrtc?token={토큰}</pre>
+                </div>
+            </div>
+            
+            <!-- 메시지 전송 -->
+            <div class="section">
+                <h3>2️⃣ 메시지 전송</h3>
+                <div class="input-group">
+                    <label>방 ID:</label>
+                    <input type="text" id="roomId" value="room-123" />
+                </div>
+                <button class="btn-primary" onclick="joinRoom()" id="joinBtn" disabled>방 참가 (JOIN_ROOM)</button>
+                <button class="btn-secondary" onclick="leaveRoom()" id="leaveBtn" disabled>방 퇴장 (LEAVE_ROOM)</button>
+                <div style="margin-top: 15px;">
+                    <label>커스텀 메시지 (JSON):</label>
+                    <textarea id="customMessage" rows="4" style="width: 100%; padding: 10px; font-family: monospace;">{"type":"JOIN_ROOM","roomId":"room-123"}</textarea>
+                    <button class="btn-secondary" onclick="sendCustomMessage()" id="customBtn" disabled>커스텀 전송</button>
+                </div>
+            </div>
+            
+            <!-- 빠른 액션 -->
+            <div class="section">
+                <h3>⚡ 빠른 액션</h3>
+                <button class="btn-primary" onclick="getRooms()">활성 방 목록 조회</button>
+                <button class="btn-secondary" onclick="getRoomDetail()">방 상세 조회</button>
+                <button class="btn-danger" onclick="clearAllRooms()">모든 방 초기화</button>
+                <div id="apiResult" style="margin-top: 15px;"></div>
+            </div>
+            
+            <!-- 메시지 로그 -->
+            <div class="section full-width">
+                <h3>📝 메시지 로그</h3>
+                <button class="btn-secondary" onclick="clearLog()">로그 지우기</button>
+                <div id="messageLog" class="messages"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageLog = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            messageLog.push({text: logEntry, type: type});
+            
+            const logDiv = document.getElementById('messageLog');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            msgDiv.textContent = logEntry;
+            logDiv.appendChild(msgDiv);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            messageLog = [];
+            document.getElementById('messageLog').innerHTML = '';
+        }
+
+        async function getToken() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const userId = parseInt(document.getElementById('userId').value);
+            const username = document.getElementById('username').value;
+
+            try {
+                log(`JWT 토큰 요청: userId=${userId}, username=${username}`, 'info');
+                
+                const response = await fetch(`${serverUrl}/api/webrtc/test/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId, username })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('jwtToken').value = data.token;
+                document.getElementById('connectBtn').disabled = false;
+                
+                const wsUrl = data.websocketUrl.replace('http', 'ws') + `?token=${data.token}`;
+                document.getElementById('wsUrl').textContent = wsUrl;
+                
+                log('✅ JWT 토큰 발급 성공', 'received');
+                log(JSON.stringify(data, null, 2), 'received');
+            } catch (error) {
+                log(`❌ 토큰 발급 실패: ${error.message}`, 'error');
+            }
+        }
+
+        function connectWebSocket() {
+            const token = document.getElementById('jwtToken').value;
+            const serverUrl = document.getElementById('serverUrl').value;
+            const wsUrl = serverUrl.replace('http', 'ws') + `/ws/webrtc?token=${token}`;
+
+            log(`WebSocket 연결 시도: ${wsUrl}`, 'info');
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                log('✅ WebSocket 연결 성공', 'received');
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('connectionStatus').textContent = '연결됨';
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('joinBtn').disabled = false;
+                document.getElementById('leaveBtn').disabled = false;
+                document.getElementById('customBtn').disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log(`📨 수신: ${event.data}`, 'received');
+                
+                // 메시지 타입별 처리
+                if (data.type === 'JOIN_OK') {
+                    log('✅ 방 참가 완료', 'received');
+                } else if (data.type === 'ROOM_STATE') {
+                    log(`👥 참가자 ${data.participantCount}명`, 'received');
+                } else if (data.type === 'ERROR') {
+                    log(`❌ 에러: ${data.message}`, 'error');
+                }
+            };
+
+            ws.onerror = (error) => {
+                log(`❌ WebSocket 에러: ${error}`, 'error');
+            };
+
+            ws.onclose = () => {
+                log('🔌 WebSocket 연결 종료', 'info');
+                document.getElementById('connectionStatus').className = 'status disconnected';
+                document.getElementById('connectionStatus').textContent = '연결되지 않음';
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                document.getElementById('joinBtn').disabled = true;
+                document.getElementById('leaveBtn').disabled = true;
+                document.getElementById('customBtn').disabled = true;
+            };
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendMessage(message) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket이 연결되지 않았습니다', 'error');
+                return;
+            }
+
+            const json = JSON.stringify(message);
+            ws.send(json);
+            log(`📤 전송: ${json}`, 'sent');
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('roomId').value;
+            sendMessage({
+                type: 'JOIN_ROOM',
+                roomId: roomId
+            });
+        }
+
+        function leaveRoom() {
+            const roomId = document.getElementById('roomId').value;
+            sendMessage({
+                type: 'LEAVE_ROOM',
+                roomId: roomId
+            });
+        }
+
+        function sendCustomMessage() {
+            try {
+                const message = JSON.parse(document.getElementById('customMessage').value);
+                sendMessage(message);
+            } catch (error) {
+                log(`❌ JSON 파싱 실패: ${error.message}`, 'error');
+            }
+        }
+
+        async function getRooms() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            try {
+                const response = await fetch(`${serverUrl}/api/webrtc/test/rooms`);
+                const data = await response.json();
+                document.getElementById('apiResult').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                log('✅ 방 목록 조회 성공', 'received');
+            } catch (error) {
+                log(`❌ 방 목록 조회 실패: ${error.message}`, 'error');
+            }
+        }
+
+        async function getRoomDetail() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const roomId = document.getElementById('roomId').value;
+            try {
+                const response = await fetch(`${serverUrl}/api/webrtc/test/rooms/${roomId}`);
+                if (response.status === 404) {
+                    document.getElementById('apiResult').innerHTML = '<p style="color: red;">방을 찾을 수 없습니다</p>';
+                    return;
+                }
+                const data = await response.json();
+                document.getElementById('apiResult').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                log('✅ 방 상세 조회 성공', 'received');
+            } catch (error) {
+                log(`❌ 방 상세 조회 실패: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearAllRooms() {
+            if (!confirm('모든 방을 초기화하시겠습니까?')) {
+                return;
+            }
+            const serverUrl = document.getElementById('serverUrl').value;
+            try {
+                const response = await fetch(`${serverUrl}/api/webrtc/test/rooms`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                document.getElementById('apiResult').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                log('✅ 모든 방 초기화 완료', 'received');
+            } catch (error) {
+                log(`❌ 방 초기화 실패: ${error.message}`, 'error');
+            }
+        }
+
+        // 초기 로그
+        log('WebSocket 테스트 클라이언트 시작', 'info');
+        log('1. JWT 토큰 발급 버튼을 클릭하세요', 'info');
+        log('2. WebSocket 연결 버튼을 클릭하세요', 'info');
+        log('3. 방 참가 버튼을 클릭하세요', 'info');
+    </script>
+</body>
+</html>
