@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roundy-backend
+  labels:
+    app: roundy-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: roundy-backend
+  template:
+    metadata:
+      labels:
+        app: roundy-backend
+    spec:
+      containers:
+      - name: backend-container
+        image: smj100394/roundy_back:latest 
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"

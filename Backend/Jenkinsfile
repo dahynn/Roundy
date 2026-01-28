@@ -19,6 +19,11 @@ pipeline {
                   volumeMounts:
                   - mountPath: /var/run/docker.sock
                     name: docker-sock
+                - name: git
+                  image: alpine/git:latest
+                  command:
+                  - cat
+                  tty: true
                 volumes:
                 - name: docker-sock
                   hostPath:
@@ -32,6 +37,9 @@ pipeline {
         REPO_NAME = 'roundy_back'
         IMAGE_TAG = "${DOCKER_USER}/${REPO_NAME}:${BUILD_NUMBER}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
+
+        MANIFEST_REPO_URL = 'lab.ssafy.com/s14-webmobile1-sub1/S14P11A701.git'
+        GIT_CREDENTIALS_ID = 'gitlab'
     }
 
     stages {
@@ -69,6 +77,33 @@ pipeline {
                                 sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
                                 
                                 sh "docker logout"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifest') {
+            steps {
+                container('git') {
+                    script {
+                        withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", 
+                                         passwordVariable: 'GIT_PASSWORD', 
+                                         usernameVariable: 'GIT_USERNAME')]) {
+                            
+                            sh '''
+                                git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@''' + "${MANIFEST_REPO_URL} config-repo" + '''
+                            '''
+                            
+                            dir('config-repo') {
+                                sh "sed -i 's|image: ${DOCKER_USER}/${REPO_NAME}:.*|image: ${IMAGE_TAG}|g' Infra/devops/argocd/backend/deployment.yaml"
+                                
+                                sh "git config user.email 'jenkins@example.com'"
+                                sh "git config user.name 'jenkins'"
+                                sh "git add ."
+                                sh "git commit -m 'Update image to ${IMAGE_TAG} [skip ci]'"
+                                sh "git push origin main"
                             }
                         }
                     }
