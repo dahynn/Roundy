@@ -49,10 +49,10 @@ public class JwtService {
         Date validity = new Date(now.getTime() + validityMs);
 
         String token = Jwts.builder()
-                .subject(username)
+                .setSubject(username)
                 .claim("userId", userId)
-                .issuedAt(now)
-                .expiration(validity)
+                .setIssuedAt(now)
+                .setExpiration(validity)
                 .signWith(secretKey)
                 .compact();
 

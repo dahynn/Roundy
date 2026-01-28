@@ -67,12 +67,12 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             //     return false;
             // }
             
-            // JWT 검증 및 파싱
-            Claims claims = Jwts.parser()
-                    .verifyWith(secretKey)
+            // JWT 검증 및 파싱 (jjwt 0.12.x 이상 버전 호환)
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
                     .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+                    .parseClaimsJws(token)
+                    .getBody();
 
             // 사용자 정보를 WebSocket 세션 속성에 저장
             Long userId = claims.get("userId", Long.class);
