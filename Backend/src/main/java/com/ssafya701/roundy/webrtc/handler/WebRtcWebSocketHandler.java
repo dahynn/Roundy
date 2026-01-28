@@ -56,7 +56,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        log.debug("메시지 수신: sessionId={}, payload={}", session.getId(), payload);
 
         try {
             WsMessage wsMessage = messageSerializer.deserialize(payload);
@@ -65,15 +64,12 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                 case JOIN_ROOM -> handleJoinRoom(session, (JoinRoomMessage) wsMessage);
                 case LEAVE_ROOM -> handleLeaveRoom(session, (LeaveRoomMessage) wsMessage);
                 default -> {
-                    log.warn("알 수 없는 메시지 타입: type={}", wsMessage.getType());
                     sendError(session, "UNKNOWN_MESSAGE_TYPE", "알 수 없는 메시지 타입입니다");
                 }
             }
         } catch (JsonProcessingException e) {
-            log.error("메시지 파싱 실패: sessionId={}, payload={}", session.getId(), payload, e);
             sendError(session, "INVALID_MESSAGE", "잘못된 메시지 형식입니다");
         } catch (Exception e) {
-            log.error("메시지 처리 중 오류 발생: sessionId={}", session.getId(), e);
             sendError(session, "INTERNAL_ERROR", "서버 오류가 발생했습니다");
         }
     }
@@ -81,8 +77,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         Long userId = (Long) session.getAttributes().get("userId");
-        log.info("WebSocket 연결 종료: sessionId={}, userId={}, status={}", 
-                session.getId(), userId, status);
 
         eventLogger.logConnectionClosed(session.getId(), userId, status.toString());
         
@@ -102,8 +96,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         Long userId = (Long) session.getAttributes().get("userId");
         String username = (String) session.getAttributes().get("username");
         String roomId = message.getRoomId();
-
-        log.info("방 참가 요청: roomId={}, userId={}, username={}", roomId, userId, username);
 
         try {
             // TODO: [DB 연동] User 엔티티로 사용자 검증
@@ -166,17 +158,14 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // TODO: [운영 환경] 모니터링 메트릭 추가
             // meterRegistry.counter("webrtc.room.join", "roomId", roomId).increment();
             // meterRegistry.gauge("webrtc.room.participants", room.getParticipantCount());
-
-            log.info("방 참가 성공: roomId={}, userId={}, 현재 인원={}", 
-                    roomId, userId, room.getParticipantCount());
             
             eventLogger.logRoomJoined(roomId, userId, username, room.getParticipantCount());
 
         } catch (OpenViduService.OpenViduServiceException e) {
-            log.error("OpenVidu 처리 실패: roomId={}, userId={}", roomId, userId, e);
+            log.error("OpenVidu 연결 실패: roomId={}, userId={}", roomId, userId, e);
             sendError(session, "OPENVIDU_ERROR", "OpenVidu 연결에 실패했습니다");
         } catch (Exception e) {
-            log.error("방 참가 처리 실패: roomId={}, userId={}", roomId, userId, e);
+            log.error("방 참가 실패: roomId={}, userId={}", roomId, userId, e);
             sendError(session, "JOIN_FAILED", "방 참가에 실패했습니다");
         }
     }
@@ -187,8 +176,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private void handleLeaveRoom(WebSocketSession session, LeaveRoomMessage message) throws IOException {
         Long userId = (Long) session.getAttributes().get("userId");
         String roomId = message.getRoomId();
-
-        log.info("방 퇴장 요청: roomId={}, userId={}", roomId, userId);
 
         try {
             // TODO: [DB 연동] 방 퇴장 이벤트 기록
@@ -212,15 +199,13 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                             log.error("방 상태 브로드캐스트 실패: roomId={}", roomId, e);
                         }
                     },
-                    () -> log.info("방이 이미 제거됨: roomId={}", roomId)
+                    () -> {}
             );
-
-            log.info("방 퇴장 성공: roomId={}, userId={}", roomId, userId);
             
             eventLogger.logRoomLeft(roomId, userId, roomRegistry.getParticipantCount(roomId));
 
         } catch (Exception e) {
-            log.error("방 퇴장 처리 실패: roomId={}, userId={}", roomId, userId, e);
+            log.error("방 퇴장 실패: roomId={}, userId={}", roomId, userId, e);
             sendError(session, "LEAVE_FAILED", "방 퇴장에 실패했습니다");
         }
     }
@@ -240,8 +225,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         );
 
         broadcastMessage(room, roomState);
-        
-        eventLogger.logBroadcast(room.getRoomId(), "ROOM_STATE", room.getParticipantCount());
     }
 
     /**
@@ -251,7 +234,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         if (session.isOpen()) {
             String json = messageSerializer.serialize(message);
             session.sendMessage(new TextMessage(json));
-            log.debug("메시지 전송: sessionId={}, type={}", session.getId(), message.getType());
         }
     }
 
@@ -266,8 +248,6 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             WebSocketSession session = participant.getSession();
             if (session.isOpen()) {
                 session.sendMessage(textMessage);
-                log.debug("브로드캐스트: roomId={}, userId={}, type={}", 
-                        room.getRoomId(), participant.getUserId(), message.getType());
             }
         }
     }

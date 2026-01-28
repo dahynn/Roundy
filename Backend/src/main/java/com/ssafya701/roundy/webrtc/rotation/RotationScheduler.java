@@ -57,7 +57,6 @@ public class RotationScheduler {
                 : pairingStrategy.calculateTotalRounds(room.getParticipantCount());
         
         if (rounds == 0) {
-            log.warn("로테이션 시작 불가: 참가자 수 부족, roomId={}", roomId);
             return;
         }
         
@@ -66,9 +65,6 @@ public class RotationScheduler {
         
         RoomScheduler scheduler = new RoomScheduler(room, roundInfo);
         roomSchedulers.put(roomId, scheduler);
-        
-        log.info("로테이션 시작: roomId={}, 총 라운드={}, 참가자 {}명", 
-                roomId, rounds, room.getParticipantCount());
         
         // 첫 라운드 시작
         scheduler.scheduleRound();
@@ -83,7 +79,6 @@ public class RotationScheduler {
         RoomScheduler scheduler = roomSchedulers.remove(roomId);
         if (scheduler != null) {
             scheduler.cancel();
-            log.info("로테이션 중지: roomId={}", roomId);
         }
     }
     
@@ -91,8 +86,6 @@ public class RotationScheduler {
      * 모든 로테이션 중지 (종료 시 호출)
      */
     public void shutdown() {
-        log.info("로테이션 스케줄러 종료 시작");
-        
         // 모든 방 스케줄러 취소
         roomSchedulers.values().forEach(RoomScheduler::cancel);
         roomSchedulers.clear();
@@ -107,8 +100,6 @@ public class RotationScheduler {
             executorService.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        
-        log.info("로테이션 스케줄러 종료 완료");
     }
     
     /**
@@ -136,7 +127,6 @@ public class RotationScheduler {
          */
         public void scheduleRound() {
             if (currentRound.isLastRound() && currentRound.getCurrentRound() > currentRound.getTotalRounds()) {
-                log.info("모든 라운드 완료: roomId={}", room.getRoomId());
                 stopRotation(room.getRoomId());
                 return;
             }
@@ -159,12 +149,6 @@ public class RotationScheduler {
                 currentRound.getDurationSeconds(),
                 TimeUnit.SECONDS
             );
-            
-            log.info("라운드 스케줄링 완료: roomId={}, round={}/{}, duration={}s",
-                    room.getRoomId(), 
-                    currentRound.getCurrentRound(), 
-                    currentRound.getTotalRounds(),
-                    currentRound.getDurationSeconds());
         }
         
         /**
@@ -200,11 +184,6 @@ public class RotationScheduler {
             // ROUND_END 발행
             eventPublisher.publishRoundEnd(room, currentRound.getCurrentRound());
             
-            log.info("라운드 종료: roomId={}, round={}/{}",
-                    room.getRoomId(), 
-                    currentRound.getCurrentRound(), 
-                    currentRound.getTotalRounds());
-            
             // 다음 라운드 준비
             if (!currentRound.isLastRound()) {
                 currentRound = currentRound.nextRound();
@@ -216,17 +195,10 @@ public class RotationScheduler {
                     intervalBetweenRoundsSeconds,
                     TimeUnit.SECONDS
                 );
-                
-                log.info("다음 라운드 예약: roomId={}, round={}/{}, 대기시간={}s",
-                        room.getRoomId(),
-                        currentRound.getCurrentRound(),
-                        currentRound.getTotalRounds(),
-                        intervalBetweenRoundsSeconds);
             } else {
                 // 마지막 라운드 완료
                 room.setCurrentRound(null);
                 stopRotation(room.getRoomId());
-                log.info("전체 로테이션 완료: roomId={}", room.getRoomId());
             }
         }
         
@@ -236,7 +208,6 @@ public class RotationScheduler {
         public void cancel() {
             if (currentTask != null && !currentTask.isDone()) {
                 currentTask.cancel(false);
-                log.debug("스케줄 취소: roomId={}", room.getRoomId());
             }
         }
     }

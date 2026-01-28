@@ -66,7 +66,7 @@ public class RoomEventPublisher {
         
         broadcastToRoom(room, message);
         log.info("ROUND_END 발행: roomId={}, round={}", room.getRoomId(), roundNumber);
-        
+
         eventLogger.logRoundEnded(room.getRoomId(), roundNumber, 
                 room.getCurrentRound().getTotalRounds());
     }
