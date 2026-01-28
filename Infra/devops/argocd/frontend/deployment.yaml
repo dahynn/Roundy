@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: roundy-frontend
+  namespace: roundy-app
   labels:
     app: roundy-frontend
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: smj100394/roundy_front:2
+        image: smj100394/roundy_front:latest
         ports:
         - containerPort: 80 
         resources:
