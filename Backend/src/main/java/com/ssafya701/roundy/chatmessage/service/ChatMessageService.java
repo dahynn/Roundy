@@ -5,6 +5,8 @@ import com.ssafya701.roundy.chatmessage.entity.ChatMessage;
 import com.ssafya701.roundy.chatmessage.enums.MsgType;
 import com.ssafya701.roundy.chatmessage.repository.ChatMessageRepository;
 import com.ssafya701.roundy.global.error.BusinessLogicException;
+import com.ssafya701.roundy.global.error.CustomException;
+import com.ssafya701.roundy.global.error.ErrorEnum;
 import com.ssafya701.roundy.match.entity.Match;
 import com.ssafya701.roundy.match.enums.ChatStatus;
 import com.ssafya701.roundy.match.repository.MatchRepository;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,7 +44,10 @@ public class ChatMessageService {
 
         // 매칭 정보 유효성 검증
         Match match = matchRepository.findById(matchId)
-                .orElseThrow(() -> new BusinessLogicException("존재하지 않는 쪽지방입니다."));
+                .orElseThrow(() -> new CustomException(ErrorEnum.MATCH_NOT_FOUND));
+
+        // 발신자가 해당 매칭의 참여자인지 검증
+        validateParticipant(match, senderId);
 
         // 대화 가능 상태 확인 (이미 종료된 매칭인 경우 전송 불가)
         if (match.getChatStatus() == ChatStatus.TERMINATED) {
@@ -79,10 +85,16 @@ public class ChatMessageService {
      * @param size          조회할 메시지 개수 (초기 진입 시 사용)
      * @return 메시지 리스트 (시간순 정렬)
      */
-    public List<ChatMessageDto.Response> getMessages(Long matchId, Long lastMessageId, int size) {
+    public List<ChatMessageDto.Response> getMessages(Long matchId, Long userId, Long lastMessageId, int size) {
+
+        // 매칭 정보 조회
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new CustomException(ErrorEnum.MATCH_NOT_FOUND));
+
+        // 조회 요청자가 해당 매칭의 참여자인지 검증
+        validateParticipant(match, userId);
 
         List<ChatMessage> messages;
-
         if (lastMessageId == null) {
             // case 1: 쪽지방 처음 진입 시
             // 최근 메시지부터 역순으로 size만큼 조회
@@ -101,5 +113,17 @@ public class ChatMessageService {
                 .map(ChatMessageDto.Response::from)
                 .collect(Collectors.toList());
 
+    }
+
+    /**
+     * 검증 메서드
+     * */
+    private void validateParticipant(Match match, Long userId) {
+        boolean isParticipant = Objects.equals(match.getMaleId(), userId) ||
+                Objects.equals(match.getFemaleId(), userId);
+
+        if (!isParticipant) {
+            throw new CustomException(ErrorEnum.MATCH_ACCESS_DENIED);
+        }
     }
 }
