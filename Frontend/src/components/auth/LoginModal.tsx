@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위한 훅
+import { useNavigate } from 'react-router-dom';
 import { X, Heart } from 'lucide-react';
 import kakaoLoginBtn from '@/assets/kakao_login_medium_wide.png';
 
@@ -11,12 +11,11 @@ export default function LoginModal({ onClose }: Props) {
 
   // 카카오 로그인 시뮬레이션 핸들러
   const handleKakaoLogin = () => {
-    // 1. 실제 환경에서는 여기서 SDK 호출이나 API 통신이 일어납니다.
     console.log('카카오 로그인 시뮬레이션 성공');
 
-    // 2. 모달을 닫고 로그인 후 전용 메인 화면으로 이동합니다.
+    // 모달을 닫고 '온보딩' 페이지로 이동하도록 수정했습니다.
     onClose();
-    navigate('/home');
+    navigate('/onboarding');
   };
 
   return (
@@ -24,7 +23,7 @@ export default function LoginModal({ onClose }: Props) {
       {/* 배경 블러 처리 */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={onClose} />
 
-      {/* 모달 본체: 기존의 큼직하고 세련된 디자인 유지 */}
+      {/* 모달 본체 */}
       <div className="relative w-full max-w-lg bg-white rounded-[50px] shadow-2xl overflow-hidden flex flex-col items-center p-16 animate-in fade-in zoom-in duration-300 border border-white/20">
         {/* 상단 닫기 버튼 */}
         <button
@@ -34,7 +33,7 @@ export default function LoginModal({ onClose }: Props) {
           <X size={28} />
         </button>
 
-        {/* 1. 로고 (그라데이션과 쉐도우 강조) */}
+        {/* 1. 로고 */}
         <div className="w-24 h-24 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-[30px] flex items-center justify-center mb-10 shadow-xl shadow-pink-100/50">
           <Heart size={48} fill="white" className="text-white" />
         </div>
@@ -47,7 +46,7 @@ export default function LoginModal({ onClose }: Props) {
           <p className="text-gray-400 font-medium text-lg">지금 바로 설레는 대화를 시작해보세요.</p>
         </div>
 
-        {/* 3. 카카오 공식 로그인 버튼 (클릭 시 이동 로직 연결) */}
+        {/* 3. 카카오 공식 로그인 버튼 */}
         <div className="w-full max-w-sm">
           <button
             className="w-full transition-transform hover:scale-[1.02] active:scale-95 mb-14 rounded-2xl overflow-hidden shadow-sm"
