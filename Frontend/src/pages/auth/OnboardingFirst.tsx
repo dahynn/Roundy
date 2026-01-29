@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, ChevronRight, User, Camera, X } from 'lucide-react';
+import { Heart, User, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -14,16 +14,15 @@ export default function OnboardingFirst() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. 상태 관리
+  // 상태 관리
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [name, setName] = useState('');
   const [nickName, setNickName] = useState('');
   const [gender, setGender] = useState<'MALE' | 'FEMALE' | null>(null);
   const [birth, setBirth] = useState({ year: '', month: '', day: '' });
   const [mbti, setMbti] = useState<{ [key: string]: string }>({ ei: '', ns: '', ft: '', jp: '' });
 
-  // 2. 사진 업로드 핸들러
+  // 사진 업로드 핸들러
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -32,33 +31,18 @@ export default function OnboardingFirst() {
     }
   };
 
-  // 3. MBTI 선택 핸들러
+  // 모든 항목 입력 여부 확인 (사진 포함)
+  const isFormValid =
+    profileFile !== null &&
+    nickName.trim().length > 0 &&
+    gender !== null &&
+    birth.year !== '' &&
+    birth.month !== '' &&
+    birth.day !== '' &&
+    Object.values(mbti).every((v) => v !== '');
+
   const handleMbtiClick = (group: string, value: string) => {
     setMbti((prev) => ({ ...prev, [group]: value }));
-  };
-
-  // 4. 회원가입 API 호출 준비 (명세서 3번 기준)
-  const handleNext = async () => {
-    const mbtiString = Object.values(mbti).join('');
-    const birthDate = `${birth.year}-${birth.month.padStart(2, '0')}-${birth.day.padStart(2, '0')}`;
-
-    // API 전송용 데이터 구조
-    const signupData = {
-      nickName,
-      gender,
-      birthDate,
-      mbti: mbtiString,
-    };
-
-    console.log('전송될 JSON 데이터:', signupData);
-    console.log('전송될 이미지 파일:', profileFile);
-
-    // TODO: axios 또는 fetch를 사용하여 FormData 전송
-    // const formData = new FormData();
-    // formData.append('data', new Blob([JSON.stringify(signupData)], { type: 'application/json' }));
-    // if (profileFile) formData.append('file', profileFile);
-
-    navigate('/onboarding/second');
   };
 
   const years = Array.from({ length: 40 }, (_, i) =>
@@ -71,31 +55,26 @@ export default function OnboardingFirst() {
     <div className="min-h-screen bg-[#FDF2F8] flex flex-col items-center py-20 relative overflow-x-hidden font-['Pretendard']">
       <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-pink-200/20 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* 헤더 */}
       <div className="text-center mb-10 z-10">
         <div className="w-14 h-14 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg shadow-pink-100">
           <Heart size={28} fill="white" className="text-white" />
         </div>
         <h1 className="text-3xl font-black text-[#1A1F36] mb-2">프로필 설정</h1>
-        <p className="text-gray-400 font-medium">나를 가장 잘 표현하는 정보를 입력해주세요.</p>
+        <p className="text-gray-400 font-medium text-sm">나를 표현하는 모든 항목을 입력해주세요.</p>
       </div>
 
       <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[60px] p-12 md:p-16 shadow-2xl border border-white z-10">
         <form className="space-y-12" onSubmit={(e) => e.preventDefault()}>
-          {/* 대표 사진 등록 */}
-          <div className="flex justify-center">
+          {/* 1. 대표 사진 등록 */}
+          <div className="flex justify-center mb-4">
             <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <div className="w-40 h-40 rounded-full border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center overflow-hidden">
                 {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    className="w-full h-full object-cover"
-                    alt="Profile Preview"
-                  />
+                  <img src={previewUrl} className="w-full h-full object-cover" alt="Profile" />
                 ) : (
                   <>
                     <Camera size={32} className="text-gray-300 mb-1" />
-                    <span className="text-[10px] text-gray-400 font-bold tracking-tighter">
+                    <span className="text-[10px] text-gray-400 font-bold tracking-tighter text-center px-4">
                       대표 사진 1개 등록
                     </span>
                   </>
@@ -114,19 +93,8 @@ export default function OnboardingFirst() {
             </div>
           </div>
 
-          {/* 입력 필드들 (레이아웃 간격 조정) */}
           <div className="space-y-10">
-            <div className="space-y-4">
-              <label className="text-sm font-black text-[#1A1F36] ml-1">내 이름</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                type="text"
-                placeholder="김라운디"
-                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl py-5 px-7 focus:outline-none focus:border-[#FF4D94] transition-all"
-              />
-            </div>
-
+            {/* 닉네임 */}
             <div className="space-y-4">
               <label className="text-sm font-black text-[#1A1F36] ml-1">닉네임</label>
               <input
@@ -138,6 +106,7 @@ export default function OnboardingFirst() {
               />
             </div>
 
+            {/* 성별 */}
             <div className="space-y-4">
               <label className="text-sm font-black text-[#1A1F36] ml-1">성별</label>
               <div className="flex bg-gray-50/80 rounded-2xl p-2 gap-2 border border-gray-100">
@@ -158,8 +127,9 @@ export default function OnboardingFirst() {
               </div>
             </div>
 
+            {/* 생년월일 */}
             <div className="space-y-4">
-              <label className="text-sm font-black text-[#1A1F36] ml-1">생년월일</label>
+              <label className="text-sm font-black text-[#1A1F36] ml-1">생년월일 및 생일</label>
               <div className="grid grid-cols-3 gap-4">
                 <Select onValueChange={(v) => setBirth((prev) => ({ ...prev, year: v }))}>
                   <SelectTrigger className="h-14 rounded-2xl bg-white border-gray-100 focus:ring-[#FF4D94]">
@@ -200,6 +170,7 @@ export default function OnboardingFirst() {
               </div>
             </div>
 
+            {/* MBTI */}
             <div className="space-y-5">
               <label className="text-sm font-black text-[#1A1F36] ml-1 uppercase">MBTI</label>
               <div className="grid grid-cols-4 gap-4">
@@ -227,16 +198,18 @@ export default function OnboardingFirst() {
           </div>
 
           <Button
-            className="w-full py-10 bg-gradient-to-r from-[#FF4D94] via-[#FF7EB3] to-[#7C3AED] hover:opacity-90 text-white rounded-[30px] text-xl font-bold shadow-xl shadow-pink-200/50 mt-14"
-            onClick={handleNext}
+            disabled={!isFormValid}
+            className={`w-full py-10 rounded-[30px] text-xl font-bold shadow-xl mt-14 transition-all ${
+              isFormValid
+                ? 'bg-gradient-to-r from-[#FF4D94] via-[#FF7EB3] to-[#7C3AED] text-white shadow-pink-200/50 hover:scale-[1.02]'
+                : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
+            }`}
+            onClick={() => navigate('/onboarding/second')}
           >
             다음
           </Button>
         </form>
       </div>
-      <p className="mt-8 text-[11px] text-gray-300 font-bold uppercase tracking-widest">
-        © 2026 ROUNDY. PREMIUM MEMBERSHIP REGISTRATION.
-      </p>
     </div>
   );
 }
