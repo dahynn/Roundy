@@ -9,6 +9,7 @@ import com.ssafya701.roundy.webrtc.message.inbound.SubmitGameAnswerMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.ErrorMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.JoinOkMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.RoomStateMessage;
+import com.ssafya701.roundy.webrtc.message.outbound.VoteSubmittedMessage;
 import com.ssafya701.roundy.webrtc.openvidu.OpenViduService;
 import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
@@ -101,6 +102,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         Long userId = (Long) session.getAttributes().get("userId");
         String username = (String) session.getAttributes().get("username");
         String genderStr = (String) session.getAttributes().get("gender");
+        String modeStr = (String) session.getAttributes().get("mode");
         String roomId = message.getRoomId();
 
         try {
@@ -111,6 +113,15 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             } catch (Exception e) {
                 log.warn("잘못된 gender 파라미터: {}, 기본값 MALE 사용", genderStr);
                 gender = Gender.MALE;
+            }
+            
+            // RotationMode enum 변환
+            RotationMode mode;
+            try {
+                mode = RotationMode.valueOf(modeStr.toUpperCase());
+            } catch (Exception e) {
+                log.warn("잘못된 mode 파라미터: {}, 기본값 FREE_TALK 사용", modeStr);
+                mode = RotationMode.FREE_TALK;
             }
             
             // TODO: [DB 연동] User 엔티티로 사용자 검증
@@ -124,13 +135,12 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // 1. OpenVidu Session 보장
             String openViduSessionId = openViduService.ensureSession(roomId);
 
-            // 2. 방 생성 또는 조회 (기본값: FREE_TALK 모드)
+            // 2. 방 생성 또는 조회 (URL 파라미터로 mode 지정)
             // TODO: [DB 연동] Room 엔티티에서 방 정보 조회
             // Room roomEntity = roomService.findById(roomId)
             //     .orElseThrow(() -> new RoomNotFoundException(roomId));
             // RotationMode mode = RotationMode.valueOf(roomEntity.getMode());
-            // RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
-            RoomState room = roomRegistry.getOrCreateRoom(roomId, RotationMode.FREE_TALK, openViduSessionId);
+            RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
 
             // 3. 참가자 추가 (Gender 포함)
             roomRegistry.addParticipant(roomId, userId, username, gender, session);
@@ -324,6 +334,24 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                 userId, targetUserId, isFinalVote ? "최종" : "첫인상");
         
         eventLogger.logVoteSubmitted(userId, targetUserId, isFinalVote);
+        
+        // 투표 완료 확인 메시지 전송 (클라이언트 피드백)
+        int votedCount = isFinalVote ? room.getFinalVotesCount() : room.getFirstVotesCount();
+        int totalCount = room.getParticipantCount();
+        
+        VoteSubmittedMessage confirmMessage = new VoteSubmittedMessage(
+                isFinalVote ? "FINAL" : "FIRST",
+                true,
+                "투표가 성공적으로 제출되었습니다",
+                votedCount,
+                totalCount
+        );
+        
+        try {
+            sendMessage(session, confirmMessage);
+        } catch (IOException e) {
+            log.error("투표 확인 메시지 전송 실패: userId={}", userId, e);
+        }
     }
     
     /**

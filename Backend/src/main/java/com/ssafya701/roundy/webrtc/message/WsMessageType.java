@@ -32,6 +32,7 @@ public enum WsMessageType {
     MATCH_RESULT,         // 매칭 결과 (성공/실패)
     FACE_REVEAL_START,    // 얼굴 공개 시작
     PARTNER_LEFT,         // 1:1 대화 중 파트너 이탈
+    VOTE_SUBMITTED,       // 투표 제출 확인 (성공 피드백)
     
     // 공통
     ERROR

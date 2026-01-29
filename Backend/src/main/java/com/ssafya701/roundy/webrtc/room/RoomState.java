@@ -264,6 +264,20 @@ public class RoomState {
     }
     
     /**
+     * 첫인상 투표 완료 인원 수 조회
+     */
+    public int getFirstVotesCount() {
+        return firstVotes.size();
+    }
+    
+    /**
+     * 최종 투표 완료 인원 수 조회
+     */
+    public int getFinalVotesCount() {
+        return finalVotes.size();
+    }
+    
+    /**
      * 게임 답변 제출 (뱃지 부여)
      * @param userId 사용자 ID
      * @param badge 부여할 뱃지 (예: "FAST_THINKER", "CREATIVE")

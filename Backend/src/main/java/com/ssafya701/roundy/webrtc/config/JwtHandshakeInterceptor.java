@@ -33,20 +33,24 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         
         String query = request.getURI().getQuery();
         
-        // 테스트용: userId, username, gender를 쿼리 파라미터에서 직접 추출
+        // 테스트용: userId, username, gender, mode를 쿼리 파라미터에서 직접 추출
         String userIdParam = extractQueryParam(query, "userId");
         String usernameParam = extractQueryParam(query, "username");
         String genderParam = extractQueryParam(query, "gender");
+        String modeParam = extractQueryParam(query, "mode");
         
         Long userId = userIdParam != null ? Long.parseLong(userIdParam) : 1L;
         String username = usernameParam != null ? usernameParam : "testUser";
         String gender = genderParam != null ? genderParam : "MALE";  // 기본값: MALE
+        String mode = modeParam != null ? modeParam : "FREE_TALK";  // 기본값: FREE_TALK
         
         attributes.put("userId", userId);
         attributes.put("username", username);
-        attributes.put("gender", gender);  // gender 추가
+        attributes.put("gender", gender);
+        attributes.put("mode", mode);
         
-        log.warn("🔓 [테스트 모드] JWT 검증 SKIP - userId={}, username={}, gender={}", userId, username, gender);
+        log.warn("🔓 [테스트 모드] JWT 검증 SKIP - userId={}, username={}, gender={}, mode={}", 
+                userId, username, gender, mode);
         return true;
         
         /* ========== 원래 JWT 검증 로직 (주석 처리) ==========
