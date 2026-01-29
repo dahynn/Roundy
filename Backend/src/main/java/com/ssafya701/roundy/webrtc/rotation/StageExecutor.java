@@ -80,6 +80,9 @@ public class StageExecutor {
         // PAIR_ASSIGNED 발행
         eventPublisher.publishPairAssignments(room, stage.getOrder(), pairMap);
         
+        // 현재 페어링 정보 저장 (파트너 이탈 감지용)
+        room.setCurrentPairing(pairMap);
+        
         log.info("1:1 대화 시작: roomId={}, type={}, 페어 {}쌍", 
                 room.getRoomId(), isLong ? "긴 대화" : "짧은 대화", pairs.size());
     }

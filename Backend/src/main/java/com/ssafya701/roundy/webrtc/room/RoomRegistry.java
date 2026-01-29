@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.webrtc.room;
 
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
@@ -15,8 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RoomRegistry {
     private final Map<String, RoomState> rooms = new ConcurrentHashMap<>();
+    private final com.ssafya701.roundy.webrtc.rotation.RoomEventPublisher eventPublisher;
     
     /**
      * 방 생성 또는 조회
@@ -104,6 +107,9 @@ public class RoomRegistry {
             log.info("참가자 제거: roomId={}, userId={}, 남은 인원={}", 
                     roomId, userId, room.getParticipantCount());
             
+            // 로테이션 단계 중에 나간 경우 파트너에게 알림
+            notifyPartnerIfInRotation(room, removed);
+            
             // TODO: [DB 연동] 위 주석 참고하여 구현
         }
         
@@ -111,6 +117,38 @@ public class RoomRegistry {
         if (room.isEmpty()) {
             removeRoom(roomId);
         }
+    }
+    
+    /**
+     * 로테이션 단계에서 참가자가 나갔을 때 파트너에게 알림
+     */
+    private void notifyPartnerIfInRotation(RoomState room, ParticipantState leftParticipant) {
+        // 현재 로테이션 단계인지 확인
+        if (!room.getCurrentStage().isRotationStage()) {
+            return;
+        }
+        
+        // 파트너 ID 조회
+        Long partnerId = room.getPartnerId(leftParticipant.getUserId());
+        if (partnerId == null) {
+            return;
+        }
+        
+        // 파트너 정보 조회
+        ParticipantState partner = room.getParticipant(partnerId).orElse(null);
+        if (partner == null) {
+            return;
+        }
+        
+        // 파트너에게 PARTNER_LEFT 메시지 전송
+        eventPublisher.publishPartnerLeft(
+            partner, 
+            leftParticipant.getUserId(), 
+            leftParticipant.getNickname()
+        );
+        
+        log.warn("⚠️ 로테이션 중 참가자 이탈 알림 전송: roomId={}, leftUserId={}, partnerId={}, stage={}", 
+                room.getRoomId(), leftParticipant.getUserId(), partnerId, room.getCurrentStage());
     }
     
     /**

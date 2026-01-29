@@ -77,6 +77,12 @@ public class RoomState {
      */
     private Long currentSpeakerId;
     
+    /**
+     * 현재 로테이션의 페어링 정보 (userId -> partnerId)
+     * 로테이션 단계에서만 사용
+     */
+    private Map<Long, Long> currentPairing = new ConcurrentHashMap<>();
+    
     // TODO: [DB 연동] 성별별 인원수 관리 필드 추가
     // private Integer maleCount = 0;
     // private Integer femaleCount = 0;
@@ -409,5 +415,29 @@ public class RoomState {
             }
             return null;
         }
+    }
+    
+    /**
+     * 현재 페어링 정보 설정 (로테이션 시작 시)
+     */
+    public void setCurrentPairing(Map<Long, Long> pairMap) {
+        this.currentPairing.clear();
+        if (pairMap != null) {
+            this.currentPairing.putAll(pairMap);
+        }
+    }
+    
+    /**
+     * 특정 사용자의 파트너 ID 조회
+     */
+    public Long getPartnerId(Long userId) {
+        return currentPairing.get(userId);
+    }
+    
+    /**
+     * 방 정리 시 페어링 정보도 초기화
+     */
+    public void clearPairing() {
+        currentPairing.clear();
     }
 }
