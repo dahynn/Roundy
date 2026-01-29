@@ -1,5 +1,6 @@
 package com.ssafya701.roundy.webrtc.room;
 
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.rotation.RoundInfo;
@@ -83,11 +84,13 @@ public class RoomState {
      */
     private Map<Long, Long> currentPairing = new ConcurrentHashMap<>();
     
-    // TODO: [DB 연동] 성별별 인원수 관리 필드 추가
-    // private Integer maleCount = 0;
-    // private Integer femaleCount = 0;
-    // private Integer maleMax = 6;   // DB에서 가져옴
-    // private Integer femaleMax = 6;  // DB에서 가져옴
+    /**
+     * 성별별 인원수 관리
+     */
+    private Integer maleCount = 0;
+    private Integer femaleCount = 0;
+    private Integer maleMax = 6;   // 기본값 6명, DB에서 조회 가능
+    private Integer femaleMax = 6;  // 기본값 6명, DB에서 조회 가능
     
     public RoomState(String roomId, RotationMode mode, String openViduSessionId) {
         this.roomId = roomId;
@@ -99,30 +102,33 @@ public class RoomState {
     
     /**
      * 참가자 추가
-     * 
-     * TODO: [DB 연동] 성별별 인원수 증가
-     * Gender gender = // DB users 테이블에서 조회
-     * if (gender == MALE) maleCount++;
-     * if (gender == FEMALE) femaleCount++;
      */
-    public void addParticipant(Long userId, String nickname, WebSocketSession session) {
-        participants.put(userId, new ParticipantState(userId, nickname, session, null));
+    public void addParticipant(Long userId, String nickname, Gender gender, WebSocketSession session) {
+        participants.put(userId, new ParticipantState(userId, nickname, gender, session, null));
         
-        // TODO: [DB 연동] maleCount/femaleCount 증가 로직
+        // 성별별 인원수 증가
+        if (gender == Gender.MALE) {
+            maleCount++;
+        } else if (gender == Gender.FEMALE) {
+            femaleCount++;
+        }
     }
     
     /**
      * 참가자 제거
-     * 
-     * TODO: [DB 연동] 성별별 인원수 감소
-     * Gender gender = removed.getGender(); // ParticipantState에 gender 필드 추가 필요
-     * if (gender == MALE) maleCount--;
-     * if (gender == FEMALE) femaleCount--;
      */
     public ParticipantState removeParticipant(Long userId) {
         ParticipantState removed = participants.remove(userId);
         
-        // TODO: [DB 연동] maleCount/femaleCount 감소 로직
+        if (removed != null) {
+            // 성별별 인원수 감소
+            Gender gender = removed.getGender();
+            if (gender == Gender.MALE) {
+                maleCount--;
+            } else if (gender == Gender.FEMALE) {
+                femaleCount--;
+            }
+        }
         
         return removed;
     }
@@ -155,6 +161,34 @@ public class RoomState {
      */
     public Optional<ParticipantState> getParticipant(Long userId) {
         return Optional.ofNullable(participants.get(userId));
+    }
+    
+    /**
+     * 남성 참가자 수 반환
+     */
+    public Integer getMaleCount() {
+        return maleCount;
+    }
+    
+    /**
+     * 여성 참가자 수 반환
+     */
+    public Integer getFemaleCount() {
+        return femaleCount;
+    }
+    
+    /**
+     * 남성 최대 수용 인원
+     */
+    public Integer getMaleMax() {
+        return maleMax;
+    }
+    
+    /**
+     * 여성 최대 수용 인원
+     */
+    public Integer getFemaleMax() {
+        return femaleMax;
     }
     
     /**

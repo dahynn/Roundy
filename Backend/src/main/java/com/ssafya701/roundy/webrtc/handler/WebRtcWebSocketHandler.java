@@ -14,6 +14,7 @@ import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
 import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
@@ -99,15 +100,26 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private void handleJoinRoom(WebSocketSession session, JoinRoomMessage message) throws IOException {
         Long userId = (Long) session.getAttributes().get("userId");
         String username = (String) session.getAttributes().get("username");
+        String genderStr = (String) session.getAttributes().get("gender");
         String roomId = message.getRoomId();
 
         try {
+            // Gender enum 변환
+            Gender gender;
+            try {
+                gender = Gender.valueOf(genderStr.toUpperCase());
+            } catch (Exception e) {
+                log.warn("잘못된 gender 파라미터: {}, 기본값 MALE 사용", genderStr);
+                gender = Gender.MALE;
+            }
+            
             // TODO: [DB 연동] User 엔티티로 사용자 검증
             // User user = userService.findById(userId)
             //     .orElseThrow(() -> new UserNotFoundException(userId));
             // if (!user.isActive()) {
             //     throw new UserInactiveException(userId);
             // }
+            // gender = user.getGender(); // DB에서 gender 가져오기
             
             // 1. OpenVidu Session 보장
             String openViduSessionId = openViduService.ensureSession(roomId);
@@ -120,8 +132,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
             RoomState room = roomRegistry.getOrCreateRoom(roomId, RotationMode.FREE_TALK, openViduSessionId);
 
-            // 3. 참가자 추가
-            roomRegistry.addParticipant(roomId, userId, username, session);
+            // 3. 참가자 추가 (Gender 포함)
+            roomRegistry.addParticipant(roomId, userId, username, gender, session);
 
             // 4. OpenVidu Token 발급
             String token = openViduService.generateToken(roomId, userId);

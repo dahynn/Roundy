@@ -52,32 +52,29 @@ public class RoomRegistry {
     /**
      * 참가자 추가
      * 
-     * TODO: [DB 연동] users 및 participants 테이블 연동
-     * 1. users 테이블에서 nickname, gender 조회
-     *    User user = userRepository.findById(userId).orElseThrow();
-     * 
-     * 2. 성별별 인원수 검증 (male_max, female_max)
-     *    if (user.getGender() == MALE && room.getMaleCount() >= room.getMaleMax()) {
-     *        throw new BusinessLogicException("남자 정원 초과");
-     *    }
-     * 
-     * 3. participants 테이블에 INSERT
-     *    participantRepository.save(new Participant(sessionId, userId));
-     * 
-     * 4. sessions.status 업데이트 (남녀 모두 max 도달 시 RECRUITING → ONGOING)
+     * @throws IllegalStateException 성별별 정원 초과 시
      */
-    public void addParticipant(String roomId, Long userId, String nickname, WebSocketSession session) {
+    public void addParticipant(String roomId, Long userId, String nickname, com.ssafya701.roundy.webrtc.room.enums.Gender gender, WebSocketSession session) {
         RoomState room = rooms.get(roomId);
         if (room == null) {
             log.warn("존재하지 않는 방에 참가자 추가 시도: roomId={}", roomId);
             return;
         }
         
-        // TODO: [DB 연동] 위 주석 참고하여 구현
+        // PAIR_ONLY 모드에서 성별별 정원 검증
+        if (room.getMode() == RotationMode.PAIR_ONLY) {
+            if (gender == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE && room.getMaleCount() >= room.getMaleMax()) {
+                throw new IllegalStateException("남성 정원 초과: 현재 " + room.getMaleCount() + "명 / 최대 " + room.getMaleMax() + "명");
+            }
+            if (gender == com.ssafya701.roundy.webrtc.room.enums.Gender.FEMALE && room.getFemaleCount() >= room.getFemaleMax()) {
+                throw new IllegalStateException("여성 정원 초과: 현재 " + room.getFemaleCount() + "명 / 최대 " + room.getFemaleMax() + "명");
+            }
+        }
         
-        room.addParticipant(userId, nickname, session);
-        log.info("참가자 추가: roomId={}, userId={}, nickname={}, 현재 인원={}", 
-                roomId, userId, nickname, room.getParticipantCount());
+        room.addParticipant(userId, nickname, gender, session);
+        log.info("참가자 추가: roomId={}, userId={}, nickname={}, gender={}, 현재 인원={} (남:{}명, 여:{}명)", 
+                roomId, userId, nickname, gender, room.getParticipantCount(), 
+                room.getMaleCount(), room.getFemaleCount());
     }
     
     /**
