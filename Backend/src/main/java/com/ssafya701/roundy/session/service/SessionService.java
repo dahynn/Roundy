@@ -68,9 +68,14 @@ public class SessionService {
     // Lua Script로 원자적 매칭 수행 (남3녀3)
     private RoomMatchResult tryMatchRoom() {
         try {
+            // 이번 매칭에 사용할 후보 Room ID 생성 (UUID)
+            String candidateRoomId = java.util.UUID.randomUUID().toString();
+
             List<Object> result = redisTemplate.execute(
-                    Objects.requireNonNull(matchRoomScript),
-                    Objects.requireNonNull(Arrays.asList(SESSION_QUEUE_MALE, SESSION_QUEUE_FEMALE, ROOM_ID_KEY)));
+                    matchRoomScript,
+                    Arrays.asList(SESSION_QUEUE_MALE, SESSION_QUEUE_FEMALE), // KEYS (2개)
+                    candidateRoomId // ARGV[1]
+            );
 
             if (result == null || result.isEmpty()) {
                 log.error("Lua script returned null or empty result");
@@ -85,7 +90,8 @@ public class SessionService {
                 log.info("Matching waiting: male={}, female={}", maleCount, femaleCount);
                 return RoomMatchResult.waiting(maleCount, femaleCount);
             } else if ("MATCHED".equals(status)) {
-                Long roomId = ((Number) result.get(1)).longValue();
+                // 매칭 성공 시 Lua가 반환한 roomId 사용 (우리가 보낸 candidateRoomId와 같음)
+                String roomId = (String) result.get(1);
 
                 List<String> males = objectMapper.readValue(
                         (String) result.get(2),
@@ -99,8 +105,6 @@ public class SessionService {
                 log.info("Room matched! roomId={}, males={}, females={}",
                         roomId, males, females);
 
-                // TODO: WebRTC 세션 생성 알림 (WebSocket or SSE)
-
                 return RoomMatchResult.matched(roomId, males, females);
             }
 
@@ -112,8 +116,8 @@ public class SessionService {
         }
     }
 
-    // 방 멤버 정보 조회 (본인 번호 확인)
-    public RoomMemberInfo getRoomMemberInfo(Long userId, Long roomId) {
+    // 방 멤버 정보 조회
+    public RoomMemberInfo getRoomMemberInfo(Long userId, String roomId) {
         String memberInfoKey = "room:" + roomId + ":member:" + userId;
         Map<Object, Object> memberInfo = redisTemplate.opsForHash().entries(memberInfoKey);
 
@@ -123,16 +127,15 @@ public class SessionService {
         }
 
         String gender = (String) memberInfo.get("gender");
-        int number = Integer.parseInt((String) memberInfo.get("number"));
 
-        log.info("Member info retrieved: userId={}, roomId={}, gender={}, number={}",
-                userId, roomId, gender, number);
+        log.info("Member info retrieved: userId={}, roomId={}, gender={}",
+                userId, roomId, gender);
 
-        return new RoomMemberInfo(roomId, gender, number);
+        return new RoomMemberInfo(roomId, gender);
     }
 
     // 방 전체 멤버 정보 조회 (화상 UI용)
-    public RoomMembersResponse getRoomMembers(Long roomId) {
+    public RoomMembersResponse getRoomMembers(String roomId) {
         List<RoomMembersResponse.MemberDetail> males = new ArrayList<>();
         List<RoomMembersResponse.MemberDetail> females = new ArrayList<>();
 
@@ -152,9 +155,8 @@ public class SessionService {
 
             if (!memberInfo.isEmpty()) {
                 String gender = (String) memberInfo.get("gender");
-                int number = Integer.parseInt((String) memberInfo.get("number"));
 
-                RoomMembersResponse.MemberDetail detail = new RoomMembersResponse.MemberDetail(userId, number);
+                RoomMembersResponse.MemberDetail detail = new RoomMembersResponse.MemberDetail(userId);
 
                 if ("MALE".equals(gender)) {
                     males.add(detail);

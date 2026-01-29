@@ -40,7 +40,11 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final RoomRegistry roomRegistry;
     private final OpenViduService openViduService;
     private final RotationScheduler rotationScheduler;
+
     private final WebRtcEventLogger eventLogger;
+    private final com.ssafya701.roundy.session.service.SessionService sessionService;
+    private final com.ssafya701.roundy.verification.service.VerificationService verificationService;
+    private final com.ssafya701.roundy.user.repository.UserRepository userRepository;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -96,6 +100,14 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         Long userId = (Long) session.getAttributes().get("userId");
         String username = (String) session.getAttributes().get("username");
         String roomId = message.getRoomId();
+        String requestId = message.getRequestId();
+
+        // 대기실 입장 요청인 경우 (roomId가 "waiting-room" 이거나 requestId가 있는 경우)
+        // 여기서는 "waiting-room"을 대기실 ID로 가정합니다.
+        if ("waiting-room".equals(roomId) || (requestId != null && !requestId.isEmpty())) {
+             handleQueueEntry(session, userId, username, requestId);
+             return;
+        }
 
         try {
             // TODO: [DB 연동] User 엔티티로 사용자 검증
@@ -261,6 +273,48 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             sendMessage(session, error);
         } catch (Exception e) {
             log.error("에러 메시지 전송 실패: sessionId={}, code={}", session.getId(), code, e);
+        }
+    }
+
+    /**
+     * 대기실 입장 및 큐 등록 처리
+     */
+    private void handleQueueEntry(WebSocketSession session, Long userId, String username, String requestId) throws IOException {
+        // 1. 검증 확인 (requestId 필수)
+        if (requestId == null || !verificationService.verifyAndDelete(requestId)) {
+            sendError(session, "VERIFICATION_FAILED", "검증이 완료되지 않았거나 유효하지 않은 요청입니다.");
+            return;
+        }
+
+        // 2. 성별 조회
+        com.ssafya701.roundy.user.entity.User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        com.ssafya701.roundy.user.enums.GenderType gender = user.getGender();
+
+        // 3. 큐 추가 및 매칭 시도
+        com.ssafya701.roundy.session.dto.RoomMatchResult matchResult = sessionService.addToQueueAndMatch(userId, gender);
+
+        if ("MATCHED".equals(matchResult.getStatus())) {
+            // 매칭 성공 -> 실제 방으로 입장 처리
+            String newRoomId = matchResult.getRoomId();
+            log.info("Queue matched! Redirecting to room: userId={}, roomId={}", userId, newRoomId);
+            
+            // 재귀적으로 방 참가 로직 수행 (이제 진짜 방 ID로)
+            JoinRoomMessage redirectMessage = new JoinRoomMessage(newRoomId, null); // requestId 사용 완료됨
+            handleJoinRoom(session, redirectMessage);
+            
+        } else {
+            // 대기 중 -> 대기실(waiting-room)에 머무름
+            log.info("User queued in waiting room: userId={}", userId);
+            
+            // WAITING 메시지 전송 (선택사항)
+             try {
+                // 예: {"type": "WAITING", "position": 5, "message": "대기 중입니다..."}
+                // 일단은 단순 정보 로그만 남기고, 필요하면 WaitingMessage 클래스 만들어서 전송
+                // sendMessage(session, new WaitingMessage(...));
+            } catch (Exception e) {
+                log.error("Failed to send waiting message", e);
+            }
         }
     }
 }

@@ -57,28 +57,27 @@ public class VerificationService {
     }
 
     /**
-     * Rate Limiting 체크 (1분에 3회)
+     * Rate Limiting 체크
+     * 1분에 3회까지만 검증 요청 가능
      */
-    private void checkRateLimit(Long userId) {
+    public void checkRateLimit(Long userId) {
         String key = RATE_LIMIT_KEY_PREFIX + userId;
-
         Long attempts = redisTemplate.opsForValue().increment(key);
 
-        if (attempts == null) {
-            attempts = 1L;
-        }
-
-        // 첫 요청 시 TTL 설정
+        // 첫 요청이면 TTL 설정 (60초)
         if (attempts == 1) {
             redisTemplate.expire(key, rateLimitPeriodSeconds, TimeUnit.SECONDS);
         }
 
-        // 제한 초과 시 예외
+        // 제한 초과 확인
         if (attempts > rateLimitCount) {
             log.warn("Rate limit exceeded: userId={}, attempts={}", userId, attempts);
             throw new TooManyRequestsException(
-                    String.format("1분에 최대 %d회까지 검증 요청이 가능합니다. 잠시 후 다시 시도해주세요.", rateLimitCount));
+                    String.format("%d초에 %d회까지만 가능합니다", rateLimitPeriodSeconds, rateLimitCount)
+            );
         }
+
+        log.debug("Rate limit check passed: userId={}, attempts={}/{}", userId, attempts, rateLimitCount);
     }
 
     /**
@@ -103,25 +102,24 @@ public class VerificationService {
     /**
      * 검증 상태 업데이트 (다이어그램 ⑩번)
      * AI 검증 완료 후 VERIFIED/FAILED 상태로 변경
+     * SETNX 사용으로 중복 callback 방지 (첫 번째 결과만 유효)
      */
     public void updateVerificationStatus(String requestId, boolean success) {
         String key = VERIFICATION_KEY_PREFIX + requestId;
-
-        // 기존 상태 확인
-        String currentStatus = redisTemplate.opsForValue().get(key);
-        if (currentStatus == null) {
-            log.warn("Verification record not found or expired: requestId={}", requestId);
-            throw new VerificationNotFoundException("검증 기록을 찾을 수 없습니다. 다시 시도해주세요.");
-        }
-
-        // PENDING 상태가 아니면 경고
-        if (!STATUS_PENDING.equals(currentStatus)) {
-            log.warn("Verification already processed: requestId={}, currentStatus={}", requestId, currentStatus);
-        }
-
-        // 상태 업데이트 (TTL 유지)
         String newStatus = success ? STATUS_VERIFIED : STATUS_FAILED;
-        redisTemplate.opsForValue().set(key, newStatus, ttlSeconds, TimeUnit.SECONDS);
+
+        // SETNX: 키가 없을 때만 설정 (중복 callback 방지)
+        Boolean wasSet = redisTemplate.opsForValue().setIfAbsent(
+                key,
+                newStatus,
+                ttlSeconds,
+                TimeUnit.SECONDS
+        );
+
+        if (Boolean.FALSE.equals(wasSet)) {
+            log.warn("Duplicate callback ignored: requestId={}", requestId);
+            return;
+        }
 
         log.info("Verification status updated: requestId={}, status={}", requestId, newStatus);
     }

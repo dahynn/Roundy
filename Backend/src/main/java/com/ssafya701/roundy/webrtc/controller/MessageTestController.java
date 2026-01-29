@@ -159,7 +159,7 @@ public class MessageTestController {
     // 샘플 메시지 생성 헬퍼 메서드
     private WsMessage createSampleMessage(String type) {
         return switch (type) {
-            case "JOIN_ROOM" -> new JoinRoomMessage("room-123");
+            JoinRoomMessage message = new JoinRoomMessage(roomId);
             case "LEAVE_ROOM" -> new LeaveRoomMessage("room-123");
             case "JOIN_OK" -> new JoinOkMessage(
                 "room-123",

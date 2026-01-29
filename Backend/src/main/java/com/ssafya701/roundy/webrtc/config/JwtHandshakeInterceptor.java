@@ -2,6 +2,7 @@ package com.ssafya701.roundy.webrtc.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,9 +24,13 @@ import java.util.Map;
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final SecretKey secretKey;
+    private final com.ssafya701.roundy.user.repository.UserRepository userRepository;
 
-    public JwtHandshakeInterceptor(@Value("${jwt.secret:test-secret-key-for-webrtc-development-minimum-32-bytes}") String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    public JwtHandshakeInterceptor(@Value("${jwt.secret:test-secret-key-for-webrtc-development-minimum-32-bytes}") String secret,
+                                   com.ssafya701.roundy.user.repository.UserRepository userRepository) {
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -66,22 +71,27 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             //     log.warn("WebSocket 연결 실패: Rate limit 초과, ip={}", clientIp);
             //     return false;
             // }
-            
-            // JWT 검증 및 파싱 (jjwt 0.12.x 이상 버전 호환)
+
+            // JWT 검증 및 파싱
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
 
-            // 사용자 정보를 WebSocket 세션 속성에 저장
-            Long userId = claims.get("userId", Long.class);
-            String username = claims.getSubject();
-
-            if (userId == null || username == null) {
-                log.warn("WebSocket 연결 실패: JWT에 userId 또는 username 없음");
-                return false;
+            // JwtTokenProvider는 sub에 userId를 넣음
+            String subject = claims.getSubject();
+            if (subject == null) {
+                 log.warn("WebSocket 연결 실패: JWT subject(userId) 없음");
+                 return false;
             }
+            
+            Long userId = Long.parseLong(subject);
+
+            // DB에서 유저 정보 조회 (username/nickname 확보)
+            String username = userRepository.findById(userId)
+                    .map(com.ssafya701.roundy.user.entity.User::getNickName)
+                    .orElse("UnknownUser");
 
             attributes.put("userId", userId);
             attributes.put("username", username);
@@ -101,7 +111,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             ServerHttpResponse response,
             WebSocketHandler wsHandler,
             Exception exception) {
-        // 핸드셰이크 이후 처리 (필요시 구현)
+        // 핸드셰이크 이후 처리
     }
 
     private String extractToken(String query) {

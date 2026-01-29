@@ -46,13 +46,18 @@ dependencies {
 	// HTTP Client
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
+	// MinIO
+	implementation 'io.minio:minio:8.5.7'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'
 
-
 	// 테스트용 H2 데이터베이스
 	testRuntimeOnly 'com.h2database:h2'
+
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
 
 	// 테스트 의존성
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

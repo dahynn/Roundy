@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SessionEnterRequest {
-    private String requestId; // 검증 세션 ID
+    private String requestId; // 검증 UUID
 }

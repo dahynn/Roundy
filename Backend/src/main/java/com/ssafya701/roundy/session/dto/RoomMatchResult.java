@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class RoomMatchResult {
     private String status; // MATCHED or WAITING
-    private Long roomId; // 방 ID (MATCHED일 때만)
+    private String roomId; // 방 ID (MATCHED일 때만)
     private List<String> males; // 남성 멤버 userId 리스트
     private List<String> females; // 여성 멤버 userId 리스트
 
@@ -20,7 +20,7 @@ public class RoomMatchResult {
         return new RoomMatchResult("WAITING", null, null, null);
     }
 
-    public static RoomMatchResult matched(Long roomId, List<String> males, List<String> females) {
+    public static RoomMatchResult matched(String roomId, List<String> males, List<String> females) {
         return new RoomMatchResult("MATCHED", roomId, males, females);
     }
 }

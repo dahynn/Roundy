@@ -84,12 +84,10 @@ public class SessionController {
 
                         SessionEnterResponse response = SessionEnterResponse.matched(
                                         memberInfo.getRoomId(),
-                                        memberInfo.getGender(),
-                                        memberInfo.getMyNumber());
+                                        memberInfo.getGender());
 
-                        log.info("Room matched: userId={}, roomId={}, gender={}, number={}",
-                                        userId, memberInfo.getRoomId(), memberInfo.getGender(),
-                                        memberInfo.getMyNumber());
+                        log.info("Room matched: userId={}, roomId={}, gender={}",
+                                        userId, memberInfo.getRoomId(), memberInfo.getGender());
 
                         return ResponseEntity.ok(CommonResponse.ofSuccess(response));
                 } else {
@@ -137,7 +135,7 @@ public class SessionController {
         @GetMapping("/room/{roomId}/members")
         public ResponseEntity<CommonResponse<RoomMembersResponse>> getRoomMembers(
                         @RequestHeader("Authorization") String jwt,
-                        @PathVariable Long roomId) {
+                        @PathVariable String roomId) {
 
                 String token = jwt.replace("Bearer ", "");
                 jwtTokenProvider.validateToken(token);
@@ -154,7 +152,7 @@ public class SessionController {
         @GetMapping("/room/{roomId}/my-info")
         public ResponseEntity<CommonResponse<RoomMemberInfo>> getMyRoomInfo(
                         @RequestHeader("Authorization") String jwt,
-                        @PathVariable Long roomId) {
+                        @PathVariable String roomId) {
 
                 String token = jwt.replace("Bearer ", "");
                 jwtTokenProvider.validateToken(token);
