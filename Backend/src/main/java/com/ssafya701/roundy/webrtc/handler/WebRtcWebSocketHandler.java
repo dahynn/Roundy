@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ssafya701.roundy.webrtc.message.WsMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.JoinRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
+import com.ssafya701.roundy.webrtc.message.inbound.SubmitVoteMessage;
+import com.ssafya701.roundy.webrtc.message.inbound.SubmitGameAnswerMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.ErrorMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.JoinOkMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.RoomStateMessage;
@@ -63,6 +65,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             switch (wsMessage.getType()) {
                 case JOIN_ROOM -> handleJoinRoom(session, (JoinRoomMessage) wsMessage);
                 case LEAVE_ROOM -> handleLeaveRoom(session, (LeaveRoomMessage) wsMessage);
+                case SUBMIT_VOTE -> handleSubmitVote(session, (SubmitVoteMessage) wsMessage);
+                case SUBMIT_GAME_ANSWER -> handleSubmitGameAnswer(session, (SubmitGameAnswerMessage) wsMessage);
                 default -> {
                     sendError(session, "UNKNOWN_MESSAGE_TYPE", "알 수 없는 메시지 타입입니다");
                 }
@@ -261,6 +265,101 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             sendMessage(session, error);
         } catch (Exception e) {
             log.error("에러 메시지 전송 실패: sessionId={}, code={}", session.getId(), code, e);
+        }
+    }
+    
+    // ========== 8단계 로테이션 메시지 처리 ==========
+    
+    /**
+     * SUBMIT_VOTE 메시지 처리 (첫인상/최종 투표)
+     */
+    private void handleSubmitVote(WebSocketSession session, SubmitVoteMessage message) {
+        Long userId = (Long) session.getAttributes().get("userId");
+        Long targetUserId = message.getTargetUserId();
+        
+        // 세션 ID로 방 찾기
+        RoomState room = roomRegistry.findRoomBySessionId(session.getId())
+                .orElse(null);
+        
+        if (room == null) {
+            sendError(session, "ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
+            return;
+        }
+        
+        // 투표 대상이 방에 존재하는지 확인
+        if (!room.getParticipant(targetUserId).isPresent()) {
+            sendError(session, "INVALID_TARGET", "투표 대상이 방에 존재하지 않습니다");
+            return;
+        }
+        
+        // 자기 자신에게 투표하는지 확인
+        if (userId.equals(targetUserId)) {
+            sendError(session, "SELF_VOTE", "자신에게는 투표할 수 없습니다");
+            return;
+        }
+        
+        // 현재 스테이지가 투표 단계인지 확인
+        if (!room.getCurrentStage().isVoteStage()) {
+            sendError(session, "INVALID_STAGE", "현재 투표할 수 있는 단계가 아닙니다");
+            return;
+        }
+        
+        // 투표 제출 (첫인상 vs 최종 투표 구분)
+        boolean isFinalVote = room.getCurrentStage().name().equals("VOTE_FINAL");
+        room.submitVote(userId, targetUserId, isFinalVote);
+        
+        log.info("투표 제출: userId={}, targetId={}, type={}", 
+                userId, targetUserId, isFinalVote ? "최종" : "첫인상");
+        
+        eventLogger.logVoteSubmitted(userId, targetUserId, isFinalVote);
+    }
+    
+    /**
+     * SUBMIT_GAME_ANSWER 메시지 처리
+     */
+    private void handleSubmitGameAnswer(WebSocketSession session, SubmitGameAnswerMessage message) {
+        Long userId = (Long) session.getAttributes().get("userId");
+        String answer = message.getAnswer();
+        
+        // 세션 ID로 방 찾기
+        RoomState room = roomRegistry.findRoomBySessionId(session.getId())
+                .orElse(null);
+        
+        if (room == null) {
+            sendError(session, "ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
+            return;
+        }
+        
+        // 현재 스테이지가 게임 단계인지 확인
+        if (!room.getCurrentStage().isGameStage()) {
+            sendError(session, "INVALID_STAGE", "현재 게임을 할 수 있는 단계가 아닙니다");
+            return;
+        }
+        
+        // TODO: 게임 답변 검증 및 뱃지 결정 로직
+        // 현재는 간단하게 답변을 그대로 뱃지로 저장
+        String badge = determineBadge(answer);
+        room.submitGameAnswer(userId, badge);
+        
+        log.info("게임 답변 제출: userId={}, answer={}, badge={}", userId, answer, badge);
+        
+        eventLogger.logGameAnswerSubmitted(userId, answer, badge);
+    }
+    
+    /**
+     * 게임 답변으로부터 뱃지 결정
+     * TODO: 실제 게임 로직에 맞게 구현 필요
+     */
+    private String determineBadge(String answer) {
+        // 임시 구현: 답변 길이에 따라 뱃지 부여
+        if (answer == null || answer.isEmpty()) {
+            return "SILENT";
+        } else if (answer.length() < 10) {
+            return "QUICK_THINKER";
+        } else if (answer.length() < 30) {
+            return "CREATIVE";
+        } else {
+            return "STORYTELLER";
         }
     }
 }
