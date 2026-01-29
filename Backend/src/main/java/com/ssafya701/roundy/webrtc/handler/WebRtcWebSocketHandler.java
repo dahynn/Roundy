@@ -16,7 +16,9 @@ import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import com.ssafya701.roundy.webrtc.room.enums.Gender;
+import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
+import com.ssafya701.roundy.webrtc.rotation.StageScheduler;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
 import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final RoomRegistry roomRegistry;
     private final OpenViduService openViduService;
     private final RotationScheduler rotationScheduler;
+    private final StageScheduler stageScheduler;
     private final WebRtcEventLogger eventLogger;
 
     @Override
@@ -171,9 +174,17 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // 6. ROOM_STATE 브로드캐스트
             broadcastRoomState(room);
 
-            // 7. 로테이션 스케줄러 시작 (PAIR_ONLY 모드인 경우)
-            if (room.isPairMode() && !room.isRoundActive()) {
-                rotationScheduler.startRotation(room, null);
+            // 7. 8단계 로테이션 자동 시작 (PAIR_ONLY 모드 + 최소 인원 충족)
+            if (room.isPairMode() && room.getCurrentStage() == Stage.WAITING) {
+                int participantCount = room.getParticipantCount();
+                int minParticipants = 4; // PAIR_ONLY는 짝수 인원 필요 (남2, 여2)
+                
+                if (participantCount >= minParticipants) {
+                    log.info("🎬 8단계 로테이션 자동 시작: roomId={}, 참가자={}명", roomId, participantCount);
+                    
+                    // 자동 전환 스케줄러 시작
+                    stageScheduler.startStageRotation(room);
+                }
             }
 
             // TODO: [DB 연동] 방 참가 이벤트 기록

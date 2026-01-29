@@ -48,18 +48,20 @@ public class RoomState {
      */
     private ScheduledFuture<?> stageTimer;
     
-    /**
-     * 첫인상 투표 결과 (투표자 ID -> 대상자 ID)
-     */
-    private final Map<Long, Long> firstVotes = new ConcurrentHashMap<>();
     
     /**
-     * 최종 투표 결과 (투표자 ID -> 대상자 ID)
+     * 투표 데이터
      */
-    private final Map<Long, Long> finalVotes = new ConcurrentHashMap<>();
+    private final Map<Long, Long> firstVotes = new ConcurrentHashMap<>();  // 첫인상 투표
+    private final Map<Long, Long> finalVotes = new ConcurrentHashMap<>();  // 최종 투표
     
     /**
-     * 게임 뱃지/결과 (사용자 ID -> 뱃지 또는 점수)
+     * 매칭 결과 (MATCHING_RESULT 단계에서 계산됨)
+     */
+    private List<MatchPair> matchedCouples = new ArrayList<>();
+    
+    /**
+     * 게임 답변 및 뱃지
      */
     private final Map<Long, String> gameBadges = new ConcurrentHashMap<>();
     
@@ -360,7 +362,17 @@ public class RoomState {
             }
         }
         
+        // 매칭 결과 저장
+        this.matchedCouples = matches;
+        
         return matches;
+    }
+    
+    /**
+     * 저장된 매칭 결과 조회
+     */
+    public List<MatchPair> getMatchedCouples() {
+        return new ArrayList<>(matchedCouples);
     }
     
     /**
