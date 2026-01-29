@@ -33,26 +33,15 @@ public class OpenViduConnectionCheck implements ApplicationRunner {
             Map<String, Object> pingResult = openViduHealthService.pingOpenViduServer();
             
             if ("SUCCESS".equals(pingResult.get("status"))) {
-                log.info("========================================");
-                log.info("✅ OpenVidu 서버 연결 성공!");
-                log.info("응답 시간: {}", pingResult.get("responseTime"));
-                log.info("========================================");
-                
+
                 // Ping-Pong 테스트 (선택적)
                 log.info("🏓 OpenVidu Ping-Pong 테스트 시작...");
                 Map<String, Object> pongResult = openViduHealthService.testOpenViduCommunication();
                 
                 if ("SUCCESS".equals(pongResult.get("status"))) {
-                    log.info("========================================");
                     log.info("🎉 OpenVidu Ping-Pong 테스트 성공!");
-                    log.info("테스트 완료: Session 생성 → 조회 → 삭제");
-                    log.info("========================================");
                 } else {
-                    log.warn("========================================");
                     log.warn("⚠️ OpenVidu Ping-Pong 테스트 실패");
-                    log.warn("상태: {}", pongResult.get("status"));
-                    log.warn("메시지: {}", pongResult.get("message"));
-                    log.warn("========================================");
                 }
                 
             } else {

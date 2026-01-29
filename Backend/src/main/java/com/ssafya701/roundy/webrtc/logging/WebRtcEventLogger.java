@@ -289,4 +289,28 @@ public class WebRtcEventLogger {
     public long getRoomEventCount(String roomId) {
         return roomEventCounters.getOrDefault(roomId, new AtomicLong(0)).get();
     }
+    
+    // ========== 8단계 로테이션 이벤트 로깅 ==========
+    
+    /**
+     * 투표 제출 로깅
+     */
+    public void logVoteSubmitted(Long userId, Long targetUserId, boolean isFinalVote) {
+        long eventId = eventCounter.incrementAndGet();
+        String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
+        
+        log.info("[EVENT#{}] [{}] [VOTE_SUBMITTED] userId={}, targetUserId={}, type={}", 
+                eventId, timestamp, userId, targetUserId, isFinalVote ? "FINAL" : "FIRST");
+    }
+    
+    /**
+     * 게임 답변 제출 로깅
+     */
+    public void logGameAnswerSubmitted(Long userId, String answer, String badge) {
+        long eventId = eventCounter.incrementAndGet();
+        String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
+        
+        log.info("[EVENT#{}] [{}] [GAME_ANSWER_SUBMITTED] userId={}, answerLength={}, badge={}", 
+                eventId, timestamp, userId, answer != null ? answer.length() : 0, badge);
+    }
 }

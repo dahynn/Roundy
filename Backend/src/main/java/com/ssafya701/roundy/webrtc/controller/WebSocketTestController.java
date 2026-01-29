@@ -1,8 +1,9 @@
 package com.ssafya701.roundy.webrtc.controller;
 
+import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
+import com.ssafya701.roundy.user.enums.UserRole;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
-import com.ssafya701.roundy.webrtc.service.JwtService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,17 +21,17 @@ import java.util.Map;
  * WebSocket 테스트용 REST API 컨트롤러
  * 개발 및 테스트 환경에서 WebSocket 연결을 테스트하기 위한 유틸리티 API 제공
  * 
- * WARN: 이 컨트롤러는 테스트 전용입니다. 운영 환경에서는 반드시 비활성화해야 합니다.
+ * WARN: 이 컨트롤러는 테스트 전용입니다. 운영 환경에서는 자동으로 비활성화됩니다.
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/webrtc/test")
-// TODO: [운영 환경] @Profile({"dev", "local"}) 추가하여 운영에서 비활성화
-@CrossOrigin(origins = "*", allowedHeaders = "*") // TODO: [운영 환경] 제거 또는 특정 도메인으로 제한
+@org.springframework.context.annotation.Profile({"local", "dev", "default"})  // 운영 환경에서 비활성화
+@CrossOrigin(origins = "*", allowedHeaders = "*")  // 테스트 컨트롤러는 모든 origin 허용
 @RequiredArgsConstructor
 public class WebSocketTestController {
 
-    private final JwtService jwtService;
+    private final JwtTokenProvider jwtTokenProvider;
     private final RoomRegistry roomRegistry;
 
     @Value("${server.port:8080}")
@@ -50,9 +51,9 @@ public class WebSocketTestController {
         // TODO: [브랜치 병합] 실제 인증 서비스와 통합
         // User user = userService.findById(request.getUserId())
         //     .orElseThrow(() -> new UserNotFoundException(request.getUserId()));
-        // String token = authService.createAccessToken(user.getId(), user.getUsername());
         
-        String token = jwtService.generateTempToken(request.getUserId(), request.getUsername());
+        // JwtTokenProvider를 사용하여 Access Token 생성 (테스트용으로 USER 권한 부여)
+        String token = jwtTokenProvider.createAccessToken(request.getUserId(), UserRole.USER);
 
         TokenResponse response = new TokenResponse(
                 token,

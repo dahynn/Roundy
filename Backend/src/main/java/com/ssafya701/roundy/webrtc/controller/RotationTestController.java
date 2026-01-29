@@ -4,6 +4,7 @@ import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
 import com.ssafya701.roundy.webrtc.rotation.PairingStrategy;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
 import lombok.AllArgsConstructor;
@@ -310,10 +311,11 @@ public class RotationTestController {
             "openvidu-session-" + request.getRoomId()
         );
         
-        // Mock 참가자 추가
+        // Mock 참가자 추가 (남녀 교대 배정)
         for (int i = 1; i <= request.getParticipantCount(); i++) {
             WebSocketSession mockSession = new MockWebSocketSession("session-" + i);
-            room.addParticipant((long) i, "User" + i, mockSession);
+            Gender gender = (i % 2 == 1) ? Gender.MALE : Gender.FEMALE;  // 홀수: 남성, 짝수: 여성
+            room.addParticipant((long) i, "User" + i, gender, mockSession);
         }
         
         // 로테이션 시작
@@ -418,10 +420,12 @@ public class RotationTestController {
         
         for (int i = 1; i <= count; i++) {
             WebSocketSession mockSession = new MockWebSocketSession("session-" + i);
+            Gender gender = (i % 2 == 1) ? Gender.MALE : Gender.FEMALE;  // 홀수: 남성, 짝수: 여성
             
             participants.add(new ParticipantState(
                 (long) i,
                 "User" + i,
+                gender,
                 mockSession,
                 null
             ));

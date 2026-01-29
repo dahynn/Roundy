@@ -2,6 +2,7 @@ package com.ssafya701.roundy.webrtc.rotation;
 
 import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomState;
+import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ public class RotationScheduler {
     
     private final RoomEventPublisher eventPublisher;
     private final PairingStrategy pairingStrategy = new PairingStrategy();
+    private final StageExecutor stageExecutor;
     
     @Value("${webrtc.round.duration-seconds:300}")
     private int defaultRoundDurationSeconds;
