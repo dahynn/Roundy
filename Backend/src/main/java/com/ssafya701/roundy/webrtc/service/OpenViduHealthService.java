@@ -31,8 +31,6 @@ public class OpenViduHealthService {
         long startTime = System.currentTimeMillis();
 
         try {
-            log.info("OpenVidu 서버 연결 확인 시작...");
-
             // OpenVidu API로 GET /openvidu/api/config 호출 (헬스체크용)
             String response = openViduWebClient.get()
                 .uri("/openvidu/api/config")
@@ -48,8 +46,6 @@ public class OpenViduHealthService {
             result.put("responseTime", responseTime + "ms");
             result.put("response", response);
 
-            log.info("✅ OpenVidu 서버 연결 성공 (응답시간: {}ms)", responseTime);
-
         } catch (WebClientResponseException e) {
             long responseTime = System.currentTimeMillis() - startTime;
             
@@ -58,9 +54,6 @@ public class OpenViduHealthService {
             result.put("responseTime", responseTime + "ms");
             result.put("error", e.getResponseBodyAsString());
 
-            log.error("❌ OpenVidu 서버 연결 실패 - HTTP {}: {}", 
-                e.getStatusCode(), e.getResponseBodyAsString());
-
         } catch (Exception e) {
             long responseTime = System.currentTimeMillis() - startTime;
             
@@ -68,8 +61,6 @@ public class OpenViduHealthService {
             result.put("message", "OpenVidu 서버 연결 오류");
             result.put("responseTime", responseTime + "ms");
             result.put("error", e.getMessage());
-
-            log.error("❌ OpenVidu 서버 연결 오류: {}", e.getMessage(), e);
         }
 
         return result;
@@ -86,10 +77,7 @@ public class OpenViduHealthService {
         String testSessionId = "test-ping-pong-" + System.currentTimeMillis();
         
         try {
-            log.info("OpenVidu Ping-Pong 테스트 시작: {}", testSessionId);
-
             // 1. Session 생성 (PING)
-            log.info("1️⃣ Session 생성 요청...");
             String createResponse = openViduWebClient.post()
                 .uri("/openvidu/api/sessions")
                 .bodyValue(String.format("{\"customSessionId\":\"%s\"}", testSessionId))
@@ -98,10 +86,7 @@ public class OpenViduHealthService {
                 .timeout(Duration.ofSeconds(5))
                 .block();
 
-            log.info("✅ Session 생성 성공: {}", testSessionId);
-
             // 2. Session 조회 (PONG)
-            log.info("2️⃣ Session 조회 요청...");
             String getResponse = openViduWebClient.get()
                 .uri("/openvidu/api/sessions/" + testSessionId)
                 .retrieve()
@@ -109,18 +94,13 @@ public class OpenViduHealthService {
                 .timeout(Duration.ofSeconds(5))
                 .block();
 
-            log.info("✅ Session 조회 성공");
-
             // 3. Session 삭제 (CLEANUP)
-            log.info("3️⃣ Session 삭제 요청...");
             openViduWebClient.delete()
                 .uri("/openvidu/api/sessions/" + testSessionId)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .timeout(Duration.ofSeconds(5))
                 .block();
-
-            log.info("✅ Session 삭제 성공");
 
             result.put("status", "SUCCESS");
             result.put("message", "OpenVidu Ping-Pong 테스트 성공");
@@ -131,16 +111,11 @@ public class OpenViduHealthService {
                 "3_delete", "SUCCESS"
             ));
 
-            log.info("🎉 OpenVidu Ping-Pong 테스트 완료!");
-
         } catch (WebClientResponseException e) {
             result.put("status", "FAILED");
             result.put("message", "OpenVidu 통신 실패: " + e.getStatusCode());
             result.put("error", e.getResponseBodyAsString());
             
-            log.error("❌ OpenVidu Ping-Pong 테스트 실패 - HTTP {}: {}", 
-                e.getStatusCode(), e.getResponseBodyAsString());
-
             // 실패 시에도 정리 시도
             cleanupTestSession(testSessionId);
 
@@ -149,8 +124,6 @@ public class OpenViduHealthService {
             result.put("message", "OpenVidu 통신 오류");
             result.put("error", e.getMessage());
             
-            log.error("❌ OpenVidu Ping-Pong 테스트 오류: {}", e.getMessage(), e);
-
             // 오류 시에도 정리 시도
             cleanupTestSession(testSessionId);
         }
@@ -170,9 +143,8 @@ public class OpenViduHealthService {
                 .timeout(Duration.ofSeconds(3))
                 .onErrorResume(e -> Mono.empty())
                 .block();
-            log.info("🧹 테스트 Session 정리 완료: {}", sessionId);
         } catch (Exception e) {
-            log.warn("⚠️ 테스트 Session 정리 실패 (무시): {}", sessionId);
+            // Silent cleanup
         }
     }
 }

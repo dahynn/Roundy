@@ -37,31 +37,13 @@ public class OpenViduHealthCheckScheduler {
     @Scheduled(cron = "0 * * * * *")  // 매분 0초에 실행
     public void checkOpenViduHealth() {
         try {
-            log.debug("⏰ [정기 체크] OpenVidu 서버 연결 확인 시작");
-            
             Map<String, Object> result = openViduHealthService.pingOpenViduServer();
-            
-            // 통계 업데이트
             updateStatistics(result);
-            
-            // 상태에 따른 로그 출력
-            if ("SUCCESS".equals(result.get("status"))) {
-                log.info("✅ [정기 체크] OpenVidu 연결 정상 (응답시간: {}, 성공률: {}/{})", 
-                    result.get("responseTime"),
-                    successCount.get(),
-                    successCount.get() + failCount.get());
-            } else {
-                log.warn("⚠️ [정기 체크] OpenVidu 연결 실패 (상태: {}, 메시지: {})", 
-                    result.get("status"),
-                    result.get("message"));
-            }
             
         } catch (Exception e) {
             failCount.incrementAndGet();
             lastStatus = "ERROR";
             lastCheckTime = LocalDateTime.now().format(timeFormatter);
-            
-            log.error("❌ [정기 체크] OpenVidu 연결 확인 중 오류 발생: {}", e.getMessage());
         }
     }
 
@@ -72,21 +54,9 @@ public class OpenViduHealthCheckScheduler {
     @Scheduled(cron = "0 */10 * * * *")  // 매 10분마다 실행
     public void detailedHealthCheck() {
         try {
-            log.info("🔍 [상세 체크] OpenVidu Ping-Pong 테스트 시작");
-            
             Map<String, Object> result = openViduHealthService.testOpenViduCommunication();
-            
-            if ("SUCCESS".equals(result.get("status"))) {
-                log.info("🎉 [상세 체크] OpenVidu Ping-Pong 테스트 성공 (세션: {})", 
-                    result.get("testSessionId"));
-            } else {
-                log.warn("⚠️ [상세 체크] OpenVidu Ping-Pong 테스트 실패 (상태: {}, 메시지: {})", 
-                    result.get("status"),
-                    result.get("message"));
-            }
-            
         } catch (Exception e) {
-            log.error("❌ [상세 체크] OpenVidu Ping-Pong 테스트 중 오류 발생: {}", e.getMessage());
+            // Silent health check
         }
     }
 
@@ -148,7 +118,5 @@ public class OpenViduHealthCheckScheduler {
         lastCheckTime = "미실행";
         lastStatus = "UNKNOWN";
         lastResponseTime = "N/A";
-        
-        log.info("📊 OpenVidu 헬스체크 통계가 초기화되었습니다.");
     }
 }

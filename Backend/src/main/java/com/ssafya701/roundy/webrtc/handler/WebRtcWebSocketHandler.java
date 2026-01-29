@@ -53,9 +53,18 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         Long userId = (Long) session.getAttributes().get("userId");
         String username = (String) session.getAttributes().get("username");
+        String gender = (String) session.getAttributes().get("gender");
+        String mode = (String) session.getAttributes().get("mode");
 
-        log.info("WebSocket 연결 성공: sessionId={}, userId={}, username={}", 
-                session.getId(), userId, username);
+        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log.info("🔌 [WebSocket 연결 성공]");
+        log.info("   📍 URL: {}", session.getUri());
+        log.info("   👤 User ID: {}", userId);
+        log.info("   🏷️  Username: {}", username);
+        log.info("   ⚧️  Gender: {}", gender);
+        log.info("   🎮 Mode: {}", mode);
+        log.info("   🔑 Session ID: {}", session.getId());
+        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         
         eventLogger.logConnectionEstablished(session.getId(), userId, username);
     }
@@ -63,9 +72,18 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
+        Long userId = (Long) session.getAttributes().get("userId");
+        String username = (String) session.getAttributes().get("username");
 
         try {
             WsMessage wsMessage = messageSerializer.deserialize(payload);
+            
+            // 📨 WebSocket 메시지 로그
+            log.info("📨 [WebSocket] Event: {}, Client: {} (userId: {}, sessionId: {})", 
+                    wsMessage.getType(), 
+                    username, 
+                    userId, 
+                    session.getId());
             
             switch (wsMessage.getType()) {
                 case JOIN_ROOM -> handleJoinRoom(session, (JoinRoomMessage) wsMessage);
@@ -73,12 +91,18 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                 case SUBMIT_VOTE -> handleSubmitVote(session, (SubmitVoteMessage) wsMessage);
                 case SUBMIT_GAME_ANSWER -> handleSubmitGameAnswer(session, (SubmitGameAnswerMessage) wsMessage);
                 default -> {
+                    log.warn("⚠️ [WebSocket] Unknown Event: {}, Client: {} (userId: {})", 
+                            wsMessage.getType(), username, userId);
                     sendError(session, "UNKNOWN_MESSAGE_TYPE", "알 수 없는 메시지 타입입니다");
                 }
             }
         } catch (JsonProcessingException e) {
+            log.error("❌ [WebSocket] Invalid Message Format, Client: {} (userId: {}, sessionId: {})", 
+                    username, userId, session.getId(), e);
             sendError(session, "INVALID_MESSAGE", "잘못된 메시지 형식입니다");
         } catch (Exception e) {
+            log.error("❌ [WebSocket] Internal Error, Client: {} (userId: {}, sessionId: {})", 
+                    username, userId, session.getId(), e);
             sendError(session, "INTERNAL_ERROR", "서버 오류가 발생했습니다");
         }
     }
@@ -269,6 +293,12 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
      */
     public void sendMessage(WebSocketSession session, WsMessage message) throws IOException {
         if (session.isOpen()) {
+            Long userId = (Long) session.getAttributes().get("userId");
+            String username = (String) session.getAttributes().get("username");
+            
+            log.info("📤 [WebSocket] Send: {}, To: {} (userId: {}, sessionId: {})", 
+                    message.getType(), username, userId, session.getId());
+            
             String json = messageSerializer.serialize(message);
             session.sendMessage(new TextMessage(json));
         }
@@ -278,6 +308,9 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
      * 방의 모든 참가자에게 메시지 브로드캐스트
      */
     public void broadcastMessage(RoomState room, WsMessage message) throws IOException {
+        log.info("📢 [WebSocket] Broadcast: {}, Room: {}, Participants: {}", 
+                message.getType(), room.getRoomId(), room.getParticipantCount());
+        
         String json = messageSerializer.serialize(message);
         TextMessage textMessage = new TextMessage(json);
 
