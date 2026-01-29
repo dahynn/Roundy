@@ -27,3 +27,6 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "1000m"
+        envFrom:
+        - secretRef:
+            name: roundy-backend-secrets
