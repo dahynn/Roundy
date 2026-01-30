@@ -26,7 +26,7 @@ public class OpenViduClient {
 
     /**
      * OpenVidu Session 생성 또는 기존 Session 정보 조회
-     * 
+     *
      * @param customSessionId 커스텀 Session ID
      * @return OpenVidu Session 응답
      * @throws OpenViduClientException OpenVidu API 호출 실패 시
@@ -35,14 +35,14 @@ public class OpenViduClient {
         log.debug("OpenVidu Session 생성 요청: customSessionId={}", customSessionId);
 
         try {
-            OpenViduSessionResponse response = openViduWebClient.post()
+            return openViduWebClient.post()
                 .uri("/openvidu/api/sessions")
                 .bodyValue(Map.of("customSessionId", customSessionId))
                 .retrieve()
                 .bodyToMono(OpenViduSessionResponse.class)
                 .onErrorResume(WebClientResponseException.Conflict.class, e -> {
                     // 409 Conflict: 이미 존재하는 세션, body에서 Session 정보 파싱
-                    log.info("기존 Session 사용: customSessionId={}", customSessionId);
+                    log.debug("기존 Session 사용: customSessionId={}", customSessionId);
                     try {
                         OpenViduSessionResponse existingSession = new com.fasterxml.jackson.databind.ObjectMapper()
                             .readValue(e.getResponseBodyAsString(), OpenViduSessionResponse.class);
@@ -60,9 +60,6 @@ public class OpenViduClient {
                 .timeout(Duration.ofSeconds(10))
                 .block();
 
-            log.info("OpenVidu Session 생성 성공: sessionId={}", response.getId());
-            return response;
-
         } catch (WebClientResponseException.Unauthorized e) {
             log.error("OpenVidu 인증 실패: secret이 올바르지 않습니다");
             throw new OpenViduClientException("OpenVidu 인증 실패", e);
@@ -77,7 +74,7 @@ public class OpenViduClient {
 
     /**
      * OpenVidu Connection Token 발급
-     * 
+     *
      * @param sessionId Session ID
      * @return OpenVidu Token 응답
      * @throws OpenViduClientException OpenVidu API 호출 실패 시
@@ -103,7 +100,7 @@ public class OpenViduClient {
                 .timeout(Duration.ofSeconds(10))
                 .block();
 
-            log.info("OpenVidu Token 발급 성공: sessionId={}, connectionId={}", sessionId, response.getId());
+            log.info("OpenVidu 연결 성공: sessionId={}, connectionId={}", sessionId, response.getId());
             return response;
 
         } catch (WebClientResponseException.Unauthorized e) {

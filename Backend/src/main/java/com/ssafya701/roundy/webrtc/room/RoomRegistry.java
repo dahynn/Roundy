@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.webrtc.room;
 
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
@@ -15,8 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RoomRegistry {
     private final Map<String, RoomState> rooms = new ConcurrentHashMap<>();
+    private final com.ssafya701.roundy.webrtc.rotation.RoomEventPublisher eventPublisher;
     
     /**
      * 방 생성 또는 조회
@@ -49,32 +52,29 @@ public class RoomRegistry {
     /**
      * 참가자 추가
      * 
-     * TODO: [DB 연동] users 및 participants 테이블 연동
-     * 1. users 테이블에서 nickname, gender 조회
-     *    User user = userRepository.findById(userId).orElseThrow();
-     * 
-     * 2. 성별별 인원수 검증 (male_max, female_max)
-     *    if (user.getGender() == MALE && room.getMaleCount() >= room.getMaleMax()) {
-     *        throw new BusinessLogicException("남자 정원 초과");
-     *    }
-     * 
-     * 3. participants 테이블에 INSERT
-     *    participantRepository.save(new Participant(sessionId, userId));
-     * 
-     * 4. sessions.status 업데이트 (남녀 모두 max 도달 시 RECRUITING → ONGOING)
+     * @throws IllegalStateException 성별별 정원 초과 시
      */
-    public void addParticipant(String roomId, Long userId, String nickname, WebSocketSession session) {
+    public void addParticipant(String roomId, Long userId, String nickname, com.ssafya701.roundy.webrtc.room.enums.Gender gender, WebSocketSession session) {
         RoomState room = rooms.get(roomId);
         if (room == null) {
             log.warn("존재하지 않는 방에 참가자 추가 시도: roomId={}", roomId);
             return;
         }
         
-        // TODO: [DB 연동] 위 주석 참고하여 구현
+        // PAIR_ONLY 모드에서 성별별 정원 검증
+        if (room.getMode() == RotationMode.PAIR_ONLY) {
+            if (gender == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE && room.getMaleCount() >= room.getMaleMax()) {
+                throw new IllegalStateException("남성 정원 초과: 현재 " + room.getMaleCount() + "명 / 최대 " + room.getMaleMax() + "명");
+            }
+            if (gender == com.ssafya701.roundy.webrtc.room.enums.Gender.FEMALE && room.getFemaleCount() >= room.getFemaleMax()) {
+                throw new IllegalStateException("여성 정원 초과: 현재 " + room.getFemaleCount() + "명 / 최대 " + room.getFemaleMax() + "명");
+            }
+        }
         
-        room.addParticipant(userId, nickname, session);
-        log.info("참가자 추가: roomId={}, userId={}, nickname={}, 현재 인원={}", 
-                roomId, userId, nickname, room.getParticipantCount());
+        room.addParticipant(userId, nickname, gender, session);
+        log.info("참가자 추가: roomId={}, userId={}, nickname={}, gender={}, 현재 인원={} (남:{}명, 여:{}명)", 
+                roomId, userId, nickname, gender, room.getParticipantCount(), 
+                room.getMaleCount(), room.getFemaleCount());
     }
     
     /**
@@ -104,6 +104,9 @@ public class RoomRegistry {
             log.info("참가자 제거: roomId={}, userId={}, 남은 인원={}", 
                     roomId, userId, room.getParticipantCount());
             
+            // 로테이션 단계 중에 나간 경우 파트너에게 알림
+            notifyPartnerIfInRotation(room, removed);
+            
             // TODO: [DB 연동] 위 주석 참고하여 구현
         }
         
@@ -111,6 +114,38 @@ public class RoomRegistry {
         if (room.isEmpty()) {
             removeRoom(roomId);
         }
+    }
+    
+    /**
+     * 로테이션 단계에서 참가자가 나갔을 때 파트너에게 알림
+     */
+    private void notifyPartnerIfInRotation(RoomState room, ParticipantState leftParticipant) {
+        // 현재 로테이션 단계인지 확인
+        if (!room.getCurrentStage().isRotationStage()) {
+            return;
+        }
+        
+        // 파트너 ID 조회
+        Long partnerId = room.getPartnerId(leftParticipant.getUserId());
+        if (partnerId == null) {
+            return;
+        }
+        
+        // 파트너 정보 조회
+        ParticipantState partner = room.getParticipant(partnerId).orElse(null);
+        if (partner == null) {
+            return;
+        }
+        
+        // 파트너에게 PARTNER_LEFT 메시지 전송
+        eventPublisher.publishPartnerLeft(
+            partner, 
+            leftParticipant.getUserId(), 
+            leftParticipant.getNickname()
+        );
+        
+        log.warn("⚠️ 로테이션 중 참가자 이탈 알림 전송: roomId={}, leftUserId={}, partnerId={}, stage={}", 
+                room.getRoomId(), leftParticipant.getUserId(), partnerId, room.getCurrentStage());
     }
     
     /**

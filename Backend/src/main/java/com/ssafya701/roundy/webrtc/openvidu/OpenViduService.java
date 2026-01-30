@@ -32,7 +32,7 @@ public class OpenViduService {
     /**
      * 방에 대한 OpenVidu Session을 보장하고 Session ID 반환
      * Session이 없으면 생성하고, 있으면 기존 Session ID 반환
-     * 
+     *
      * @param roomId 방 ID
      * @return OpenVidu Session ID
      */
@@ -51,15 +51,15 @@ public class OpenViduService {
         try {
             OpenViduSessionResponse response = openViduClient.createSession(customSessionId);
             String sessionId = response.getId();
-            
+
             // 캐시 저장
             sessionCache.put(roomId, sessionId);
-            
-            log.info("OpenVidu Session 보장 완료: roomId={}, sessionId={}", roomId, sessionId);
+
+            log.debug("OpenVidu Session 보장 완료: roomId={}, sessionId={}", roomId, sessionId);
             eventLogger.logOpenViduSessionCreated(roomId, sessionId);
-            
+
             return sessionId;
-            
+
         } catch (OpenViduClient.OpenViduClientException e) {
             log.error("OpenVidu Session 생성 실패: roomId={}", roomId, e);
             throw new OpenViduServiceException("OpenVidu Session 생성 실패: " + roomId, e);
@@ -68,7 +68,7 @@ public class OpenViduService {
 
     /**
      * 참가자를 위한 OpenVidu Connection Token 발급
-     * 
+     *
      * @param roomId 방 ID
      * @param userId 사용자 ID
      * @return OpenVidu Connection Token
@@ -86,13 +86,13 @@ public class OpenViduService {
         try {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
-            
-            log.info("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}", 
+
+            log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                 roomId, userId, response.getId());
             eventLogger.logOpenViduTokenGenerated(roomId, userId, response.getId());
-            
+
             return token;
-            
+
         } catch (OpenViduClient.OpenViduClientException e) {
             log.error("OpenVidu Token 발급 실패: roomId={}, userId={}", roomId, userId, e);
             throw new OpenViduServiceException("OpenVidu Token 발급 실패: " + roomId, e);
@@ -101,15 +101,15 @@ public class OpenViduService {
 
     /**
      * 방의 OpenVidu Session 제거 (방 종료 시)
-     * 
+     *
      * @param roomId 방 ID
      */
     public void removeSession(String roomId) {
         log.debug("OpenVidu Session 제거: roomId={}", roomId);
-        
+
         String sessionId = sessionCache.remove(roomId);
         if (sessionId != null) {
-            log.info("OpenVidu Session 캐시 제거 완료: roomId={}, sessionId={}", roomId, sessionId);
+            log.debug("OpenVidu Session 캐시 제거 완료: roomId={}, sessionId={}", roomId, sessionId);
             // TODO: 실제로 OpenVidu Server에서 Session을 삭제하려면 DELETE API 호출 필요
             // 현재는 캐시만 제거하고, OpenVidu는 자동으로 빈 Session을 정리함
         }
@@ -117,7 +117,7 @@ public class OpenViduService {
 
     /**
      * OpenVidu 서버 URL 반환
-     * 
+     *
      * @return OpenVidu 서버 URL
      */
     public String getOpenViduUrl() {

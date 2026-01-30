@@ -30,7 +30,7 @@ public class JwtTokenProvider {
     public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,
                             @Value("${jwt.expiration-time}") long accessTokenValidTime,
                             UserDetailsService userDetailsService) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64URL.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenValidTime = accessTokenValidTime;
         this.userDetailsService = userDetailsService;

@@ -4,15 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ssafya701.roundy.webrtc.message.WsMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.JoinRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
+import com.ssafya701.roundy.webrtc.message.inbound.SubmitVoteMessage;
+import com.ssafya701.roundy.webrtc.message.inbound.SubmitGameAnswerMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.ErrorMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.JoinOkMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.RoomStateMessage;
+import com.ssafya701.roundy.webrtc.message.outbound.VoteSubmittedMessage;
 import com.ssafya701.roundy.webrtc.openvidu.OpenViduService;
 import com.ssafya701.roundy.webrtc.room.ParticipantState;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
+import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
+import com.ssafya701.roundy.webrtc.rotation.StageScheduler;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
 import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
 import lombok.RequiredArgsConstructor;
@@ -40,11 +46,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final RoomRegistry roomRegistry;
     private final OpenViduService openViduService;
     private final RotationScheduler rotationScheduler;
-
+    private final StageScheduler stageScheduler;
     private final WebRtcEventLogger eventLogger;
-    private final com.ssafya701.roundy.session.service.SessionService sessionService;
-    private final com.ssafya701.roundy.verification.service.VerificationService verificationService;
-    private final com.ssafya701.roundy.user.repository.UserRepository userRepository;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -67,6 +70,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             switch (wsMessage.getType()) {
                 case JOIN_ROOM -> handleJoinRoom(session, (JoinRoomMessage) wsMessage);
                 case LEAVE_ROOM -> handleLeaveRoom(session, (LeaveRoomMessage) wsMessage);
+                case SUBMIT_VOTE -> handleSubmitVote(session, (SubmitVoteMessage) wsMessage);
+                case SUBMIT_GAME_ANSWER -> handleSubmitGameAnswer(session, (SubmitGameAnswerMessage) wsMessage);
                 default -> {
                     sendError(session, "UNKNOWN_MESSAGE_TYPE", "알 수 없는 메시지 타입입니다");
                 }
@@ -99,37 +104,49 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private void handleJoinRoom(WebSocketSession session, JoinRoomMessage message) throws IOException {
         Long userId = (Long) session.getAttributes().get("userId");
         String username = (String) session.getAttributes().get("username");
+        String genderStr = (String) session.getAttributes().get("gender");
+        String modeStr = (String) session.getAttributes().get("mode");
         String roomId = message.getRoomId();
-        String requestId = message.getRequestId();
-
-        // 대기실 입장 요청인 경우 (roomId가 "waiting-room" 이거나 requestId가 있는 경우)
-        // 여기서는 "waiting-room"을 대기실 ID로 가정합니다.
-        if ("waiting-room".equals(roomId) || (requestId != null && !requestId.isEmpty())) {
-             handleQueueEntry(session, userId, username, requestId);
-             return;
-        }
 
         try {
+            // Gender enum 변환
+            Gender gender;
+            try {
+                gender = Gender.valueOf(genderStr.toUpperCase());
+            } catch (Exception e) {
+                log.warn("잘못된 gender 파라미터: {}, 기본값 MALE 사용", genderStr);
+                gender = Gender.MALE;
+            }
+            
+            // RotationMode enum 변환
+            RotationMode mode;
+            try {
+                mode = RotationMode.valueOf(modeStr.toUpperCase());
+            } catch (Exception e) {
+                log.warn("잘못된 mode 파라미터: {}, 기본값 FREE_TALK 사용", modeStr);
+                mode = RotationMode.FREE_TALK;
+            }
+            
             // TODO: [DB 연동] User 엔티티로 사용자 검증
             // User user = userService.findById(userId)
             //     .orElseThrow(() -> new UserNotFoundException(userId));
             // if (!user.isActive()) {
             //     throw new UserInactiveException(userId);
             // }
+            // gender = user.getGender(); // DB에서 gender 가져오기
             
             // 1. OpenVidu Session 보장
             String openViduSessionId = openViduService.ensureSession(roomId);
 
-            // 2. 방 생성 또는 조회 (기본값: FREE_TALK 모드)
+            // 2. 방 생성 또는 조회 (URL 파라미터로 mode 지정)
             // TODO: [DB 연동] Room 엔티티에서 방 정보 조회
             // Room roomEntity = roomService.findById(roomId)
             //     .orElseThrow(() -> new RoomNotFoundException(roomId));
             // RotationMode mode = RotationMode.valueOf(roomEntity.getMode());
-            // RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
-            RoomState room = roomRegistry.getOrCreateRoom(roomId, RotationMode.FREE_TALK, openViduSessionId);
+            RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
 
-            // 3. 참가자 추가
-            roomRegistry.addParticipant(roomId, userId, username, session);
+            // 3. 참가자 추가 (Gender 포함)
+            roomRegistry.addParticipant(roomId, userId, username, gender, session);
 
             // 4. OpenVidu Token 발급
             String token = openViduService.generateToken(roomId, userId);
@@ -157,9 +174,17 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // 6. ROOM_STATE 브로드캐스트
             broadcastRoomState(room);
 
-            // 7. 로테이션 스케줄러 시작 (PAIR_ONLY 모드인 경우)
-            if (room.isPairMode() && !room.isRoundActive()) {
-                rotationScheduler.startRotation(room, null);
+            // 7. 8단계 로테이션 자동 시작 (PAIR_ONLY 모드 + 최소 인원 충족)
+            if (room.isPairMode() && room.getCurrentStage() == Stage.WAITING) {
+                int participantCount = room.getParticipantCount();
+                int minParticipants = 4; // PAIR_ONLY는 짝수 인원 필요 (남2, 여2)
+                
+                if (participantCount >= minParticipants) {
+                    log.info("🎬 8단계 로테이션 자동 시작: roomId={}, 참가자={}명", roomId, participantCount);
+                    
+                    // 자동 전환 스케줄러 시작
+                    stageScheduler.startStageRotation(room);
+                }
             }
 
             // TODO: [DB 연동] 방 참가 이벤트 기록
@@ -275,46 +300,117 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             log.error("에러 메시지 전송 실패: sessionId={}, code={}", session.getId(), code, e);
         }
     }
-
+    
+    // ========== 8단계 로테이션 메시지 처리 ==========
+    
     /**
-     * 대기실 입장 및 큐 등록 처리
+     * SUBMIT_VOTE 메시지 처리 (첫인상/최종 투표)
      */
-    private void handleQueueEntry(WebSocketSession session, Long userId, String username, String requestId) throws IOException {
-        // 1. 검증 확인 (requestId 필수)
-        if (requestId == null || !verificationService.verifyAndDelete(requestId)) {
-            sendError(session, "VERIFICATION_FAILED", "검증이 완료되지 않았거나 유효하지 않은 요청입니다.");
+    private void handleSubmitVote(WebSocketSession session, SubmitVoteMessage message) {
+        Long userId = (Long) session.getAttributes().get("userId");
+        Long targetUserId = message.getTargetUserId();
+        
+        // 세션 ID로 방 찾기
+        RoomState room = roomRegistry.findRoomBySessionId(session.getId())
+                .orElse(null);
+        
+        if (room == null) {
+            sendError(session, "ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
             return;
         }
-
-        // 2. 성별 조회
-        com.ssafya701.roundy.user.entity.User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        com.ssafya701.roundy.user.enums.GenderType gender = user.getGender();
-
-        // 3. 큐 추가 및 매칭 시도
-        com.ssafya701.roundy.session.dto.RoomMatchResult matchResult = sessionService.addToQueueAndMatch(userId, gender);
-
-        if ("MATCHED".equals(matchResult.getStatus())) {
-            // 매칭 성공 -> 실제 방으로 입장 처리
-            String newRoomId = matchResult.getRoomId();
-            log.info("Queue matched! Redirecting to room: userId={}, roomId={}", userId, newRoomId);
-            
-            // 재귀적으로 방 참가 로직 수행 (이제 진짜 방 ID로)
-            JoinRoomMessage redirectMessage = new JoinRoomMessage(newRoomId, null); // requestId 사용 완료됨
-            handleJoinRoom(session, redirectMessage);
-            
+        
+        // 투표 대상이 방에 존재하는지 확인
+        if (!room.getParticipant(targetUserId).isPresent()) {
+            sendError(session, "INVALID_TARGET", "투표 대상이 방에 존재하지 않습니다");
+            return;
+        }
+        
+        // 자기 자신에게 투표하는지 확인
+        if (userId.equals(targetUserId)) {
+            sendError(session, "SELF_VOTE", "자신에게는 투표할 수 없습니다");
+            return;
+        }
+        
+        // 현재 스테이지가 투표 단계인지 확인
+        if (!room.getCurrentStage().isVoteStage()) {
+            sendError(session, "INVALID_STAGE", "현재 투표할 수 있는 단계가 아닙니다");
+            return;
+        }
+        
+        // 투표 제출 (첫인상 vs 최종 투표 구분)
+        boolean isFinalVote = room.getCurrentStage().name().equals("VOTE_FINAL");
+        room.submitVote(userId, targetUserId, isFinalVote);
+        
+        log.info("투표 제출: userId={}, targetId={}, type={}", 
+                userId, targetUserId, isFinalVote ? "최종" : "첫인상");
+        
+        eventLogger.logVoteSubmitted(userId, targetUserId, isFinalVote);
+        
+        // 투표 완료 확인 메시지 전송 (클라이언트 피드백)
+        int votedCount = isFinalVote ? room.getFinalVotesCount() : room.getFirstVotesCount();
+        int totalCount = room.getParticipantCount();
+        
+        VoteSubmittedMessage confirmMessage = new VoteSubmittedMessage(
+                isFinalVote ? "FINAL" : "FIRST",
+                true,
+                "투표가 성공적으로 제출되었습니다",
+                votedCount,
+                totalCount
+        );
+        
+        try {
+            sendMessage(session, confirmMessage);
+        } catch (IOException e) {
+            log.error("투표 확인 메시지 전송 실패: userId={}", userId, e);
+        }
+    }
+    
+    /**
+     * SUBMIT_GAME_ANSWER 메시지 처리
+     */
+    private void handleSubmitGameAnswer(WebSocketSession session, SubmitGameAnswerMessage message) {
+        Long userId = (Long) session.getAttributes().get("userId");
+        String answer = message.getAnswer();
+        
+        // 세션 ID로 방 찾기
+        RoomState room = roomRegistry.findRoomBySessionId(session.getId())
+                .orElse(null);
+        
+        if (room == null) {
+            sendError(session, "ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
+            return;
+        }
+        
+        // 현재 스테이지가 게임 단계인지 확인
+        if (!room.getCurrentStage().isGameStage()) {
+            sendError(session, "INVALID_STAGE", "현재 게임을 할 수 있는 단계가 아닙니다");
+            return;
+        }
+        
+        // TODO: 게임 답변 검증 및 뱃지 결정 로직
+        // 현재는 간단하게 답변을 그대로 뱃지로 저장
+        String badge = determineBadge(answer);
+        room.submitGameAnswer(userId, badge);
+        
+        log.info("게임 답변 제출: userId={}, answer={}, badge={}", userId, answer, badge);
+        
+        eventLogger.logGameAnswerSubmitted(userId, answer, badge);
+    }
+    
+    /**
+     * 게임 답변으로부터 뱃지 결정
+     * TODO: 실제 게임 로직에 맞게 구현 필요
+     */
+    private String determineBadge(String answer) {
+        // 임시 구현: 답변 길이에 따라 뱃지 부여
+        if (answer == null || answer.isEmpty()) {
+            return "SILENT";
+        } else if (answer.length() < 10) {
+            return "QUICK_THINKER";
+        } else if (answer.length() < 30) {
+            return "CREATIVE";
         } else {
-            // 대기 중 -> 대기실(waiting-room)에 머무름
-            log.info("User queued in waiting room: userId={}", userId);
-            
-            // WAITING 메시지 전송 (선택사항)
-             try {
-                // 예: {"type": "WAITING", "position": 5, "message": "대기 중입니다..."}
-                // 일단은 단순 정보 로그만 남기고, 필요하면 WaitingMessage 클래스 만들어서 전송
-                // sendMessage(session, new WaitingMessage(...));
-            } catch (Exception e) {
-                log.error("Failed to send waiting message", e);
-            }
+            return "STORYTELLER";
         }
     }
 }

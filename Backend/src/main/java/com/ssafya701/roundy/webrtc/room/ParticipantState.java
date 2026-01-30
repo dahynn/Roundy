@@ -1,5 +1,6 @@
 package com.ssafya701.roundy.webrtc.room;
 
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -11,9 +12,7 @@ import org.springframework.web.socket.WebSocketSession;
  * ERD 매핑: participants 테이블과 대응
  * - userId ↔ participants.user_id
  * - nickname ↔ users.nickname (DB에서 조회 필요)
- * 
- * TODO: [DB 연동] 향후 추가할 필드
- * - Gender gender (users 테이블에서 조회, 인원수 관리에 필요)
+ * - gender ↔ users.gender (성별별 인원수 관리)
  */
 @Getter
 @AllArgsConstructor
@@ -21,11 +20,9 @@ import org.springframework.web.socket.WebSocketSession;
 public class ParticipantState {
     private final Long userId;
     private final String nickname;
+    private final Gender gender;  // 성별 (MALE/FEMALE)
     private final WebSocketSession session;
     private String openViduToken;
-    
-    // TODO: [DB 연동] 성별 필드 추가
-    // private final Gender gender;  // users 테이블에서 조회
     
     /**
      * OpenVidu 토큰 설정

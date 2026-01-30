@@ -8,16 +8,39 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    // 필터를 적용하지 않을 경로 목록
+    private static final List<String> EXCLUDE_PATHS = Arrays.asList(
+            "/api/auth/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            // 개발/테스트용 경로
+            "/test/**",
+            "/api/test/**",
+            "/ws/**",
+            "/api/webrtc/test/**"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String requestURI = request.getRequestURI();
+        return EXCLUDE_PATHS.stream().anyMatch(p -> pathMatcher.match(p, requestURI));
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {

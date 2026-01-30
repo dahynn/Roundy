@@ -7,6 +7,7 @@ import com.ssafya701.roundy.webrtc.message.WsMessageType;
 import com.ssafya701.roundy.webrtc.message.inbound.JoinRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.*;
+import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
 import org.springframework.web.bind.annotation.*;
 
@@ -177,9 +178,22 @@ public class MessageTestController {
                 ),
                 3
             );
+            case "STAGE_CHANGE" -> new StageChangeMessage("room-123", Stage.SELF_INTRO, 60);
+            case "MATCH_RESULT" -> new MatchResultMessage(
+                true,
+                2L,
+                "Bob"
+            );
             case "ROUND_START" -> new RoundStartMessage("room-123", 1, 300);
             case "ROUND_END" -> new RoundEndMessage("room-123", 1);
-            case "PAIR_ASSIGNED" -> new PairAssignedMessage("room-123", 1, 2L, "Bob");
+            case "PAIR_ASSIGNED" -> new PairAssignedMessage(
+                "room-123",      // roomId
+                1,               // roundNumber
+                2L,              // partnerId
+                "Bob",           // partnerNickname
+                "room-123-pair-round1-1-2",  // privateSessionId
+                "test-token-xyz" // privateToken
+            );
             case "ERROR" -> new ErrorMessage("ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
             default -> throw new IllegalArgumentException("알 수 없는 메시지 타입: " + type);
         };
