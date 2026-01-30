@@ -80,50 +80,49 @@ class RoundyVision:
                 continue
         return None, None
 
-    def get_reference_face(self, image_source):
-        """기준 이미지에서 얼굴을 추출합니다. (경로 또는 numpy 배열 지원)"""
-        # 1. 경로인 경우 캐싱 활용
-        if isinstance(image_source, str):
-            if image_source in self.reference_cache:
-                return self.reference_cache[image_source]
-            
-            face_img, backend = self.extract_face_robust(image_source, 'retinaface')
-            if face_img is not None:
-                self.reference_cache[image_source] = face_img
-                # debug_path = os.path.join(os.path.dirname(image_source), f"debug_ref_face_{backend}.jpg")
-                # cv2.imwrite(debug_path, face_img)
-                return face_img
-            return cv2.imread(image_source)
+    def get_reference_face(self, img_input):
+        """기준 이미지에서 얼굴을 추출하여 캐싱합니다. (Numpy 배열 지원)"""
+        # 1. 파일 경로인 경우 (legacy support if needed, but primarily for caching)
+        if isinstance(img_input, str):
+            if img_input in self.reference_cache:
+                return self.reference_cache[img_input]
 
-        # 2. Numpy 배열인 경우 (캐싱 없음 or 별도 로직)
-        elif isinstance(image_source, np.ndarray):
-            face_img, backend = self.extract_face_robust(image_source, 'retinaface')
-            return face_img if face_img is not None else image_source
+        # 2. 얼굴 추출 시도 (retinaface)
+        face_img, backend = self.extract_face_robust(img_input, 'retinaface')
 
-        return None
+        if face_img is not None:
+            # 경로라면 캐시에 저장
+            if isinstance(img_input, str):
+                self.reference_cache[img_input] = face_img
+            return face_img
 
-    def verify_face(self, img1, img2_source, threshold=0.4, landmarks=None):
-        """정밀 정렬 및 안면 인증 수행 (img2_source: path or numpy array)"""
+        # 3. 추출 실패 시 원본 반환 (이미지 데이터인 경우)
+        if hasattr(img_input, 'shape'):  # numpy array check
+            return img_input
+
+        return cv2.imread(img_input)
+
+    def verify_face(self, img1, img2, threshold=0.4):
+        """정밀 정렬 및 안면 인증 수행 (Stateless: img2 is image data)"""
         try:
             # 1. 캡처 이미지 품질 검사
             brightness, contrast = self.check_image_quality(img1)
             if brightness < 35 or contrast < 12:
                 return {"verified": False, "distance": None, "error": "사진이 너무 어둡거나 흐릿합니다."}
 
-            # 2. 기준 이미지 얼굴 확보 (캐싱됨)
-            ref_face = self.get_reference_face(img2_source)
+            # 2. 기준 이미지 얼굴 확보 (이미지 데이터 input)
+            ref_face = self.get_reference_face(img2)
             if ref_face is None:
-                return {"verified": False, "distance": None, "error": "기준 파일을 읽을 수 없습니다."}
+                return {"verified": False, "distance": None, "error": "기준 이미지를 분석할 수 없습니다."}
 
-            # 3. 실시간 캡처 사진도 retinaface로 정밀 추출
+            # 3. 실시간 캡처 사진도 retinaface로 정밀 추출 (서버 자체 추출)
             cap_face, backend = self.extract_face_robust(img1, 'retinaface')
 
             if cap_face is not None:
                 img1 = cap_face
-                # cv2.imwrite("asset/debug/debug_cap_face_refined.jpg", img1)
-            elif landmarks is not None:
-                img1 = self.get_face_crop_manual(img1, landmarks)
-                # cv2.imwrite("asset/debug/debug_cap_face_manual.jpg", img1)
+                cv2.imwrite("asset/debug/debug_cap_face_refined.jpg", img1)
+            else:
+                pass
 
             # 4. DeepFace 비교 (ArcFace + GPU 가속 활용)
             result = DeepFace.verify(
