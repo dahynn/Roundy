@@ -1,4 +1,3 @@
-// src/hooks/useRotation.ts
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type {
     RotationState,
@@ -7,10 +6,10 @@ import type {
     RoomStatePayload,
     StageChangePayload,
     PairAssignedPayload,
-    MatchResultPayload
+    MatchResultPayload,
+    // RotationStage // Import Stage Type
 } from '../../types/meeting/rotaion';
 
-// 연결 시 필요한 유저 정보 타입
 interface UserProfile {
     userId: number;
     username: string;
@@ -18,11 +17,17 @@ interface UserProfile {
     mode: 'FREE_TALK' | 'PAIR_ONLY';
 }
 
+// 로비(대기실) 접속 정보 저장을 위한 타입
+interface LobbyCredentials {
+    sessionId: string;
+    token: string;
+}
+
 export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
     const socketRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<number | null>(null);
 
-    const [state, setState] = useState<RotationState>({
+    const [state, setState] = useState<RotationState & { lobbyCredentials?: LobbyCredentials }>({
         connected: false,
         roomId: null,
         currentStage: 'WAITING',
@@ -30,45 +35,45 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         participants: [],
         currentPartner: null,
         lastMessage: null,
+        lobbyCredentials: undefined, // 초기 대기실 토큰 저장용
     });
 
-    // --- 메시지 전송 헬퍼 ---
     const sendMessage = useCallback((type: WsMessageType, payload: any = {}) => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
             const message = { type, ...payload };
             socketRef.current.send(JSON.stringify(message));
-            console.log(`[WS-SEND] ${type}:`, payload);
-        } else {
-            console.warn('[WS] 소켓 미연결 상태');
         }
     }, []);
 
-    // --- 수신 메시지 핸들러 ---
     const handleMessage = useCallback((event: MessageEvent) => {
         try {
             const data = JSON.parse(event.data);
             console.log(`[WS-RECV] ${data.type}:`, data);
 
             switch (data.type) {
-                // 방 참가 성공 -> OpenVidu 토큰 수신
                 case 'JOIN_OK': {
                     const payload = data as JoinOkPayload;
+                    const lobbyInfo = {
+                        sessionId: payload.roomId,
+                        token: payload.token
+                    };
+
                     setState(prev => ({
                         ...prev,
                         connected: true,
                         roomId: payload.roomId,
-                        // 초기 대기실 접속용 토큰 저장 (필요 시 OpenVidu 훅으로 전달)
+                        lobbyCredentials: lobbyInfo, // 로비 정보 백업
+                        // 처음엔 대기실로 연결
                         currentPartner: {
                             id: null,
                             nickname: 'Lobby',
-                            sessionId: payload.roomId,
-                            token: payload.token
+                            sessionId: lobbyInfo.sessionId,
+                            token: lobbyInfo.token
                         }
                     }));
                     break;
                 }
 
-                // 참가자 목록 갱신
                 case 'ROOM_STATE': {
                     const payload = data as RoomStatePayload;
                     setState(prev => ({
@@ -78,65 +83,77 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                     break;
                 }
 
-                // 스테이지 변경 (타이머 리셋)
                 case 'STAGE_CHANGE': {
                     const payload = data as StageChangePayload;
-                    setState(prev => ({
-                        ...prev,
-                        currentStage: payload.stage,
-                        remainingTime: payload.durationSeconds,
-                        lastMessage: `스테이지 변경: ${payload.stage}`
-                    }));
+
+                    // 스테이지가 변경될 때, 로테이션(1:1) 단계가 아니면 다시 로비(단체방) 세션으로 복귀해야 함
+                    // 예: 로테이션 끝 -> 중간 투표(VOTE_FIRST) -> 다시 로비 세션 필요
+                    const isPairStage = ['ROTATION_SHORT', 'ROTATION_LONG', 'FACE_REVEAL'].includes(payload.stage);
+
+                    setState(prev => {
+                        let nextPartner = prev.currentPartner;
+
+                        // 1:1 스테이지가 아니고, 현재 로비 세션이 아니라면 -> 로비로 복귀
+                        if (!isPairStage && prev.lobbyCredentials) {
+                            nextPartner = {
+                                id: null,
+                                nickname: 'Lobby',
+                                sessionId: prev.lobbyCredentials.sessionId,
+                                token: prev.lobbyCredentials.token
+                            };
+                        }
+
+                        return {
+                            ...prev,
+                            currentStage: payload.stage,
+                            remainingTime: payload.durationSeconds,
+                            currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
+                            lastMessage: `스테이지 변경: ${payload.stage}`
+                        };
+                    });
                     break;
                 }
 
-                // 1:1 매칭 발생 (가장 중요) -> 여기서 OpenVidu 세션 갈아타야 함
                 case 'PAIR_ASSIGNED': {
                     const payload = data as PairAssignedPayload;
                     setState(prev => ({
                         ...prev,
+                        // 1:1 매칭 정보를 덮어씌움 -> RotationTest에서 감지하여 OpenVidu 세션 변경
                         currentPartner: {
                             id: payload.partnerId,
                             nickname: payload.partnerNickname,
                             sessionId: payload.privateSessionId,
-                            token: payload.privateToken // 이 토큰으로 OpenVidu 재접속
+                            token: payload.privateToken
                         },
                         lastMessage: payload.partnerNickname
-                            ? `${payload.partnerNickname}님과 매칭되었습니다.`
-                            : '매칭 대상이 없습니다 (휴식).'
+                            ? `${payload.partnerNickname}님과 1:1 매칭!`
+                            : '매칭 휴식 (대기)'
                     }));
                     break;
                 }
 
-                // 최종 결과
                 case 'MATCH_RESULT': {
                     const payload = data as MatchResultPayload;
                     setState(prev => ({
                         ...prev,
                         lastMessage: payload.isMatched
-                            ? `🎉 최종 매칭 성공! (${payload.partnerNickname})`
-                            : '앗, 매칭에 실패했습니다.'
+                            ? `🎉 최종 커플: ${payload.partnerNickname}`
+                            : '최종 매칭 실패 ㅠㅠ'
                     }));
                     break;
                 }
 
                 case 'VOTE_SUBMITTED':
-                    setState(prev => ({ ...prev, lastMessage: '투표가 제출되었습니다.' }));
-                    break;
-
-                case 'ERROR':
-                    console.error('[WS-ERROR]', data.message);
-                    setState(prev => ({ ...prev, lastMessage: `에러: ${data.message}` }));
+                    setState(prev => ({ ...prev, lastMessage: '투표 완료!' }));
                     break;
             }
         } catch (err) {
-            console.error('[WS] 파싱 에러:', err);
+            console.error('[WS] Parsing Error:', err);
         }
     }, []);
 
-    // --- WebSocket 연결 (쿼리 파라미터 적용) ---
+    // WebSocket 연결 (생략 가능하지만 전체 흐름 유지 위해 포함)
     useEffect(() => {
-        //  문서에 명시된 쿼리 파라미터 구조 적용
         const params = new URLSearchParams({
             userId: userProfile.userId.toString(),
             username: userProfile.username,
@@ -144,15 +161,14 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
             mode: userProfile.mode
         }).toString();
 
-        // 엔드포인트
-        const WS_URL = `ws://localhost:8080/ws/roundy?${params}`;
+        const baseUrl = import.meta.env.VITE_WS_URL;
+        const WS_URL = `${baseUrl}?${params}`;
 
         const socket = new WebSocket(WS_URL);
         socketRef.current = socket;
 
         socket.onopen = () => {
             console.log('[WS] Connected');
-            //  연결 후 JOIN_ROOM 메시지 전송 (JOIN 아님!)
             sendMessage('JOIN_ROOM', { roomId });
         };
 
@@ -160,9 +176,9 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         socket.onclose = () => setState(prev => ({ ...prev, connected: false }));
 
         return () => socket.close();
-    }, [roomId, userProfile.userId]); // userId 변경 시 재연결
+    }, [roomId, userProfile.userId, sendMessage, handleMessage]);
 
-    // --- 타이머 ---
+    // 타이머
     useEffect(() => {
         if (state.remainingTime > 0) {
             timerRef.current = window.setInterval(() => {
@@ -172,20 +188,9 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [state.remainingTime]);
 
-    // --- 액션 함수들 ---
-    // targetUserId 필드명 준수
-    const submitVote = (targetUserId: number) => {
-        sendMessage('SUBMIT_VOTE', { targetUserId });
-    };
-
-    // answer 필드명 준수
-    const submitGameAnswer = (answer: string) => {
-        sendMessage('SUBMIT_GAME_ANSWER', { answer });
-    };
-
-    const leaveRoom = () => {
-        sendMessage('LEAVE_ROOM', { roomId });
-    };
+    const submitVote = (targetUserId: number) => sendMessage('SUBMIT_VOTE', { targetUserId });
+    const submitGameAnswer = (answer: string) => sendMessage('SUBMIT_GAME_ANSWER', { answer });
+    const leaveRoom = () => sendMessage('LEAVE_ROOM', { roomId });
 
     return { state, submitVote, submitGameAnswer, leaveRoom };
 };

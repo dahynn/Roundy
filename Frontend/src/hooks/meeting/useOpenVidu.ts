@@ -5,40 +5,86 @@ export const useOpenVidu = () => {
     const [session, setSession] = useState<Session | undefined>(undefined);
     const [publisher, setPublisher] = useState<Publisher | undefined>(undefined);
     const [subscribers, setSubscribers] = useState<StreamManager[]>([]);
-    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
-    // OV 객체는 렌더링과 무관하게 유지
+    const currentSessionIdRef = useRef<string | null>(null);
     const OV = useRef(new OpenVidu());
 
-    // 세션 나가기 (Cleanup)
+    // 카메라 초기화 중복 실행 방지용 Ref
+    const isInitializingRef = useRef<boolean>(false);
+
+    /**
+     * 1. 카메라 권한 요청 및 초기화 함수 (독립적으로 실행)
+     */
+    const initSelfCamera = useCallback(async () => {
+        // 이미 publisher가 있거나 초기화 중이라면 스킵
+        if (publisher || isInitializingRef.current) return publisher;
+
+        isInitializingRef.current = true; // 락 걸기
+
+        try {
+            console.log('📷 [initSelfCamera] 카메라 권한 요청 및 초기화 시작...');
+            const newPublisher = await OV.current.initPublisherAsync(undefined, {
+                audioSource: undefined,
+                videoSource: undefined,
+                publishAudio: true,
+                publishVideo: true,
+                resolution: '640x480',
+                frameRate: 30,
+                insertMode: 'APPEND',
+                mirror: true,
+            });
+
+            setPublisher(newPublisher);
+            console.log('✅ [initSelfCamera] 카메라 초기화 완료');
+            isInitializingRef.current = false; // 락 해제
+            return newPublisher;
+
+        } catch (err) {
+            console.error('❌ [initSelfCamera] 카메라 초기화 실패:', err);
+            isInitializingRef.current = false;
+            return undefined;
+        }
+    }, [publisher]);
+
+    /**
+     * 2. 마운트 시 즉시 카메라 실행 (서버 연결 여부와 무관하게 내 얼굴 띄우기)
+     */
+    useEffect(() => {
+        initSelfCamera();
+    }, [initSelfCamera]);
+
+    /**
+     * 3. 세션 종료 (카메라는 끄지 않음)
+     */
     const leaveSession = useCallback(() => {
         if (session) {
             session.disconnect();
         }
-        // 상태 초기화
         setSession(undefined);
-        setPublisher(undefined);
         setSubscribers([]);
-        setCurrentSessionId(null);
+        currentSessionIdRef.current = null;
     }, [session]);
 
-    // 세션 접속
+    /**
+     * 4. 세션 접속
+     */
     const joinSession = useCallback(async (sessionId: string, token: string, nickname: string) => {
-        // 이미 동일한 세션에 접속 중이면 중복 실행 방지
-        if (session && currentSessionId === sessionId) {
-            console.log('이미 해당 세션에 접속 중입니다:', sessionId);
+        // 이미 동일 세션이면 무시
+        if (currentSessionIdRef.current === sessionId) {
             return;
         }
 
-        // 다른 세션에 있었다면 먼저 종료
+        console.log(`🔄 [joinSession] 세션 전환 시도: ${sessionId}`);
+
+        // 기존 세션 정리
         if (session) {
-            leaveSession();
+            session.disconnect();
+            setSubscribers([]);
         }
 
-        // 1. 세션 객체 초기화 (연결 전 준비)
         const newSession = OV.current.initSession();
 
-        // 2. 이벤트 리스너 설정 (상대방 입장/퇴장 감지)
+        // 이벤트 리스너
         newSession.on('streamCreated', (event) => {
             const subscriber = newSession.subscribe(event.stream, undefined);
             setSubscribers((prev) => [...prev, subscriber]);
@@ -49,59 +95,49 @@ export const useOpenVidu = () => {
         });
 
         newSession.on('exception', (exception) => {
-            console.warn('OpenVidu Exception:', exception);
+            console.warn('⚠️ OpenVidu Exception:', exception);
         });
 
         try {
-            // -----------------------------------------------------------
-            // 연결(connect)보다 카메라(Publisher)를 먼저 초기화
-            // 이유: 서버 연결이 실패하더라도 내 얼굴은 화면에 띄우기 위함 + 권한 획득 보장
-            // -----------------------------------------------------------
-            console.log('📷 카메라/마이크 권한 요청 및 초기화 중...');
+            // 연결 전에 카메라(publisher)가 확실히 있는지 확인
+            let myPublisher = publisher;
+            if (!myPublisher) {
+                console.log('📷 [joinSession] 카메라가 아직 없음, 강제 초기화 시도');
+                myPublisher = await initSelfCamera();
+            }
 
-            const newPublisher = await OV.current.initPublisherAsync(undefined, {
-                audioSource: undefined, // 기본 마이크
-                videoSource: undefined, // 기본 카메라
-                publishAudio: true,
-                publishVideo: true,
-                resolution: '640x480',
-                frameRate: 30,
-                insertMode: 'APPEND',
-                mirror: true, // 내 얼굴은 거울 모드로
-            });
+            // 카메라가 없으면 연결 진행 불가 (권한 거부 등)
+            if (!myPublisher) {
+                console.error('❌ [joinSession] 카메라 권한이 없어 세션 연결을 중단합니다.');
+                return;
+            }
 
-            // 내 화면을 먼저 상태에 저장 (즉시 UI에 표시됨)
-            setPublisher(newPublisher);
-            console.log('✅ 카메라 초기화 성공');
-
-            // 4. 세션 연결 (Token 사용)
-            console.log(`🔗 세션 연결 시도: ${sessionId}`);
+            // 세션 연결
             await newSession.connect(token, { clientData: nickname });
-            console.log(`✅ 세션 연결 성공: ${sessionId}`);
+            console.log(`✅ [joinSession] 세션 연결 성공: ${sessionId}`);
 
-            // 5. 연결된 세션에 내 카메라 송출
-            await newSession.publish(newPublisher);
+            // 카메라 송출
+            await newSession.publish(myPublisher);
 
-            // 6. 세션 상태 업데이트
             setSession(newSession);
-            setCurrentSessionId(sessionId);
+            currentSessionIdRef.current = sessionId;
 
-        } catch (error) {
-            // 에러가 나도 Publisher(내 화면)는 유지할지, 지울지 결정
-            // 여기서는 에러 로그만 띄우고 내 화면은 유지하여 "카메라는 되는데 서버가 안됨"을 인지하게 함
-            console.error('❌ OpenVidu Connection Error:', error);
-
-            // 만약 연결 실패 시 카메라까지 끄고 싶다면 아래 주석 해제
-            // setPublisher(undefined);
+        } catch (error: any) {
+            console.error('❌ [joinSession] OpenVidu 연결 에러 (서버 문제일 가능성 높음):', error);
+            // 연결 실패해도 publisher(카메라)는 초기화하지 않음 (내 얼굴은 계속 보이게)
+            setSession(undefined);
+            currentSessionIdRef.current = null;
         }
-    }, [session, currentSessionId, leaveSession]);
+    }, [session, publisher, initSelfCamera]); // 의존성
 
-    // 컴포넌트 언마운트 시 자동 연결 해제
+    // 언마운트 시 정리
     useEffect(() => {
         return () => {
             if (session) session.disconnect();
+            // 페이지 나갈 때는 끄기 (선택사항)
+            // if (publisher) publisher.off();
         };
-    }, []); // 의존성 배열 비움 (마운트 해제 시 1회 실행)
+    }, []);
 
     return {
         session,
