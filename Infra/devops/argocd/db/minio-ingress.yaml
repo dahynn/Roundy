@@ -1,12 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: roundy-app-ingress
+  name: roundy-app-minio-ingress
   namespace: roundy-app
   annotations:
     kubernetes.io/ingress.class: "traefik"
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip-prefix@kubernetescrd
 spec:
   tls:
     - hosts:
@@ -16,17 +17,10 @@ spec:
   - host: i14a701.p.ssafy.io
     http:
       paths:
-      - path: /
+      - path: /minio
         pathType: Prefix
         backend:
           service:
-            name: roundy-frontend-svc
+            name: minio-svc
             port:
-              number: 80
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: roundy-backend-svc
-            port:
-              number: 8080
+              number: 8886
