@@ -2,8 +2,8 @@ package com.ssafya701.roundy.global.auth;
 
 import com.ssafya701.roundy.global.error.CustomException;
 import com.ssafya701.roundy.global.error.ErrorEnum;
-import com.ssafya701.roundy.user.entity.User;
-import com.ssafya701.roundy.user.repository.UserRepository;
+import com.ssafya701.roundy.auth.entity.User;
+import com.ssafya701.roundy.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
