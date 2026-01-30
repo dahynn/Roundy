@@ -1,6 +1,6 @@
 package com.ssafya701.roundy.global.auth;
 
-import com.ssafya701.roundy.user.entity.User;
+import com.ssafya701.roundy.auth.entity.User;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;

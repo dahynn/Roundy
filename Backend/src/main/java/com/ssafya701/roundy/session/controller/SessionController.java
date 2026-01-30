@@ -9,16 +9,14 @@ import com.ssafya701.roundy.session.dto.response.RoomMembersResponse;
 import com.ssafya701.roundy.session.dto.response.SessionEnterResponse;
 import com.ssafya701.roundy.session.dto.response.SessionStatusResponse;
 import com.ssafya701.roundy.session.service.SessionService;
-import com.ssafya701.roundy.user.entity.User;
-import com.ssafya701.roundy.user.enums.GenderType;
-import com.ssafya701.roundy.user.repository.UserRepository;
+import com.ssafya701.roundy.auth.entity.User;
+import com.ssafya701.roundy.auth.enums.GenderType;
+import com.ssafya701.roundy.auth.repository.UserRepository;
 import com.ssafya701.roundy.verification.service.VerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 @Slf4j
 @RestController

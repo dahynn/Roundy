@@ -2,8 +2,7 @@ package com.ssafya701.roundy.global.jwt;
 
 import com.ssafya701.roundy.global.error.CustomException;
 import com.ssafya701.roundy.global.error.ErrorEnum;
-import com.ssafya701.roundy.user.enums.UserRole;
-import com.ssafya701.roundy.user.enums.UserStatus;
+import com.ssafya701.roundy.auth.enums.UserRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

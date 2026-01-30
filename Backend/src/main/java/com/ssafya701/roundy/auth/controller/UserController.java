@@ -1,9 +1,9 @@
-package com.ssafya701.roundy.user.controller;
+package com.ssafya701.roundy.auth.controller;
 
 import com.ssafya701.roundy.global.auth.PrincipalDetails;
 import com.ssafya701.roundy.global.common.CommonResponse;
-import com.ssafya701.roundy.user.dto.request.UserSignUpRequest;
-import com.ssafya701.roundy.user.service.UserService;
+import com.ssafya701.roundy.auth.dto.request.UserSignUpRequest;
+import com.ssafya701.roundy.auth.service.UserService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,8 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.ssafya701.roundy.user.dto.response.UserResponse;
-import com.ssafya701.roundy.user.dto.response.TokenPair;
+import com.ssafya701.roundy.auth.dto.response.UserResponse;
+import com.ssafya701.roundy.auth.dto.response.TokenPair;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -62,7 +62,7 @@ public class UserController {
     @GetMapping("/signup/details")
     public ResponseEntity<?> getRegistrationDetails(
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
-        com.ssafya701.roundy.user.entity.User user = principal.getUser();
+        com.ssafya701.roundy.auth.entity.User user = principal.getUser();
 
         return ResponseEntity.ok(CommonResponse.ofSuccess(UserResponse.from(user)));
     }
@@ -102,7 +102,7 @@ public class UserController {
     @Operation(summary = "온보딩 완료", description = "연애 성향 및 특징 정보를 입력하여 온보딩을 완료합니다. User 상태가 VALID로 변경되며 새로운 토큰이 발급됩니다.")
     @PostMapping("/onboarding")
     public ResponseEntity<?> completeOnboarding(
-            @Parameter(description = "선택한 Preference ID 목록", required = true) @RequestBody com.ssafya701.roundy.user.dto.request.OnboardingRequest request,
+            @Parameter(description = "선택한 Preference ID 목록", required = true) @RequestBody com.ssafya701.roundy.auth.dto.request.OnboardingRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
         TokenPair tokenPair = userService.completeOnboarding(principal.getUser().getId(), request.getPreferenceIds());
 

@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.dto.response;
+package com.ssafya701.roundy.auth.dto.response;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
