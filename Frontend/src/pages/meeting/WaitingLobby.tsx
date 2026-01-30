@@ -22,17 +22,20 @@ export default function WaitingLobby() {
 
   return (
     <div className="min-h-screen bg-[#FDF2F8] flex flex-col font-['Pretendard'] overflow-hidden">
-      {/* 1. 상단 헤더 영역 (보내주신 이미지 상단바 반영) */}
+      {/* 1. 상단 헤더 영역 */}
       <header className="w-full px-12 py-6 flex justify-between items-center bg-white/30 backdrop-blur-md">
-        {/* 왼쪽 로고 */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+        {/* 왼쪽 로고 - 클릭 시 랜딩이 아닌 홈으로 이동 */}
+        <div
+          className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+          onClick={() => navigate('/home')}
+        >
           <div className="w-9 h-9 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-xl flex items-center justify-center shadow-lg">
             <Heart size={20} fill="white" className="text-white" />
           </div>
           <span className="text-2xl font-black tracking-tighter text-[#1A1F36]">Roundy</span>
         </div>
 
-        {/* 오른쪽 상단 버튼 (다크모드/알림 이미지 반영) */}
+        {/* 오른쪽 상단 버튼 */}
         <div className="flex items-center gap-4 bg-white/80 p-2 px-4 rounded-2xl shadow-sm border border-white/50">
           <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
             <Moon size={22} />
@@ -47,36 +50,28 @@ export default function WaitingLobby() {
 
       {/* 2. 메인 대기 섹션 */}
       <main className="flex-1 flex items-center justify-center p-6 relative">
-        {/* 배경 은은한 빛 방울 (시안 느낌) */}
+        {/* 배경 빛 방울 디자인 */}
         <div className="absolute top-[20%] left-[10%] w-96 h-96 bg-pink-200/30 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-[20%] right-[10%] w-[500px] h-[500px] bg-purple-200/20 rounded-full blur-[130px] pointer-events-none"></div>
 
-        {/* 중앙 카드 패널 */}
         <div className="w-full max-w-2xl bg-white/70 backdrop-blur-2xl rounded-[50px] p-16 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.05)] border border-white/80 flex flex-col items-center">
-          {/* 하트 로딩 애니메이션 (보낸 이미지 참고) */}
+          {/* 하트 로딩 애니메이션 */}
           <div className="relative mb-14">
-            {/* 회전하는 하단 원형 가이드 */}
             <div className="w-28 h-28 border-[3px] border-gray-100 rounded-full"></div>
-            {/* 회전하는 핑크 게이지 */}
             <div className="absolute top-0 left-0 w-28 h-28 border-[3px] border-t-[#FF4D94] border-r-[#FF4D94]/30 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-            {/* 중앙 하트 */}
             <div className="absolute inset-0 flex items-center justify-center">
               <Heart size={36} fill="#FF4D94" className="text-[#FF4D94] animate-pulse" />
             </div>
           </div>
 
           {/* 타이틀 및 서브텍스트 */}
-          <h2 className="text-3xl font-black text-[#1A1F36] mb-4 tracking-tight">
+          <h2 className="text-3xl font-black text-[#1A1F36] mb-4 tracking-tight text-center">
             다른 유저들을 기다리고 있어요
           </h2>
-          <div>
-            <br />
-            <p className="text-gray-400 text-center font-medium leading-relaxed mb-12">
-              참여자들의 인증이 완료되면 소개팅이 시작되니 <br />
-              그전까지 마음에 여유를 가지고 준비해주세요.
-            </p>
-            <br />
-          </div>
+          <p className="text-gray-400 text-center font-medium leading-relaxed mb-12 px-6">
+            참여자들의 인증이 완료되면 소개팅이 시작되니 <br />
+            그전까지 마음에 여유를 가지고 준비해주세요.
+          </p>
 
           {/* 현재 대기 인원 뱃지 */}
           <div className="flex items-center gap-2 bg-[#FFF0F6] text-[#FF4D94] px-6 py-2.5 rounded-full mb-10 shadow-sm border border-pink-100">
@@ -103,12 +98,14 @@ export default function WaitingLobby() {
             </div>
           </div>
 
-          {/* 3. 대기열 나가기 (하단 작게) */}
+          {/* 3. 대기열 나가기 - 홈 화면으로 리다이렉트 */}
           <button
             onClick={() => {
-              if (confirm('대기열에서 나가시겠습니까? 참여 신청이 취소됩니다.')) navigate('/');
+              if (confirm('대기열에서 나가시겠습니까? 참여 신청이 취소됩니다.')) {
+                navigate('/home');
+              }
             }}
-            className="mt-20 flex items-center gap-1.5 text-gray-300 hover:text-gray-500 font-bold text-xs transition-all tracking-tighter"
+            className="mt-20 flex items-center gap-1.5 text-gray-300 hover:text-[#FF4D94] font-bold text-xs transition-all tracking-tighter"
           >
             <LogOut size={14} />
             <span>대기열 나가기</span>
@@ -118,12 +115,12 @@ export default function WaitingLobby() {
 
       {/* 푸터 카피라이트 */}
       <footer className="py-8 text-center">
-        <p className="text-[11px] text-gray-300 font-medium tracking-wide">
-          © 2026 Roundy Premium. All rights reserved.
+        <p className="text-[11px] text-gray-300 font-medium tracking-wide uppercase">
+          © 2026 Roundy Premium. Verified Members Only.
         </p>
       </footer>
 
-      {/* 커스텀 애니메이션 정의 */}
+      {/* 커스텀 애니메이션 */}
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }

@@ -1,21 +1,52 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LandingPage from './pages/LandingPage'; // 새로 만든 랜딩 페이지
-import HomePage from './pages/HomePage'; // 기존 로그인 후 홈
-import VerificationPage from './pages/VerificationPage';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import LandingPage from './pages/LandingPage';
+import HomePage from './pages/HomePage';
+import VerificationPage from '@/pages/VerificationPage';
 import WaitingLobby from './pages/meeting/WaitingLobby';
+import OnboardingFirst from './pages/auth/OnboardingFirst';
+import OnboardingSecond from './pages/auth/OnboardingSecond';
+import OnboardingThird from './pages/auth/OnboardingThird';
+import MessageListPage from './pages/message/MessageListPage';
+import ChatRoomPage from './pages/message/ChatRoomPage';
+
+function AppLayout() {
+  const location = useLocation();
+
+  // Navbar를 숨길 경로 정의
+  const hideNavbarPaths = ['/', '/verify', '/loading'];
+  const isOnboarding = location.pathname.startsWith('/onboarding');
+  const shouldHideNavbar = hideNavbarPaths.includes(location.pathname) || isOnboarding;
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-[#FAFBFF]">
+      {/* 1. 온보딩/랜딩이 아닐 때만 Navbar 표시 */}
+      {!shouldHideNavbar && <Navbar />}
+
+      {/* 2. 메인 영역: 온보딩 페이지라면 스크롤 허용(overflow-y-auto) */}
+      <main
+        className={`flex-1 h-full ${shouldHideNavbar ? 'ml-0' : 'ml-64'} ${isOnboarding ? 'overflow-y-auto' : 'overflow-hidden'}`}
+      >
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/onboarding" element={<OnboardingFirst />} />
+          <Route path="/onboarding/second" element={<OnboardingSecond />} />
+          <Route path="/onboarding/third" element={<OnboardingThird />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/messages" element={<MessageListPage />} />
+          <Route path="/messages/:matchId" element={<ChatRoomPage />} />
+          <Route path="/verify" element={<VerificationPage />} />
+          <Route path="/loading" element={<WaitingLobby />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
 
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* 1. 이제 서비스에 접속하면 가장 먼저 랜딩 페이지가 뜹니다 */}
-        <Route path="/" element={<LandingPage />} />
-
-        {/* 2. 로그인 이후의 화면들은 주소를 조금씩 옮겨줍니다 */}
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/verify" element={<VerificationPage />} />
-        <Route path="/loading" element={<WaitingLobby />} />
-      </Routes>
+      <AppLayout />
     </Router>
   );
 }
