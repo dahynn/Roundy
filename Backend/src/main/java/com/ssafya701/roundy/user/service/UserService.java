@@ -3,7 +3,6 @@ package com.ssafya701.roundy.user.service;
 import com.ssafya701.roundy.global.error.CustomException;
 import com.ssafya701.roundy.global.error.ErrorEnum;
 import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
-import com.ssafya701.roundy.global.util.FileUploader;
 import com.ssafya701.roundy.user.dto.request.UserSignUpRequest;
 import com.ssafya701.roundy.user.dto.response.KakaoUserInfoResponse;
 import com.ssafya701.roundy.user.dto.response.TokenPair;
@@ -35,7 +34,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final KakaoService kakaoService;
-    private final FileUploader fileUploader;
+    private final com.ssafya701.roundy.global.infra.minio.MinioService minioService;
     private final RedisTemplate<String, String> redisTemplate;
     private final UserPreferenceRepository userPreferenceRepository;
     private final com.ssafya701.roundy.preference.repository.PreferenceRepository preferenceRepository;
@@ -73,7 +72,9 @@ public class UserService {
     @Transactional
     public void signUp(Long userId, UserSignUpRequest request, MultipartFile file) {
         User user = findUserById(userId);
-        String profilePath = fileUploader.upload(file);
+        
+        // MinIO에 프로필 이미지 업로드 (경로 반환)
+        String profilePath = minioService.uploadImage(userId, file, "profile");
 
         user.signUp(request.getNickName(), request.getGender(), request.getBirthDate(), request.getMbti(), profilePath);
         // 토큰 재발급 안 함 (Role: GUEST -> GUEST, Status: JOINED -> JOINED)
@@ -82,7 +83,9 @@ public class UserService {
     @Transactional
     public void uploadVerificationPhoto(Long userId, MultipartFile file) {
         User user = findUserById(userId);
-        String verificationUrl = fileUploader.upload(file);
+        
+        // MinIO에 인증용 이미지 업로드 (경로 반환)
+        String verificationUrl = minioService.uploadImage(userId, file, "verification");
 
         user.uploadVerificationImage(verificationUrl);
     }

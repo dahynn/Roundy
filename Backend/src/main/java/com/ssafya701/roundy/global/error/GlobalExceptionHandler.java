@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
     // 비즈니스 로직 예외 - 400
     @ExceptionHandler(BusinessLogicException.class)
     public ResponseEntity<CommonResponse<Void>> handleBusinessLogicException(BusinessLogicException e) {
@@ -32,6 +31,27 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.ofFailure(e.getMessage()));
     }
 
+    // Rate Limiting 초과 - 429
+    @ExceptionHandler(com.ssafya701.roundy.global.exception.TooManyRequestsException.class)
+    public ResponseEntity<CommonResponse<Void>> handleTooManyRequestsException(
+            com.ssafya701.roundy.global.exception.TooManyRequestsException e) {
+        log.warn("Rate Limit Exceeded: {}", e.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(CommonResponse.ofFailure(e.getMessage()));
+    }
+
+    // 검증 기록 없음 - 404
+    @ExceptionHandler(com.ssafya701.roundy.global.exception.VerificationNotFoundException.class)
+    public ResponseEntity<CommonResponse<Void>> handleVerificationNotFoundException(
+            com.ssafya701.roundy.global.exception.VerificationNotFoundException e) {
+        log.warn("Verification Not Found: {}", e.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.ofFailure(e.getMessage()));
+    }
 
     // 그 외의 예외 발생시 - 500
     @ExceptionHandler(Exception.class)
