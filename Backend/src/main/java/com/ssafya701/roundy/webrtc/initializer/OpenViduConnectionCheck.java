@@ -23,42 +23,17 @@ public class OpenViduConnectionCheck implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("========================================");
-        log.info("🔍 OpenVidu 서버 연결 확인 시작");
-        log.info("OpenVidu URL: {}", openViduProperties.getUrl());
-        log.info("========================================");
-
         try {
-            // 간단한 연결 확인
+            // Silent connection check
             Map<String, Object> pingResult = openViduHealthService.pingOpenViduServer();
             
             if ("SUCCESS".equals(pingResult.get("status"))) {
-
-                // Ping-Pong 테스트 (선택적)
-                log.info("🏓 OpenVidu Ping-Pong 테스트 시작...");
+                // Silent ping-pong test
                 Map<String, Object> pongResult = openViduHealthService.testOpenViduCommunication();
-                
-                if ("SUCCESS".equals(pongResult.get("status"))) {
-                    log.info("🎉 OpenVidu Ping-Pong 테스트 성공!");
-                } else {
-                    log.warn("⚠️ OpenVidu Ping-Pong 테스트 실패");
-                }
-                
-            } else {
-                log.error("========================================");
-                log.error("❌ OpenVidu 서버 연결 실패!");
-                log.error("상태: {}", pingResult.get("status"));
-                log.error("메시지: {}", pingResult.get("message"));
-                log.error("========================================");
-                log.warn("⚠️ OpenVidu 기능이 정상적으로 작동하지 않을 수 있습니다.");
             }
             
         } catch (Exception e) {
-            log.error("========================================");
-            log.error("❌ OpenVidu 연결 확인 중 오류 발생");
-            log.error("오류 메시지: {}", e.getMessage());
-            log.error("========================================");
-            log.warn("⚠️ OpenVidu 서버 설정을 확인하세요.");
+            // Silent error handling
         }
     }
 }
