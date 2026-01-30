@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Check } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// 명세서 기반 선호도 타입 및 데이터 정의
 const PREFERENCE_DATA = [
   {
     id: 'RELATIONSHIP_GOAL',
@@ -147,103 +146,74 @@ export default function OnboardingThird() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // 항목 선택 핸들러
   const toggleItem = (groupId: string, item: string, limit: number) => {
     const itemKey = `${groupId}:${item}`;
     const currentGroupSelected = selectedIds.filter((id) => id.startsWith(groupId));
-
     if (selectedIds.includes(itemKey)) {
       setSelectedIds(selectedIds.filter((id) => id !== itemKey));
-    } else {
-      if (currentGroupSelected.length < limit) {
-        setSelectedIds([...selectedIds, itemKey]);
-      }
+    } else if (currentGroupSelected.length < limit) {
+      setSelectedIds([...selectedIds, itemKey]);
     }
   };
 
-  // 선택 완료 핸들러
   const handleComplete = () => {
     if (selectedIds.length !== 14) return;
-
-    // 실제 전송 시: preferenceIds: [1, 2, 3...] 형태의 숫자 배열로 가공 필요
-    console.log('선택된 취향 목록:', selectedIds);
     alert('취향 수집 완료! 로테이션 소개팅에 오신걸 환영합니다.');
     navigate('/home');
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF2F8] flex flex-col items-center py-10 font-['Pretendard']">
-      {/* 상단 네비게이션 */}
-      <div className="w-full max-w-2xl px-6 flex items-center justify-between mb-8 z-10">
+    <div className="min-h-full bg-[#FDF2F8] flex flex-col items-center py-10 px-6 font-['Pretendard']">
+      <div className="w-full max-w-2xl flex items-center justify-between mb-8 z-10">
         <button
           onClick={() => navigate(-1)}
           className="p-2 hover:bg-white/50 rounded-full transition-all"
         >
-          <ChevronLeft size={24} className="text-[#1A1F36]" />
+          <ChevronLeft size={24} />
         </button>
         <h1 className="text-xl font-black text-[#1A1F36]">연애 성향 및 선호 설정</h1>
-        <div className="w-10" /> {/* 밸런스용 */}
+        <div className="w-10" />
       </div>
 
-      {/* 메인 스크롤 카드 */}
-      <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[40px] shadow-2xl border border-white z-10 overflow-hidden flex flex-col h-[80vh]">
-        <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+      <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[40px] shadow-2xl border border-white z-10 overflow-hidden flex flex-col h-[75vh]">
+        <div className="flex-1 overflow-y-auto p-8 md:p-12">
           {PREFERENCE_DATA.map((group) => {
-            const currentSelectedCount = selectedIds.filter((id) => id.startsWith(group.id)).length;
-
+            const count = selectedIds.filter((id) => id.startsWith(group.id)).length;
             return (
               <section key={group.id} className="mb-12 last:mb-0">
                 <div className="flex items-center gap-2 mb-6">
-                  <h3 className="text-lg font-black text-[#1A1F36]">{group.title}</h3>
+                  <h3 className="text-lg font-black">{group.title}</h3>
                   <span
-                    className={`text-sm font-bold ${currentSelectedCount === group.limit ? 'text-[#FF4D94]' : 'text-gray-300'}`}
+                    className={`text-sm font-bold ${count === group.limit ? 'text-[#FF4D94]' : 'text-gray-300'}`}
                   >
-                    {currentSelectedCount}/{group.limit}
+                    {count}/{group.limit}
                   </span>
                 </div>
-
                 <div className="flex flex-wrap gap-3">
-                  {group.items.map((item) => {
-                    const isSelected = selectedIds.includes(`${group.id}:${item}`);
-                    return (
-                      <button
-                        key={item}
-                        onClick={() => toggleItem(group.id, item, group.limit)}
-                        className={`px-5 py-3 rounded-full text-sm font-bold transition-all border-2 ${
-                          isSelected
-                            ? 'border-[#FF4D94] bg-pink-50 text-[#FF4D94] shadow-sm'
-                            : 'border-gray-50 bg-white text-gray-400 hover:border-pink-100 hover:text-gray-500'
-                        }`}
-                      >
-                        {item}
-                      </button>
-                    );
-                  })}
+                  {group.items.map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => toggleItem(group.id, item, group.limit)}
+                      className={`px-5 py-3 rounded-full text-sm font-bold border-2 transition-all ${selectedIds.includes(`${group.id}:${item}`) ? 'border-[#FF4D94] bg-pink-50 text-[#FF4D94]' : 'border-gray-50 bg-white text-gray-400'}`}
+                    >
+                      {item}
+                    </button>
+                  ))}
                 </div>
               </section>
             );
           })}
         </div>
-
-        {/* 하단 고정 완료 버튼 */}
         <div className="p-8 bg-white border-t border-gray-50">
           <Button
             disabled={selectedIds.length !== 14}
             onClick={handleComplete}
-            className={`w-full py-8 rounded-[24px] text-xl font-bold shadow-xl transition-all ${
-              selectedIds.length === 14
-                ? 'bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] text-white hover:scale-[1.02]'
-                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-            }`}
+            className={`w-full py-8 rounded-[24px] text-xl font-bold ${selectedIds.length === 14 ? 'bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] text-white' : 'bg-gray-100 text-gray-300'}`}
           >
             {selectedIds.length === 14 ? '완료' : `총 14개 중 ${selectedIds.length}개 선택됨`}
           </Button>
         </div>
       </div>
-
-      <p className="mt-8 text-[11px] text-gray-300 font-bold uppercase tracking-widest">
-        © 2026 ROUNDY. PREFERENCE ALGORITHM ACTIVATED.
-      </p>
     </div>
   );
 }

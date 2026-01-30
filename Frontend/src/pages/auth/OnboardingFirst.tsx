@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, User, Camera } from 'lucide-react';
+import { Heart, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -52,7 +52,7 @@ export default function OnboardingFirst() {
   const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 
   return (
-    <div className="min-h-screen bg-[#FDF2F8] flex flex-col items-center py-20 relative overflow-x-hidden font-['Pretendard']">
+    <div className="min-h-full bg-[#FDF2F8] flex flex-col items-center py-20 px-6 font-['Pretendard']">
       <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-pink-200/20 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="text-center mb-10 z-10">
@@ -135,7 +135,7 @@ export default function OnboardingFirst() {
                   <SelectTrigger className="h-14 rounded-2xl bg-white border-gray-100 focus:ring-[#FF4D94]">
                     <SelectValue placeholder="년" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60 bg-white z-[110]">
+                  <SelectContent className="max-h-60 bg-white">
                     {years.map((y) => (
                       <SelectItem key={y} value={y}>
                         {y}년
@@ -147,7 +147,7 @@ export default function OnboardingFirst() {
                   <SelectTrigger className="h-14 rounded-2xl bg-white border-gray-100 focus:ring-[#FF4D94]">
                     <SelectValue placeholder="월" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white z-[110]">
+                  <SelectContent className="bg-white">
                     {months.map((m) => (
                       <SelectItem key={m} value={m}>
                         {m}월
@@ -159,7 +159,7 @@ export default function OnboardingFirst() {
                   <SelectTrigger className="h-14 rounded-2xl bg-white border-gray-100 focus:ring-[#FF4D94]">
                     <SelectValue placeholder="일" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60 bg-white z-[110]">
+                  <SelectContent className="max-h-60 bg-white">
                     {days.map((d) => (
                       <SelectItem key={d} value={d}>
                         {d}일

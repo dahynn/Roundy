@@ -1,43 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/layout/Navbar';
 import Header from '@/components/layout/Header';
 import SessionCard from '@/components/home/SessionCard';
 
 export default function HomePage() {
   const navigate = useNavigate();
-
-  // 현재 유저 성별 (임시 설정: 남성)
   const userGender = 'MALE';
-
-  // 실시간 세션 데이터 (남녀 분리 카운팅)
   const [sessionData] = useState({
-    maleCount: 1, // 현재 남자 1명
-    femaleCount: 1, // 현재 여자 1명
+    maleCount: 1,
+    femaleCount: 1,
     maxPerGender: 3,
-    totalMax: 6,
   });
 
-  const handleJoinClick = () => {
-    const currentGenderCount =
-      userGender === 'MALE' ? sessionData.maleCount : sessionData.femaleCount;
-
-    // 정원 초과 체크
-    if (currentGenderCount >= sessionData.maxPerGender) {
-      alert('죄송합니다. 해당 성별의 정원이 마감되었습니다.');
-      return;
-    }
-
-    // 즉시 본인 인증 페이지로 이동
-    navigate('/verify');
-  };
+  const handleJoinClick = () => navigate('/verify');
 
   return (
-    <div className="min-h-screen bg-[#FAFBFF] flex font-['Pretendard']">
-      <Navbar />
-      <main className="flex-1 ml-64 flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center p-8">
+    <div className="h-full flex flex-col overflow-hidden">
+      <Header />
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-pink-100/30 rounded-full blur-[120px] pointer-events-none opacity-60" />
+
+        {/* 우측 화면 정중앙에 꽉 차게 배치 */}
+        <div className="z-10 w-full max-w-[1400px] flex justify-center items-center transition-all">
           <SessionCard
             userGender={userGender}
             maleCount={sessionData.maleCount}
@@ -46,7 +30,14 @@ export default function HomePage() {
             onJoin={handleJoinClick}
           />
         </div>
-      </main>
+
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+          <p className="text-gray-400 text-sm font-semibold animate-bounce">
+            현재 <span className="text-[#FF4D94] font-extrabold">LIVE</span> 매칭 진행 중! 버튼을
+            눌러 입장하세요.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

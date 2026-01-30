@@ -1,44 +1,46 @@
-import React from 'react';
-import { Home, Mail, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Home, Mail, User, Heart } from 'lucide-react';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
-    { name: '홈', icon: Home, path: '/' },
-    { name: '쪽지함', icon: Mail, path: '/messages' },
-    { name: '마이페이지', icon: User, path: '/mypage' },
+    { icon: <Home size={22} />, label: '홈', path: '/home' }, // 경로 고정
+    { icon: <Mail size={22} />, label: '쪽지함', path: '/messages' },
+    { icon: <User size={22} />, label: '마이페이지', path: '/mypage' },
   ];
 
   return (
-    <nav className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50">
-      <div className="p-8">
-        <div className="flex items-center gap-2 mb-12 cursor-pointer" onClick={() => navigate('/')}>
-          <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-            R
-          </div>
-          <span className="text-xl font-bold text-[#1A1F36]">Roundy</span>
+    <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 p-8 flex flex-col gap-10 z-50">
+      {/* 로고 클릭 시에도 /home으로 이동 */}
+      <div
+        className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
+        onClick={() => navigate('/home')}
+      >
+        <div className="w-9 h-9 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-xl flex items-center justify-center shadow-lg shadow-pink-100">
+          <Heart size={20} fill="white" className="text-white" />
         </div>
+        <span className="text-2xl font-black text-[#1A1F36] tracking-tighter">Roundy</span>
+      </div>
 
-        <div className="space-y-2">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.name}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive ? 'bg-pink-50 text-pink-600 font-bold' : 'text-gray-400 hover:bg-gray-50'
-                }`}
-              >
-                <item.icon size={20} />
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex flex-col gap-3">
+        {menuItems.map((item) => (
+          <div
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className={`flex items-center gap-4 px-5 py-4 rounded-2xl cursor-pointer transition-all ${
+              location.pathname === item.path
+                ? 'bg-[#FDF2F8] text-[#FF4D94] shadow-sm'
+                : 'text-[#8792A2] hover:bg-gray-50 hover:text-[#1A1F36]'
+            }`}
+          >
+            <div className={location.pathname === item.path ? 'text-[#FF4D94]' : 'text-[#8792A2]'}>
+              {item.icon}
+            </div>
+            <span className="font-bold text-[16px]">{item.label}</span>
+          </div>
+        ))}
       </div>
     </nav>
   );
