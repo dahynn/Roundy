@@ -18,7 +18,6 @@ public class JoinRoomMessage implements WsMessage {
 
     public JoinRoomMessage(String roomId) {
         this.roomId = roomId;
-        this.requestId = null;
     }
     
     @Override

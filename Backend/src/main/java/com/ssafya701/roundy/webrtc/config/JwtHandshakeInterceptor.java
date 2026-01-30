@@ -1,18 +1,14 @@
 package com.ssafya701.roundy.webrtc.config;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -34,29 +30,29 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
         // ========== 테스트용: JWT 검증 비활성화 ==========
         // TODO: 운영 배포 전 반드시 아래 주석 해제하고 테스트 코드 삭제할 것!
-
+        
         String query = request.getURI().getQuery();
-
+        
         // 테스트용: userId, username, gender, mode를 쿼리 파라미터에서 직접 추출
         String userIdParam = extractQueryParam(query, "userId");
         String usernameParam = extractQueryParam(query, "username");
         String genderParam = extractQueryParam(query, "gender");
         String modeParam = extractQueryParam(query, "mode");
-
+        
         Long userId = userIdParam != null ? Long.parseLong(userIdParam) : 1L;
         String username = usernameParam != null ? usernameParam : "testUser";
         String gender = genderParam != null ? genderParam : "MALE";  // 기본값: MALE
         String mode = modeParam != null ? modeParam : "FREE_TALK";  // 기본값: FREE_TALK
-
+        
         attributes.put("userId", userId);
         attributes.put("username", username);
         attributes.put("gender", gender);
         attributes.put("mode", mode);
-
-        log.warn("🔓 [테스트 모드] JWT 검증 SKIP - userId={}, username={}, gender={}, mode={}",
+        
+        log.warn("🔓 [테스트 모드] JWT 검증 SKIP - userId={}, username={}, gender={}, mode={}", 
                 userId, username, gender, mode);
         return true;
-
+        
         /* ========== 원래 JWT 검증 로직 (주석 처리) ==========
         if (query == null) {
             log.warn("WebSocket 연결 실패: 쿼리 파라미터 없음");
@@ -118,7 +114,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         }
         return null;
     }
-
+    
     // 테스트용: 범용 쿼리 파라미터 추출 메소드
     private String extractQueryParam(String query, String paramName) {
         if (query == null) return null;
