@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openvidu-server
+  namespace: roundy-app
+  labels:
+    app: openvidu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openvidu
+  template:
+    metadata:
+      labels:
+        app: openvidu
+    spec:
+      containers:
+      - name: openvidu-container
+        image: openvidu/openvidu-dev:latest
+        ports:
+        - containerPort: 4443
+        envFrom:
+        - secretRef:
+            name: openvidu-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openvidu-service
+  namespace: roundy-app
+spec:
+  selector:
+    app: openvidu
+  ports:
+    - protocol: TCP
+      port: 4443
+      targetPort: 4443
+  type: ClusterIP

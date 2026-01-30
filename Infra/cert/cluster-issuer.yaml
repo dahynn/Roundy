@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-cert
+spec:
+  acme:
+    # Let's Encrypt 운영 서버 주소
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ${ADMIN_EMAIL}
+    privateKeySecretRef:
+      name: letsencrypt-key
+    solvers:
+    - http01:
+        ingress:
+          class: traefik

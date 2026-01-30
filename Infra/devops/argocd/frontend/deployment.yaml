@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roundy-frontend
+  namespace: roundy-app
+  labels:
+    app: roundy-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: roundy-frontend
+  template:
+    metadata:
+      labels:
+        app: roundy-frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: smj100394/roundy_front:1
+        ports:
+        - containerPort: 80 
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
