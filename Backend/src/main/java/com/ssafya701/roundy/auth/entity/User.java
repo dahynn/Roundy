@@ -1,9 +1,9 @@
-package com.ssafya701.roundy.user.entity;
+package com.ssafya701.roundy.auth.entity;
 
 import com.ssafya701.roundy.global.common.BaseEntity;
-import com.ssafya701.roundy.user.enums.GenderType;
-import com.ssafya701.roundy.user.enums.UserRole;
-import com.ssafya701.roundy.user.enums.UserStatus;
+import com.ssafya701.roundy.auth.enums.GenderType;
+import com.ssafya701.roundy.auth.enums.UserRole;
+import com.ssafya701.roundy.auth.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.enums;
+package com.ssafya701.roundy.auth.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

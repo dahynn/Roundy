@@ -1,6 +1,6 @@
-package com.ssafya701.roundy.user.repository;
+package com.ssafya701.roundy.auth.repository;
 
-import com.ssafya701.roundy.user.entity.UserPreference;
+import com.ssafya701.roundy.auth.entity.UserPreference;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.entity;
+package com.ssafya701.roundy.auth.entity;
 
 import com.ssafya701.roundy.preference.entity.Preference;
 import jakarta.persistence.*;

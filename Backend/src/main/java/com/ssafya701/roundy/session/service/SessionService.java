@@ -6,7 +6,7 @@ import com.ssafya701.roundy.session.dto.RoomMatchResult;
 import com.ssafya701.roundy.session.dto.response.RoomMemberInfo;
 import com.ssafya701.roundy.session.dto.response.RoomMembersResponse;
 import com.ssafya701.roundy.session.dto.response.SessionStatusResponse;
-import com.ssafya701.roundy.user.enums.GenderType;
+import com.ssafya701.roundy.auth.enums.GenderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;

@@ -1,7 +1,7 @@
 package com.ssafya701.roundy.webrtc.controller;
 
 import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
-import com.ssafya701.roundy.user.enums.UserRole;
+import com.ssafya701.roundy.auth.enums.UserRole;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import lombok.AllArgsConstructor;

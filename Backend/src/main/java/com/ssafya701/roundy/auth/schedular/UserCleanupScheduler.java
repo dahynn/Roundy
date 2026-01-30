@@ -1,7 +1,7 @@
-package com.ssafya701.roundy.user.schedular; // 패키지 위치는 원하시는 곳에
+package com.ssafya701.roundy.auth.schedular; // 패키지 위치는 원하시는 곳에
 
-import com.ssafya701.roundy.user.enums.UserRole;
-import com.ssafya701.roundy.user.repository.UserRepository;
+import com.ssafya701.roundy.auth.enums.UserRole;
+import com.ssafya701.roundy.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

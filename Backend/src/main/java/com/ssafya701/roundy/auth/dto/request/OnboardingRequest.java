@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.user.dto.request;
+package com.ssafya701.roundy.auth.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;

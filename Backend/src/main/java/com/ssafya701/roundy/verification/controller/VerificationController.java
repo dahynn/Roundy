@@ -103,4 +103,23 @@ public class VerificationController {
     }
 
 
+    /**
+     * 내 검증용 사진 URL 조회
+     * GET /api/verification/verify
+     */
+    @GetMapping("/verify")
+    public ResponseEntity<CommonResponse<com.ssafya701.roundy.verification.dto.response.VerificationImageResponse>> getVerificationPhoto(
+            @RequestHeader("Authorization") String jwt) {
+        
+        String token = jwt.replace("Bearer ", "");
+        jwtTokenProvider.validateToken(token);
+        Long userId = jwtTokenProvider.getUserId(token);
+
+        // MinIO에서 URL 생성
+        String verificationImgUrl = minioService.getImageUrl(userId, "verification");
+        
+        return ResponseEntity.ok(CommonResponse.ofSuccess(
+                new com.ssafya701.roundy.verification.dto.response.VerificationImageResponse(verificationImgUrl)
+        ));
+    }
 }

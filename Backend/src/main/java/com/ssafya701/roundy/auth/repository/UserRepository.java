@@ -1,7 +1,7 @@
-package com.ssafya701.roundy.user.repository;
+package com.ssafya701.roundy.auth.repository;
 
-import com.ssafya701.roundy.user.entity.User;
-import com.ssafya701.roundy.user.enums.UserRole;
+import com.ssafya701.roundy.auth.entity.User;
+import com.ssafya701.roundy.auth.enums.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;

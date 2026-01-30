@@ -1,7 +1,7 @@
-package com.ssafya701.roundy.user.dto.response;
+package com.ssafya701.roundy.auth.dto.response;
 
-import com.ssafya701.roundy.user.entity.User;
-import com.ssafya701.roundy.user.enums.GenderType;
+import com.ssafya701.roundy.auth.entity.User;
+import com.ssafya701.roundy.auth.enums.GenderType;
 import lombok.Builder;
 import lombok.Getter;
 
