@@ -31,10 +31,3 @@ spec:
             name: argocd-server
             port:
               number: 8888
-      - path: /minio
-        pathType: Prefix
-        backend:
-          service:
-            name: minio-svc
-            port:
-              number: 8886

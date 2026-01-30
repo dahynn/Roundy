@@ -7,6 +7,7 @@ metadata:
     kubernetes.io/ingress.class: "traefik"
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip-prefix@kubernetescrd
 spec:
   tls:
     - hosts:
@@ -30,3 +31,10 @@ spec:
             name: roundy-backend-svc
             port:
               number: 8080
+      - path: /minio
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-svc
+            port:
+              number: 8886
