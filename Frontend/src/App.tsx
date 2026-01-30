@@ -1,35 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import LandingPage from './pages/LandingPage';
+import HomePage from './pages/HomePage';
+import VerificationPage from '@/pages/VerificationPage';
+import WaitingLobby from './pages/meeting/WaitingLobby';
+import RotationTestPage from './pages/meeting/RotationTest';
+import OnboardingFirst from './pages/auth/OnboardingFirst';
+import OnboardingSecond from './pages/auth/OnboardingSecond';
+import OnboardingThird from './pages/auth/OnboardingThird';
+import MessageListPage from './pages/message/MessageListPage';
+import ChatRoomPage from './pages/message/ChatRoomPage';
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppLayout() {
+    const location = useLocation();
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    // Navbar를 숨길 경로 정의
+    const hideNavbarPaths = ['/', '/verify', '/loading'];
+    const isOnboarding = location.pathname.startsWith('/onboarding');
+    const shouldHideNavbar = hideNavbarPaths.includes(location.pathname) || isOnboarding;
+
+    return (
+        <div className="flex h-screen w-full overflow-hidden bg-[#FAFBFF]">
+            {/* 1. 온보딩/랜딩이 아닐 때만 Navbar 표시 */}
+            {!shouldHideNavbar && <Navbar/>}
+
+            {/* 2. 메인 영역: 온보딩 페이지라면 스크롤 허용(overflow-y-auto) */}
+            <main
+                className={`flex-1 h-full ${shouldHideNavbar ? 'ml-0' : 'ml-64'} ${isOnboarding ? 'overflow-y-auto' : 'overflow-hidden'}`}
+            >
+                <Routes>
+                    <Route path="/" element={<LandingPage/>}/>
+                    <Route path="/onboarding" element={<OnboardingFirst/>}/>
+                    <Route path="/onboarding/second" element={<OnboardingSecond/>}/>
+                    <Route path="/onboarding/third" element={<OnboardingThird/>}/>
+                    <Route path="/home" element={<HomePage/>}/>
+                    <Route path="/messages" element={<MessageListPage/>}/>
+                    <Route path="/messages/:matchId" element={<ChatRoomPage/>}/>
+                    <Route path="/verify" element={<VerificationPage/>}/>
+                    <Route path="/loading" element={<WaitingLobby/>}/>
+                    <Route path="/meeting" element={<RotationTestPage/>}/>
+
+                </Routes>
+            </main>
+        </div>
+    );
 }
 
-export default App
+function App() {
+    return (
+        <Router>
+            <AppLayout/>
+        </Router>
+    );
+}
+
+export default App;
