@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 기본 API 설정
 export const api = axios.create({
-  baseURL: 'https://lab.ssafy.com/api/v1', // 실제 백엔드 주소로 나중에 변경
+  baseURL: 'http://localhost:8080/api', // 로컬 테스트용 주소
   headers: {
     'Content-Type': 'multipart/form-data',
   },
