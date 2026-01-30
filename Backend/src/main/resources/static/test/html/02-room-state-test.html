@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방 상태 및 데이터 유지 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.success {
+            background: #28a745;
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .participants-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .participant-item {
+            background: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .participant-item.me {
+            background: #e7f3ff;
+            border: 2px solid #0066cc;
+        }
+
+        .participant-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .participant-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .participant-id {
+            font-size: 12px;
+            color: #666;
+            font-family: monospace;
+        }
+
+        .room-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #f5576c;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px;
+            border-left: 3px solid transparent;
+            padding-left: 8px;
+        }
+
+        .log-entry.info { border-left-color: #4fc3f7; }
+        .log-entry.success { border-left-color: #66bb6a; }
+        .log-entry.error { border-left-color: #ef5350; }
+        .log-entry.warning { border-left-color: #ffca28; }
+
+        .timestamp {
+            color: #888;
+            font-size: 10px;
+            margin-right: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .round-status {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .round-status.active {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+        }
+
+        .data-persistence {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .data-persistence-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .data-item {
+            background: white;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 방 상태 및 데이터 유지 테스트</h1>
+        <p class="subtitle">방 입장/퇴장, 참가자 관리, 상태 데이터 유지 확인</p>
+
+        <div class="grid">
+            <!-- 연결 설정 -->
+            <div class="card">
+                <div class="card-title">
+                    1️⃣ 연결 설정
+                    <span class="status-badge disconnected" id="connectionStatus">연결 안 됨</span>
+                </div>
+
+                <div class="input-group">
+                    <label>User ID</label>
+                    <input type="number" id="userId" value="1">
+                </div>
+
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="username" value="testUser1">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="initConnection()" id="initBtn">연결 초기화</button>
+                    <button onclick="disconnect()" id="disconnectBtn" disabled class="danger">연결 해제</button>
+                </div>
+            </div>
+
+            <!-- 방 관리 -->
+            <div class="card">
+                <div class="card-title">2️⃣ 방 관리</div>
+
+                <div class="input-group">
+                    <label>Room ID</label>
+                    <input type="text" id="roomId" value="test-room-001">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="joinRoom()" id="joinBtn" disabled class="success">방 입장</button>
+                    <button onclick="leaveRoom()" id="leaveBtn" disabled class="secondary">방 퇴장</button>
+                    <button onclick="getRoomState()" id="getStateBtn" disabled>상태 조회</button>
+                </div>
+
+                <div id="currentRoomInfo" style="margin-top: 15px; display: none;">
+                    <div class="round-status" id="roundStatus">
+                        <div style="font-size: 12px; opacity: 0.9;">현재 상태</div>
+                        <div style="font-size: 18px; font-weight: bold;" id="roundStatusText">대기 중</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- 방 정보 -->
+            <div class="card">
+                <div class="card-title">3️⃣ 방 상태 정보</div>
+
+                <div class="room-info-grid">
+                    <div class="info-item">
+                        <div class="info-label">참가자 수</div>
+                        <div class="info-value" id="participantCount">0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">방 모드</div>
+                        <div class="info-value" id="roomMode" style="font-size: 1.2em;">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">현재 라운드</div>
+                        <div class="info-value" id="currentRound">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">라운드 활성</div>
+                        <div class="info-value" id="roundActive" style="font-size: 1.2em;">❌</div>
+                    </div>
+                </div>
+
+                <!-- 데이터 유지 확인 -->
+                <div class="data-persistence">
+                    <div class="data-persistence-title">📊 데이터 유지 상태</div>
+                    <div class="data-item">
+                        마지막 업데이트: <span id="lastUpdate">-</span>
+                    </div>
+                    <div class="data-item">
+                        총 메시지 수신: <span id="messageCount">0</span>
+                    </div>
+                    <div class="data-item">
+                        세션 유지 시간: <span id="sessionTime">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 참가자 목록 -->
+            <div class="card">
+                <div class="card-title">
+                    4️⃣ 참가자 목록
+                    <span style="font-size: 14px; font-weight: normal; color: #666;">
+                        (<span id="participantCountInList">0</span>명)
+                    </span>
+                </div>
+
+                <ul class="participants-list" id="participantsList">
+                    <li class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div>방에 입장하면 참가자 목록이 표시됩니다</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="card">
+            <div class="card-title">
+                5️⃣ 이벤트 로그
+                <button onclick="clearLog()" style="float: right; padding: 8px 16px; font-size: 12px;">
+                    로그 지우기
+                </button>
+            </div>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry info">
+                    <span class="timestamp">[시작]</span>
+                    <span>테스트를 시작하려면 '연결 초기화' 버튼을 클릭하세요.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let jwtToken = null;
+        let currentRoomId = null;
+        let currentUserId = null;
+        let messageCount = 0;
+        let sessionStartTime = null;
+        let sessionInterval = null;
+        let roomState = null;
+
+        // 연결 초기화
+        async function initConnection() {
+            const userId = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+
+            if (!userId || !username) {
+                addLog('error', 'User ID와 Username을 입력하세요.');
+                return;
+            }
+
+            currentUserId = userId;
+
+            try {
+                addLog('info', '1단계: JWT 토큰 발급 중...');
+                
+                const response = await fetch('http://localhost:8080/api/webrtc/test/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: parseInt(userId),
+                        username: username
+                    })
+                });
+
+                const data = await response.json();
+                jwtToken = data.token;
+                addLog('success', '✅ JWT 토큰 발급 완료');
+
+                addLog('info', '2단계: WebSocket 연결 중...');
+                await connectWebSocket();
+
+            } catch (error) {
+                addLog('error', `❌ 초기화 실패: ${error.message}`);
+            }
+        }
+
+        // WebSocket 연결
+        function connectWebSocket() {
+            return new Promise((resolve, reject) => {
+                const wsUrl = `ws://localhost:8080/ws/webrtc?token=${jwtToken}`;
+                
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    addLog('success', '✅ WebSocket 연결 성공');
+                    updateConnectionStatus(true);
+                    
+                    document.getElementById('joinBtn').disabled = false;
+                    document.getElementById('getStateBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    document.getElementById('initBtn').disabled = true;
+                    
+                    sessionStartTime = Date.now();
+                    startSessionTimer();
+                    resolve();
+                };
+
+                ws.onmessage = (event) => {
+                    messageCount++;
+                    document.getElementById('messageCount').textContent = messageCount;
+                    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ko-KR');
+                    
+                    try {
+                        const message = JSON.parse(event.data);
+                        handleMessage(message);
+                    } catch (e) {
+                        addLog('warning', '메시지 파싱 실패');
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    addLog('error', '❌ WebSocket 에러');
+                    reject(error);
+                };
+
+                ws.onclose = () => {
+                    addLog('warning', '🔌 WebSocket 연결 종료');
+                    updateConnectionStatus(false);
+                    resetUI();
+                };
+            });
+        }
+
+        // 메시지 처리
+        function handleMessage(message) {
+            addLog('info', `📨 수신: ${message.type}`);
+
+            switch (message.type) {
+                case 'JOIN_OK':
+                    handleJoinOk(message);
+                    break;
+                case 'ROOM_STATE':
+                    handleRoomState(message);
+                    break;
+                case 'USER_JOINED':
+                    handleUserJoined(message);
+                    break;
+                case 'USER_LEFT':
+                    handleUserLeft(message);
+                    break;
+                case 'ROUND_START':
+                    handleRoundStart(message);
+                    break;
+                case 'ROUND_END':
+                    handleRoundEnd(message);
+                    break;
+                case 'ERROR':
+                    addLog('error', `에러: ${message.message}`);
+                    break;
+            }
+        }
+
+        // JOIN_OK 처리
+        function handleJoinOk(message) {
+            currentRoomId = message.roomId;
+            addLog('success', `✅ 방 입장 완료: ${message.roomId}`);
+            
+            document.getElementById('joinBtn').disabled = true;
+            document.getElementById('leaveBtn').disabled = false;
+            document.getElementById('currentRoomInfo').style.display = 'block';
+        }
+
+        // ROOM_STATE 처리
+        function handleRoomState(message) {
+            roomState = message;
+            addLog('info', `방 상태 업데이트: 참가자 ${message.participantCount}명`);
+            
+            // 방 정보 업데이트
+            document.getElementById('participantCount').textContent = message.participantCount;
+            document.getElementById('roomMode').textContent = message.mode || '-';
+            document.getElementById('roundActive').textContent = message.roundActive ? '✅' : '❌';
+            
+            if (message.currentRound) {
+                document.getElementById('currentRound').textContent = 
+                    `${message.currentRound.currentRound}/${message.currentRound.totalRounds}`;
+            } else {
+                document.getElementById('currentRound').textContent = '-';
+            }
+
+            // 참가자 목록 업데이트
+            updateParticipantsList(message.participants);
+
+            // 라운드 상태 업데이트
+            updateRoundStatus(message.roundActive);
+        }
+
+        // 참가자 목록 업데이트
+        function updateParticipantsList(participants) {
+            const list = document.getElementById('participantsList');
+            list.innerHTML = '';
+            
+            document.getElementById('participantCountInList').textContent = participants.length;
+
+            if (participants.length === 0) {
+                list.innerHTML = `
+                    <li class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div>참가자가 없습니다</div>
+                    </li>
+                `;
+                return;
+            }
+
+            participants.forEach(p => {
+                const li = document.createElement('li');
+                li.className = 'participant-item';
+                if (p.userId == currentUserId) {
+                    li.classList.add('me');
+                }
+                
+                li.innerHTML = `
+                    <div class="participant-info">
+                        <div class="participant-name">
+                            ${p.nickname || `User ${p.userId}`}
+                            ${p.userId == currentUserId ? ' (나)' : ''}
+                        </div>
+                        <div class="participant-id">ID: ${p.userId} | Session: ${p.sessionId.substring(0, 8)}...</div>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // 라운드 상태 업데이트
+        function updateRoundStatus(isActive) {
+            const status = document.getElementById('roundStatus');
+            const text = document.getElementById('roundStatusText');
+            
+            if (isActive) {
+                status.classList.add('active');
+                text.textContent = '🎮 라운드 진행 중';
+            } else {
+                status.classList.remove('active');
+                text.textContent = '⏸️ 대기 중';
+            }
+        }
+
+        // 사용자 입장 처리
+        function handleUserJoined(message) {
+            addLog('success', `👤 ${message.nickname || message.userId}님이 입장했습니다`);
+        }
+
+        // 사용자 퇴장 처리
+        function handleUserLeft(message) {
+            addLog('warning', `👋 ${message.nickname || message.userId}님이 퇴장했습니다`);
+        }
+
+        // 라운드 시작
+        function handleRoundStart(message) {
+            addLog('success', `🎮 라운드 ${message.roundNumber} 시작!`);
+            updateRoundStatus(true);
+        }
+
+        // 라운드 종료
+        function handleRoundEnd(message) {
+            addLog('info', `⏹️ 라운드 ${message.roundNumber} 종료`);
+            updateRoundStatus(false);
+        }
+
+        // 방 입장
+        function joinRoom() {
+            const roomId = document.getElementById('roomId').value;
+            if (!roomId) {
+                addLog('error', 'Room ID를 입력하세요.');
+                return;
+            }
+
+            const message = {
+                type: 'JOIN_ROOM',
+                roomId: roomId
+            };
+
+            ws.send(JSON.stringify(message));
+            addLog('info', `방 입장 요청: ${roomId}`);
+        }
+
+        // 방 퇴장
+        function leaveRoom() {
+            if (!currentRoomId) return;
+
+            const message = {
+                type: 'LEAVE_ROOM',
+                roomId: currentRoomId
+            };
+
+            ws.send(JSON.stringify(message));
+            addLog('info', `방 퇴장 요청: ${currentRoomId}`);
+            
+            currentRoomId = null;
+            document.getElementById('joinBtn').disabled = false;
+            document.getElementById('leaveBtn').disabled = true;
+            document.getElementById('currentRoomInfo').style.display = 'none';
+        }
+
+        // 방 상태 조회
+        function getRoomState() {
+            addLog('info', '방 상태 조회 요청');
+            // 서버에서 자동으로 ROOM_STATE를 전송하지만, 필요시 별도 요청 가능
+        }
+
+        // 연결 해제
+        function disconnect() {
+            if (currentRoomId) {
+                leaveRoom();
+            }
+            
+            setTimeout(() => {
+                if (ws) {
+                    ws.close();
+                    ws = null;
+                }
+            }, 100);
+        }
+
+        // 연결 상태 업데이트
+        function updateConnectionStatus(isConnected) {
+            const badge = document.getElementById('connectionStatus');
+            if (isConnected) {
+                badge.className = 'status-badge connected';
+                badge.textContent = '연결됨';
+            } else {
+                badge.className = 'status-badge disconnected';
+                badge.textContent = '연결 안 됨';
+            }
+        }
+
+        // UI 리셋
+        function resetUI() {
+            document.getElementById('joinBtn').disabled = true;
+            document.getElementById('leaveBtn').disabled = true;
+            document.getElementById('getStateBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = true;
+            document.getElementById('initBtn').disabled = false;
+            document.getElementById('currentRoomInfo').style.display = 'none';
+            
+            stopSessionTimer();
+            
+            // 방 정보 리셋
+            document.getElementById('participantCount').textContent = '0';
+            document.getElementById('roomMode').textContent = '-';
+            document.getElementById('currentRound').textContent = '-';
+            document.getElementById('roundActive').textContent = '❌';
+            
+            // 참가자 목록 리셋
+            document.getElementById('participantsList').innerHTML = `
+                <li class="empty-state">
+                    <div class="empty-state-icon">👥</div>
+                    <div>방에 입장하면 참가자 목록이 표시됩니다</div>
+                </li>
+            `;
+        }
+
+        // 세션 타이머
+        function startSessionTimer() {
+            sessionInterval = setInterval(() => {
+                if (sessionStartTime) {
+                    const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    document.getElementById('sessionTime').textContent = 
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopSessionTimer() {
+            if (sessionInterval) {
+                clearInterval(sessionInterval);
+                sessionInterval = null;
+            }
+            document.getElementById('sessionTime').textContent = '-';
+        }
+
+        // 로그 추가
+        function addLog(type, message) {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span><span>${message}</span>`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+            addLog('info', '로그가 지워졌습니다.');
+        }
+
+        // 페이지 언로드 시 정리
+        window.addEventListener('beforeunload', () => {
+            if (ws) ws.close();
+        });
+    </script>
+</body>
+</html>
