@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: backend-container
-        image: smj100394/roundy_back:2
+        image: smj100394/roundy_back:3
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
