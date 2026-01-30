@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: backend-container
-        image: smj100394/roundy_back:5
+        image: smj100394/roundy_back:6
         ports:
         - containerPort: 8080
         resources:
