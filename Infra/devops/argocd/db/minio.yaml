@@ -60,6 +60,8 @@ spec:
         # Ingress 경로(/minio) 접속을 위해 반드시 필요
         - name: MINIO_BROWSER_REDIRECT_URL
           value: "https://i14a701.p.ssafy.io/minio"
+        - name: MINIO_SERVER_URL
+          value: "https://i14a701.p.ssafy.io"
         ports:
         - containerPort: 8887
         - containerPort: 8886
