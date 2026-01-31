@@ -154,6 +154,8 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
 
     // WebSocket 연결 (생략 가능하지만 전체 흐름 유지 위해 포함)
     useEffect(() => {
+        if (!roomId) return;
+
         const params = new URLSearchParams({
             userId: userProfile.userId.toString(),
             username: userProfile.username,

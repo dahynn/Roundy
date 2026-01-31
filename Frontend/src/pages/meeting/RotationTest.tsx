@@ -12,7 +12,7 @@ const testUsers = [
 ];
 
 const RotationTestPage: React.FC = () => {
-    const roomId = "001";
+    const targetRoomId = "001"; // 접속하려는 방 번호
 
     // 1. URL 쿼리 파라미터로 유저 선택
     const [userProfile] = useState(() => {
@@ -21,22 +21,61 @@ const RotationTestPage: React.FC = () => {
         return testUsers[userIdx] || testUsers[0];
     });
 
-    const { state: wsState, submitVote, leaveRoom } = useRotationSystem(roomId, userProfile);
+    // 2. 현재 활성화된 방 ID (null이면 입장 전, 값이 있으면 입장 시도)
+    const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+
+    // 3. 훅들은 activeRoomId가 설정되면 동작 시작 (useRotation 수정됨)
+    const { state: wsState, submitVote, leaveRoom } = useRotationSystem(activeRoomId, userProfile);
     const { publisher, subscribers, joinSession } = useOpenVidu();
 
-    // 2. 세션 전환 로직 (Lobby <-> Private Room)
+    // ---------------------------------------------------------
+    // [핵심 로직] 방 생성 시도 후 입장 (이미 존재하면 바로 입장)
+    // ---------------------------------------------------------
+    const handleEnterRoom = async () => {
+        try {
+            const API_URL = import.meta.env.VITE_API_URL;
+            console.log(`📡 방 확인/생성 요청: ${API_URL}/test/rooms`);
+
+            // 1. 방 생성 시도 (Create if not exists)
+            const response = await fetch(`${API_URL}/test/rooms`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    roomId: targetRoomId,
+                    mode: 'PAIR_ONLY',
+                    maxParticipants: 4, // 2남 2녀 자동 시작 조건
+                    roundDuration: 60
+                }),
+            });
+
+            if (response.ok) {
+                console.log('✅ 방이 새로 생성되었습니다.');
+            } else {
+                // 400이나 409 에러가 나면 "이미 방이 존재함"으로 간주하고 진행
+                console.log('ℹ️ 방이 이미 존재하거나 생성할 수 없는 상태입니다. 입장을 시도합니다.');
+            }
+
+            // 2. 방이 준비된 것으로 간주하고 웹소켓 연결 시작 (Hooks 활성화)
+            setActiveRoomId(targetRoomId);
+
+        } catch (error) {
+            console.error('API Error:', error);
+            alert('❌ 서버 연결 실패. 백엔드가 실행 중인지 확인해주세요.');
+        }
+    };
+
+    // 4. 세션 전환 로직 (Lobby <-> Private Room)
     useEffect(() => {
         const partnerInfo = wsState.currentPartner;
         if (partnerInfo?.sessionId && partnerInfo?.token) {
             joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username);
         }
-    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token]); // 의존성 체크
+    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token]);
 
     // --- 스테이지별 화면 렌더링 로직 ---
     const renderMainContent = () => {
         const stage = wsState.currentStage;
 
-        // 공통 스타일: 비디오 그리드
         const gridStyle = {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -44,7 +83,6 @@ const RotationTestPage: React.FC = () => {
             width: '100%'
         };
 
-        // 타이틀 헬퍼 함수
         const getVoteTitle = () => {
             if (stage === 'VOTE_FIRST') return '🗳️ 첫인상 투표';
             if (stage === 'IMAGE_GAME') return '🎨 이미지 게임';
@@ -52,64 +90,69 @@ const RotationTestPage: React.FC = () => {
         };
 
         switch (stage) {
-            case 'WAITING': // 내 화면만 보임
+            case 'WAITING':
                 return (
                     <div style={gridStyle}>
                         {publisher && (
                             <div style={{ border: '2px solid gold', position: 'relative' }}>
                                 <UserVideo streamManager={publisher} isLocal={true} />
-                                <span style={{position:'absolute', top:0, left:0, background:'gold', padding:'2px'}}>대기 중</span>
+                                <span style={{position:'absolute', top:0, left:0, background:'gold', padding:'2px'}}>나 (대기 중)</span>
                             </div>
                         )}
-                        {/* subscribers는 숨김 */}
-                        {subscribers.length > 0 && <div style={{color:'#666'}}>다른 참가자 {subscribers.length}명 대기 중...</div>}
+                        {/* 대기실 현황판 */}
+                        <div style={{
+                            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+                            padding: '20px', color: '#333', background: '#fff', borderRadius: '8px', border: '1px dashed #aaa'
+                        }}>
+                            <h3>⏳ 매칭 대기 중...</h3>
+                            <p style={{ fontSize: '20px', margin: '10px 0' }}>
+                                현재 인원: <span style={{ color: '#2196f3', fontWeight: 'bold' }}>{wsState.participants.length}</span> / 4명
+                            </p>
+                            <p style={{ color: '#666', fontSize: '14px' }}>
+                                남성 2명, 여성 2명이 모두 모이면 자동으로 시작됩니다.
+                            </p>
+                            {/* 다른 참가자들의 닉네임 표시 */}
+                            <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
+                                {wsState.participants.map(p => (
+                                    p.userId !== userProfile.userId &&
+                                    <span key={p.userId} style={{ background: '#eee', padding: '4px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                        {p.nickname}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 );
 
-            case 'SELF_INTRO': // 모든 참가자 보임 + 현재 순서 강조 (테두리)
-                // 임시: 현재 발화자가 누구인지 정보가 없다면 첫 번째 사람이라고 가정하거나,
-                // StreamManager의 speaking 이벤트를 활용해야 함. 여기선 빨간 테두리로 예시.
+            case 'SELF_INTRO':
                 return (
                     <div style={gridStyle}>
                         {publisher && <UserVideo streamManager={publisher} isLocal={true} />}
                         {subscribers.map((sub, i) => (
-                            // 예시: 0번 인덱스 참가자를 현재 발화자로 가정하여 테두리 표시
-                            <div key={sub.stream.streamId} style={{
-                                border: i === 0 ? '4px solid red' : 'none',
-                                boxSizing: 'border-box'
-                            }}>
+                            <div key={sub.stream.streamId} style={{ border: i === 0 ? '4px solid red' : 'none', boxSizing: 'border-box' }}>
                                 <UserVideo streamManager={sub} isLocal={false} />
                             </div>
                         ))}
                     </div>
                 );
 
-            // 연결된 참가자와 내 화면만 보임 (1:1)
-            // useRotationSystem에서 이미 Private Session으로 전환했으므로,
-            // subscribers에는 파트너 한 명만 존재하게 됨.
             case 'ROTATION_SHORT':
             case 'ROTATION_LONG':
             case 'FACE_REVEAL':
                 return (
                     <div style={gridStyle}>
                         {publisher && <UserVideo streamManager={publisher} isLocal={true} />}
-
-                        {/* 구독자(파트너) 영상 렌더링 */}
                         {subscribers.map(sub => (
                             <UserVideo key={sub.stream.streamId} streamManager={sub} isLocal={false} />
                         ))}
-
-                        {/* 연결은 되었으나 상대방이 아직 안 들어온 경우 */}
                         {subscribers.length === 0 && (
                             <div style={{ color: '#fff', padding: '20px', background: '#444', borderRadius: '8px' }}>
                                 <p>파트너 연결 대기 중...</p>
-                                <small>(상대방이 접속하면 화면이 나타납니다)</small>
                             </div>
                         )}
                     </div>
                 );
 
-            // 화면 없이 버튼만 보임 (이미지 게임/최종투표)
             case 'VOTE_FIRST':
             case 'IMAGE_GAME':
             case 'VOTE_FINAL':
@@ -118,7 +161,7 @@ const RotationTestPage: React.FC = () => {
                         <h2>{getVoteTitle()}</h2>
                         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
                             {wsState.participants.map(p => {
-                                if (p.userId === userProfile.userId) return null; // 나 자신 제외
+                                if (p.userId === userProfile.userId) return null;
                                 return (
                                     <button
                                         key={p.userId}
@@ -138,7 +181,6 @@ const RotationTestPage: React.FC = () => {
                     </div>
                 );
 
-            // 결과 화면
             case 'MATCHING_RESULT':
                 return (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -147,7 +189,6 @@ const RotationTestPage: React.FC = () => {
                     </div>
                 );
 
-            // 그냥 다 보여줌
             default:
                 return (
                     <div style={gridStyle}>
@@ -160,9 +201,52 @@ const RotationTestPage: React.FC = () => {
         }
     };
 
+    // [입장 전 화면] activeRoomId가 없으면 입장 버튼을 보여줌
+    if (!activeRoomId) {
+        return (
+            <div style={{
+                height: '100vh', display: 'flex', flexDirection: 'column',
+                justifyContent: 'center', alignItems: 'center', background: '#f8f9fa'
+            }}>
+                <div style={{
+                    padding: '40px', background: 'white', borderRadius: '16px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)', textAlign: 'center', minWidth: '300px'
+                }}>
+                    <h1 style={{ marginBottom: '10px' }}>💘 Roundy Meeting</h1>
+                    <p style={{ color: '#666', marginBottom: '30px' }}>
+                        안녕하세요, <strong>{userProfile.username}</strong>님!<br/>
+                        ({userProfile.gender === 'MALE' ? '남성' : '여성'} / 매칭 모드)
+                    </p>
+
+                    <div style={{ marginBottom: '20px' }}>
+                        {/* 카메라 미리보기를 위해 여기서 UserVideo를 띄울 수도 있지만,
+                             useOpenVidu는 activeRoomId 이후에 동작하도록 설계했으므로 생략 */}
+                        <div style={{ width: '100%', height: '200px', background: '#000', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
+                            카메라 준비 중...
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleEnterRoom}
+                        style={{
+                            width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold',
+                            background: '#ff4081', color: 'white', border: 'none', borderRadius: '50px',
+                            cursor: 'pointer', boxShadow: '0 4px 10px rgba(255, 64, 129, 0.3)'
+                        }}
+                    >
+                        참여하기 (매칭 시작)
+                    </button>
+                    <p style={{ fontSize: '12px', color: '#999', marginTop: '15px' }}>
+                        버튼을 누르면 대기실로 입장하며, 인원이 모이면 자동 시작됩니다.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // [입장 후 화면] 기존 레이아웃 유지
     return (
         <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
-            {/* 상단 헤더 */}
             <header style={{ marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
                 <div>
                     <h2>🎥 Rotation System Test</h2>
@@ -177,12 +261,10 @@ const RotationTestPage: React.FC = () => {
             </header>
 
             <div style={{ display: 'flex', gap: '20px' }}>
-                {/* 메인 화면 영역 */}
                 <div style={{ flex: 3, background: '#f0f0f0', padding: '20px', borderRadius: '12px', minHeight: '500px' }}>
                     {renderMainContent()}
                 </div>
 
-                {/* 사이드바 (디버깅 및 전체 참가자 현황) */}
                 <div style={{ flex: 1, background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
                     <h4>참가자 ({wsState.participants.length})</h4>
                     <ul>
