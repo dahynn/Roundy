@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-server-svc
+  namespace: devops
+spec:
+  ports:
+  - port: 8889
+    protocol: TCP
+    targetPort: 8889
+  selector:
+    app: jenkins-server
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-jnlp-svc
+  namespace: devops
+spec:
+  ports:
+  - port: 50000
+    protocol: TCP
+    targetPort: 50000
+  selector:
+    app: jenkins-server
+  type: ClusterIP
