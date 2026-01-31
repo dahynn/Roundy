@@ -6,14 +6,13 @@ export default function Navbar() {
   const location = useLocation();
 
   const menuItems = [
-    { icon: <Home size={22} />, label: '홈', path: '/home' }, // 경로 고정
+    { icon: <Home size={22} />, label: '홈', path: '/home' },
     { icon: <Mail size={22} />, label: '쪽지함', path: '/messages' },
-    { icon: <User size={22} />, label: '마이페이지', path: '/mypage' },
+    { icon: <User size={22} />, label: '마이페이지', path: '/mypage' }, // 경로 일치 확인
   ];
 
   return (
     <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 p-8 flex flex-col gap-10 z-50">
-      {/* 로고 클릭 시에도 /home으로 이동 */}
       <div
         className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
         onClick={() => navigate('/home')}

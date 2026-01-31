@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "eslint-config-prettier": "^10.1.8",
     "lucide-react": "^0.562.0",
+    "openvidu-browser": "^2.32.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",

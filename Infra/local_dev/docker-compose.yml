@@ -1,10 +1,15 @@
 services:
   backend:
+    profiles: ["full-test"]
     build:
       context: ../../
       dockerfile: ./Infra/local_dev/backend.Dockerfile
     volumes:
+      # 1. 소스 코드는 공유 (수정 시 컨테이너에 즉시 반영)
       - ../../Backend:/app
+      # 2. 빌드 결과물 및 캐시 격리 (충돌 방지 핵심 - 익명 볼륨)
+      - /app/build
+      - /app/.gradle
     ports:
       - "8080:8080"
       - "5005:5005"
