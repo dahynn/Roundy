@@ -4,11 +4,9 @@ import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
 import VerificationPage from '@/pages/VerificationPage';
 import WaitingLobby from './pages/meeting/WaitingLobby';
-import OnboardingFirst from './pages/auth/OnboardingFirst';
-import OnboardingSecond from './pages/auth/OnboardingSecond';
-import OnboardingThird from './pages/auth/OnboardingThird';
 import MessageListPage from './pages/message/MessageListPage';
 import ChatRoomPage from './pages/message/ChatRoomPage';
+import Onboarding from "@/pages/auth/Onboarding.tsx";
 
 function AppLayout() {
   const location = useLocation();
@@ -29,9 +27,7 @@ function AppLayout() {
       >
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/onboarding" element={<OnboardingFirst />} />
-          <Route path="/onboarding/second" element={<OnboardingSecond />} />
-          <Route path="/onboarding/third" element={<OnboardingThird />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/messages" element={<MessageListPage />} />
           <Route path="/messages/:matchId" element={<ChatRoomPage />} />
