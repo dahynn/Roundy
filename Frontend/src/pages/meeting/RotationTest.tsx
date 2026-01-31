@@ -12,7 +12,7 @@ const testUsers = [
 ];
 
 const RotationTestPage: React.FC = () => {
-    const targetRoomId = "001"; // 접속하려는 방 번호
+    const targetRoomId = "001"; // 접속할 방 번호
 
     // 1. URL 쿼리 파라미터로 유저 선택
     const [userProfile] = useState(() => {
@@ -24,16 +24,42 @@ const RotationTestPage: React.FC = () => {
     // 2. 현재 활성화된 방 ID (null이면 입장 전, 값이 있으면 입장 시도)
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
-    // 3. 훅들은 activeRoomId가 설정되면 동작 시작 (useRotation 수정됨)
-    const { state: wsState, submitVote, leaveRoom } = useRotationSystem(activeRoomId, userProfile);
-    const { publisher, subscribers, joinSession } = useOpenVidu();
+    // 3. Hooks (activeRoomId가 설정되면 동작 시작)
+    // useRotationSystem 내부에서 activeRoomId가 null이면 소켓 연결을 하지 않도록 처리되어 있어야 함
+    const { state: wsState, submitVote, leaveRoom } = useRotationSystem(activeRoomId || "", userProfile);
+    const { publisher, subscribers, joinSession, leaveSession } = useOpenVidu();
 
     // ---------------------------------------------------------
-    // [핵심 로직] 방 생성 시도 후 입장 (이미 존재하면 바로 입장)
+    // 세션 자동 접속/전환 로직 (재렌더링 방어 적용)
+    // ---------------------------------------------------------
+    useEffect(() => {
+        const partnerInfo = wsState.currentPartner;
+
+        // 필수 정보(세션ID, 토큰)가 있을 때만 실행
+        if (partnerInfo?.sessionId && partnerInfo?.token) {
+            console.log(`📝 [Effect] 세션 변경 감지: ${partnerInfo.sessionId}`);
+
+            joinSession(
+                partnerInfo.sessionId,
+                partnerInfo.token,
+                userProfile.username
+            );
+        }
+    }, [
+        // 중요: wsState 전체를 넣지 않고, 세션 ID와 토큰만 의존성으로 설정
+        // 이렇게 해야 타이머(remainingTime)가 흘러도 재접속을 시도하지 않음
+        wsState.currentPartner?.sessionId,
+        wsState.currentPartner?.token,
+        joinSession,
+        userProfile.username
+    ]);
+
+    // ---------------------------------------------------------
+    // 방 생성 시도 후 입장 (API 호출 -> 소켓 연결)
     // ---------------------------------------------------------
     const handleEnterRoom = async () => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL;
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
             console.log(`📡 방 확인/생성 요청: ${API_URL}/test/rooms`);
 
             // 1. 방 생성 시도 (Create if not exists)
@@ -43,7 +69,7 @@ const RotationTestPage: React.FC = () => {
                 body: JSON.stringify({
                     roomId: targetRoomId,
                     mode: 'PAIR_ONLY',
-                    maxParticipants: 4, // 2남 2녀 자동 시작 조건
+                    maxParticipants: 4, // 2남 2녀 테스트
                     roundDuration: 60
                 }),
             });
@@ -51,11 +77,10 @@ const RotationTestPage: React.FC = () => {
             if (response.ok) {
                 console.log('✅ 방이 새로 생성되었습니다.');
             } else {
-                // 400이나 409 에러가 나면 "이미 방이 존재함"으로 간주하고 진행
-                console.log('ℹ️ 방이 이미 존재하거나 생성할 수 없는 상태입니다. 입장을 시도합니다.');
+                console.log('ℹ️ 방이 이미 존재하거나 생성 오류 (입장 시도)');
             }
 
-            // 2. 방이 준비된 것으로 간주하고 웹소켓 연결 시작 (Hooks 활성화)
+            // 2. 방이 준비된 것으로 간주하고 웹소켓 연결 시작
             setActiveRoomId(targetRoomId);
 
         } catch (error) {
@@ -63,14 +88,6 @@ const RotationTestPage: React.FC = () => {
             alert('❌ 서버 연결 실패. 백엔드가 실행 중인지 확인해주세요.');
         }
     };
-
-    // 4. 세션 전환 로직 (Lobby <-> Private Room)
-    useEffect(() => {
-        const partnerInfo = wsState.currentPartner;
-        if (partnerInfo?.sessionId && partnerInfo?.token) {
-            joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username);
-        }
-    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token]);
 
     // --- 스테이지별 화면 렌더링 로직 ---
     const renderMainContent = () => {
@@ -96,9 +113,10 @@ const RotationTestPage: React.FC = () => {
                         {publisher && (
                             <div style={{ border: '2px solid gold', position: 'relative' }}>
                                 <UserVideo streamManager={publisher} isLocal={true} />
-                                <span style={{position:'absolute', top:0, left:0, background:'gold', padding:'2px'}}>나 (대기 중)</span>
+                                <span style={{position:'absolute', top:0, left:0, background:'gold', padding:'2px', fontSize:'12px'}}>나 (대기실)</span>
                             </div>
                         )}
+
                         {/* 대기실 현황판 */}
                         <div style={{
                             display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
@@ -108,10 +126,6 @@ const RotationTestPage: React.FC = () => {
                             <p style={{ fontSize: '20px', margin: '10px 0' }}>
                                 현재 인원: <span style={{ color: '#2196f3', fontWeight: 'bold' }}>{wsState.participants.length}</span> / 4명
                             </p>
-                            <p style={{ color: '#666', fontSize: '14px' }}>
-                                남성 2명, 여성 2명이 모두 모이면 자동으로 시작됩니다.
-                            </p>
-                            {/* 다른 참가자들의 닉네임 표시 */}
                             <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
                                 {wsState.participants.map(p => (
                                     p.userId !== userProfile.userId &&
@@ -146,7 +160,7 @@ const RotationTestPage: React.FC = () => {
                             <UserVideo key={sub.stream.streamId} streamManager={sub} isLocal={false} />
                         ))}
                         {subscribers.length === 0 && (
-                            <div style={{ color: '#fff', padding: '20px', background: '#444', borderRadius: '8px' }}>
+                            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', background: '#444', borderRadius: '8px', color: 'white' }}>
                                 <p>파트너 연결 대기 중...</p>
                             </div>
                         )}
@@ -218,14 +232,6 @@ const RotationTestPage: React.FC = () => {
                         ({userProfile.gender === 'MALE' ? '남성' : '여성'} / 매칭 모드)
                     </p>
 
-                    <div style={{ marginBottom: '20px' }}>
-                        {/* 카메라 미리보기를 위해 여기서 UserVideo를 띄울 수도 있지만,
-                             useOpenVidu는 activeRoomId 이후에 동작하도록 설계했으므로 생략 */}
-                        <div style={{ width: '100%', height: '200px', background: '#000', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
-                            카메라 준비 중...
-                        </div>
-                    </div>
-
                     <button
                         onClick={handleEnterRoom}
                         style={{
@@ -244,7 +250,7 @@ const RotationTestPage: React.FC = () => {
         );
     }
 
-    // [입장 후 화면] 기존 레이아웃 유지
+    // [입장 후 화면]
     return (
         <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
             <header style={{ marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
@@ -261,10 +267,12 @@ const RotationTestPage: React.FC = () => {
             </header>
 
             <div style={{ display: 'flex', gap: '20px' }}>
+                {/* 메인 화면 영역 */}
                 <div style={{ flex: 3, background: '#f0f0f0', padding: '20px', borderRadius: '12px', minHeight: '500px' }}>
                     {renderMainContent()}
                 </div>
 
+                {/* 사이드바 (디버깅 및 전체 참가자 현황) */}
                 <div style={{ flex: 1, background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
                     <h4>참가자 ({wsState.participants.length})</h4>
                     <ul>
