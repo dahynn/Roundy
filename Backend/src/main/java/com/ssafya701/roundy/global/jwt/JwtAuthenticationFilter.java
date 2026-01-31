@@ -25,7 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 필터를 적용하지 않을 경로 목록
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
-            "/api/auth/**",
+
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -33,8 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/test/**",
             "/api/test/**",
             "/ws/**",
-            "/api/webrtc/test/**"
-    );
+            "/api/webrtc/test/**");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -43,7 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         String token = resolveToken(request);
 
         // 유효한 토큰이라면
