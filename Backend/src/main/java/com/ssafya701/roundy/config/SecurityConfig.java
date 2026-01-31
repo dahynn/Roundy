@@ -28,43 +28,54 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        boolean isDevelopment = Arrays.asList(environment.getActiveProfiles())
-                .stream()
+        // 개발 환경인지 확인 (local, dev, default 프로필일 경우 true)
+        boolean isDevelopment = Arrays.stream(environment.getActiveProfiles())
                 .anyMatch(profile -> profile.equals("local") || profile.equals("dev") || profile.equals("default"));
 
         log.info("🔒 Security 설정 - 개발 모드: {}, 활성 프로필: {}",
                 isDevelopment, Arrays.toString(environment.getActiveProfiles()));
+
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // CORS 설정 추가
+                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // CORS 설정
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안 씀 (JWT 사용)
 
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers(
-                                "/api/webrtc/test/**", // 테스트용 WebRTC 토큰 발급 경로를 항상 허용
-                                "/test/**",
-                                "/api/test/**",
-                                "/ws/**"
-                        ).permitAll();
+                            "/api/auth/signup/details",
+                            "/api/auth/signup", // 회원가입 전 정보 조회
+                            "/api/auth/verify",         // 사진 인증
+                            "/api/auth/onboarding",     // 온보딩(취향 입력)
+                            "/api/auth/logout",         // 로그아웃
+                            "/api/auth/withdraw"        // 회원탈퇴
+                    ).authenticated();
 
-                    // 개발 환경에서만 테스트 페이지 허용
+                    auth.requestMatchers("/api/auth/**").permitAll();
+
+                    auth.requestMatchers(
+                            "/api/webrtc/test/**",
+                            "/test/**",
+                            "/api/test/**",
+                            "/ws/**"
+                    ).permitAll();
+
+                    // 개발 환경 로그
                     if (isDevelopment) {
                         log.info("✅ 개발 모드: 추가적인 테스트 페이지 접근 허용");
                     } else {
                         log.info("🔒 프로덕션 모드: 테스트 페이지 접근 차단");
                     }
 
-                    auth.requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll();
+                    auth.requestMatchers(
+                            "/v3/api-docs/**",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html"
+                    ).permitAll();
 
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated();
+                            .anyRequest().authenticated();
                 })
 
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
