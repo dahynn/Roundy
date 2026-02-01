@@ -63,6 +63,26 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.ofFailure("서버 내부 오류"));
     }
 
+    // 파일 용량 초과 - 413
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<CommonResponse<Void>> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException e) {
+        log.warn("File Size Exceeded: {}", e.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(CommonResponse.ofFailure("파일 크기가 너무 큽니다. (최대 10MB)"));
+    }
+
+    // MinIO 연결 실패 등 I/O 오류 - 500 (로그 강화)
+    @ExceptionHandler(java.io.IOException.class)
+    public ResponseEntity<CommonResponse<Void>> handleIOException(java.io.IOException e) {
+        log.error("I/O Error (MinIO connection?): ", e);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(CommonResponse.ofFailure("파일 처리 중 오류가 발생했습니다."));
+    }
+
     // user 부분 custom 예외 처리
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<CommonResponse<Void>> handleCustomException(CustomException e) {
