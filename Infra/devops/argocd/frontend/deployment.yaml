@@ -7,6 +7,7 @@ metadata:
     app: roundy-frontend
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: roundy-frontend
@@ -17,7 +18,8 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: smj100394/roundy_front:latest
+        image: smj100394/roundy_front:6
+        imagePullPolicy: Always
         ports:
         - containerPort: 80 
         resources:
