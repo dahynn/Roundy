@@ -1,62 +1,60 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from '@/components/layout/Navbar';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
-import VerificationPage from '@/pages/VerificationPage';
-import WaitingLobby from './pages/meeting/WaitingLobby';
 import MessageListPage from './pages/message/MessageListPage';
 import ChatRoomPage from './pages/message/ChatRoomPage';
 import MyPage from './pages/MyPage';
-import Onboarding from '@/pages/auth/Onboarding.tsx';
+import VerificationPage from '@/pages/VerificationPage';
+import WaitingLobby from './pages/meeting/WaitingLobby';
 import RotationTestPage from './pages/meeting/RotationTest';
-import AuthCallback from './pages/auth/AuthCallback'; // 콜백 페이지 임포트
+import Onboarding from '@/pages/auth/Onboarding.tsx';
+import AuthCallback from './pages/auth/AuthCallback';
+import { useTheme } from '@/components/theme-provider';
 
-function AppLayout() {
-  const location = useLocation();
-
-  // 1. Navbar를 숨길 경로 정의
-  // 랜딩(/), 인증(/verify), 로딩(/loading) 및 카카오 콜백(/auth/callback)에서 숨김 처리
-  const hideNavbarPaths = ['/', '/verify', '/loading', '/auth/callback'];
-  const isOnboarding = location.pathname.startsWith('/onboarding');
-
-  // 위 경로에 해당하거나 온보딩 과정 중이면 Navbar를 숨깁니다.
-  const shouldHideNavbar = hideNavbarPaths.includes(location.pathname) || isOnboarding;
+function App() {
+  const { theme } = useTheme();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#FAFBFF]">
-      {/* 1. 조건에 따라 Navbar 표시 여부 결정 */}
-      {!shouldHideNavbar && <Navbar />}
-
-      {/* 2. 메인 영역 설정 */}
-      <main
-        className={`flex-1 h-full ${
-          shouldHideNavbar ? 'ml-0' : 'ml-64'
-        } ${isOnboarding ? 'overflow-y-auto' : 'overflow-hidden'}`}
+    <Router>
+      <div
+        className={`min-h-screen w-full font-['Pretendard'] transition-colors duration-300 ${
+          theme === 'dark' ? 'text-white' : 'text-[#1A1F36]'
+        }`}
+        style={{
+          backgroundColor: theme === 'dark' ? '#0F1117' : '#F8F9FD',
+          backgroundImage: theme === 'dark' 
+            ? `
+              radial-gradient(circle at 0% 0%, rgba(255, 77, 148, 0.1), transparent 50%), 
+              radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.1), transparent 50%)
+            `
+            : `
+              radial-gradient(circle at 0% 0%, rgba(255, 77, 148, 0.15), transparent 50%), 
+              radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.15), transparent 50%)
+            `
+        }}
       >
         <Routes>
-          {/* 랜딩 및 인증 콜백 */}
+          {/* ─── 1. Navbar가 없는 페이지들 ─── */}
+          {/* 이제 배경색은 자동으로 적용됩니다! */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} /> {/* 토큰 수신 경로 */}
-          {/* 온보딩 및 서비스 단계 */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/messages" element={<MessageListPage />} />
-          <Route path="/messages/:matchId" element={<ChatRoomPage />} />
-          <Route path="/mypage" element={<MyPage />} />
-          {/* 특수 목적 페이지 */}
           <Route path="/verify" element={<VerificationPage />} />
           <Route path="/loading" element={<WaitingLobby />} />
           <Route path="/meeting" element={<RotationTestPage />} />
-        </Routes>
-      </main>
-    </div>
-  );
-}
 
-function App() {
-  return (
-    <Router>
-      <AppLayout />
+          {/* ─── 2. Navbar가 있는 페이지들 ─── */}
+          {/* Layout은 이제 Navbar 위치만 잡아줍니다 */}
+          <Route element={<Layout />}>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/messages" element={<MessageListPage />} />
+            <Route path="/messages/:matchId" element={<ChatRoomPage />} />
+            <Route path="/mypage" element={<MyPage />} />
+          </Route>
+
+        </Routes>
+      </div>
     </Router>
   );
 }
