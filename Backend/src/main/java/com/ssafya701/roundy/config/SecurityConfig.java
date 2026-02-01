@@ -51,8 +51,7 @@ public class SecurityConfig {
                                                         "/api/auth/verify", // 사진 인증
                                                         "/api/auth/onboarding", // 온보딩(취향 입력)
                                                         "/api/auth/logout", // 로그아웃
-                                                        "/api/auth/withdraw", // 회원탈퇴
-                                                        "/api/preferences/**" // 취향 조회
+                                                        "/api/auth/withdraw" // 회원탈퇴
                                         ).authenticated();
 
                                         // auth.requestMatchers("/api/auth/**").permitAll(); // 🚨 기존의 너무 관대한 설정 제거
@@ -60,7 +59,8 @@ public class SecurityConfig {
                                         auth.requestMatchers(
                                                         "/api/auth/login",
                                                         "/api/auth/kakao/callback",
-                                                        "/api/auth/re-issue").permitAll();
+                                                        "/api/auth/re-issue",
+                                                        "/api/preferences/**").permitAll();
 
                                         auth.requestMatchers(
                                                         "/api/webrtc/test/**",
