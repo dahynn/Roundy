@@ -51,7 +51,8 @@ public class SecurityConfig {
                                                         "/api/auth/verify", // 사진 인증
                                                         "/api/auth/onboarding", // 온보딩(취향 입력)
                                                         "/api/auth/logout", // 로그아웃
-                                                        "/api/auth/withdraw" // 회원탈퇴
+                                                        "/api/auth/withdraw", // 회원탈퇴
+                                                        "/api/preferences/**" // 취향 조회
                                         ).authenticated();
 
                                         // auth.requestMatchers("/api/auth/**").permitAll(); // 🚨 기존의 너무 관대한 설정 제거
