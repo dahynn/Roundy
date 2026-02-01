@@ -39,14 +39,14 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
 
         MANIFEST_REPO_URL = 'lab.ssafy.com/s14-webmobile1-sub1/S14P11A701.git'
-        TARGET_BRANCH = 'infra/prod'
+        TARGET_BRANCH = 'dev'
         GIT_CREDENTIALS_ID = 'gitlab'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                scmSkip(deleteBuild: true, skipPattern:'.*\\[skip ci\\].*')
             }
         }
 

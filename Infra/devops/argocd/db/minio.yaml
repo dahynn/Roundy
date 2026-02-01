@@ -33,6 +33,7 @@ metadata:
   namespace: roundy-app
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: minio
