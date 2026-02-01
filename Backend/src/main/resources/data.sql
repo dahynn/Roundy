@@ -1,5 +1,10 @@
 -- Preference 초기 데이터
--- 중복 방지: 이미 데이터가 있으면 실행하지 않음
+-- 초기화: 기존 데이터 삭제 (중복 누적 방지)
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+DELETE FROM preferences;
+ALTER TABLE preferences AUTO_INCREMENT = 1;
 
 -- 선호관계 (RELATIONSHIP_GOAL)
 INSERT INTO preferences (type, content)
@@ -128,3 +133,5 @@ SELECT * FROM (
     SELECT 'TALENT', '적극적인 플러팅'
 ) AS tmp
 WHERE NOT EXISTS (SELECT 1 FROM preferences WHERE type = 'TALENT' LIMIT 1);
+
+SET FOREIGN_KEY_CHECKS = 1;
