@@ -1,5 +1,9 @@
 -- Preference 초기 데이터
--- 중복 방지: 이미 데이터가 있으면 실행하지 않음
+-- 초기화: 기존 데이터 삭제 (중복 누적 방지)
+DELETE FROM preferences;
+ALTER TABLE preferences AUTO_INCREMENT = 1;
+
+-- 선호관계 (RELATIONSHIP_GOAL)
 
 -- 선호관계 (RELATIONSHIP_GOAL)
 INSERT INTO preferences (type, content)
