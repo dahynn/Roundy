@@ -59,7 +59,8 @@ public class SecurityConfig {
                                         auth.requestMatchers(
                                                         "/api/auth/login",
                                                         "/api/auth/kakao/callback",
-                                                        "/api/auth/re-issue").permitAll();
+                                                        "/api/auth/re-issue",
+                                                        "/api/preferences/**").permitAll();
 
                                         auth.requestMatchers(
                                                         "/api/webrtc/test/**",
