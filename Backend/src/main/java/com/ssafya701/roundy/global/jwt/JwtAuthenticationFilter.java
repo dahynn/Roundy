@@ -11,11 +11,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -25,7 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 필터를 적용하지 않을 경로 목록
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
-            "/api/auth/**",
+
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -33,8 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/test/**",
             "/api/test/**",
             "/ws/**",
-            "/api/webrtc/test/**"
-    );
+            "/api/webrtc/test/**");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -43,7 +44,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         String token = resolveToken(request);
 
         // 유효한 토큰이라면
@@ -53,6 +55,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // SecurityContext에 저장 (이래야 컨트롤러에서 @AuthenticationPrincipal 사용 가능)
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            log.info("🔑 Security Context Set - UserID: {}, URI: {}", authentication.getName(),
+                    request.getRequestURI());
+        } else {
+            log.info("⚠️ No valid token found for URI: {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);
