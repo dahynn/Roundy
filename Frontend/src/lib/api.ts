@@ -1,33 +1,71 @@
 import axios from 'axios';
 
-// 기본 API 설정
 export const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // 로컬 테스트용 주소
+  baseURL: 'http://localhost:8080/api',
   headers: {
-    'Content-Type': 'multipart/form-data',
+    'Content-Type': 'application/json',
   },
 });
 
-// 본인 인증 요청 함수
+// 인터셉터: 토큰 삽입
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (config.method?.toLowerCase() === 'get') {
+    delete config.data;
+  }
+
+  return config;
+});
+
+/**
+ * 유저 정보 조회 API
+ */
+export const getUserInfo = async () => {
+  const response = await api.get('/auth/signup/details');
+  return response.data;
+};
+
+/**
+ * [추가] 로그아웃 API
+ * Method: POST
+ * URL: /auth/logout
+ */
+export const logout = async () => {
+  const response = await api.post('/auth/logout');
+  return response.data;
+};
+
+/**
+ * [추가] 회원탈퇴 API
+ * Method: DELETE
+ * URL: /auth/withdraw
+ */
+export const withdraw = async () => {
+  const response = await api.delete('/auth/withdraw');
+  return response.data;
+};
+
+// 기존 함수들 유지
 export const verifyFace = async (representativeImage: File, liveImage: Blob) => {
   const formData = new FormData();
   formData.append('profile_image', representativeImage);
   formData.append('live_image', liveImage, 'live_capture.jpg');
-
-  return await api.post('/users/verify', formData);
+  return await api.post('/users/verify', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
-// 세션 리스트 조회 (Mock 데이터)
 export const getSessions = async () => {
-  // 실제 API 연동 시: return await api.get('/sessions');
-  // 현재는 디자인 확인용 가짜 데이터 반환
   return {
     data: [
       {
         sessionId: 1,
         title: 'ASMR Session',
-        description:
-          '시끄러운 술집이 아닌, 조용한 카페에서 속삭이듯 대화하는 기분. 서로의 목소리에 집중하는 차분하고 진실된 시간을 가져보세요.',
+        description: '조용한 카페에서 속삭이듯 대화하는 기분...',
         currentCount: 3,
         maxCount: 6,
         status: 'RECRUITING',
@@ -36,8 +74,6 @@ export const getSessions = async () => {
   };
 };
 
-// 세션 참가 신청
 export const joinSession = async (sessionId: number) => {
-  // 실제 API: return await api.post(`/sessions/${sessionId}/participants`);
   return { data: { success: true } };
 };
