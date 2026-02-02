@@ -6,40 +6,70 @@ export default function Navbar() {
   const location = useLocation();
 
   const menuItems = [
-    { icon: <Home size={22} />, label: '홈', path: '/home' },
-    { icon: <Mail size={22} />, label: '쪽지함', path: '/messages' },
-    { icon: <User size={22} />, label: '마이페이지', path: '/mypage' }, // 경로 일치 확인
+    { icon: <Home size={22} />, label: 'Home', path: '/home' },
+    { icon: <Mail size={22} />, label: 'Message', path: '/messages' },
+    { icon: <User size={22} />, label: 'Mypage', path: '/mypage' },
   ];
 
   return (
-    <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 p-8 flex flex-col gap-10 z-50">
+    <nav 
+      className="fixed left-0 top-0 h-full w-64 p-8 flex flex-col gap-10 z-50
+      bg-white/60 dark:bg-black/60
+      backdrop-blur-2xl       
+      backdrop-saturate-150    
+      border-r border-white/30 dark:border-white/5
+      shadow-[4px_0_30px_rgba(0,0,0,0.03)]
+      transition-colors duration-300
+      "
+    >
       <div
-        className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
+        className="flex items-center gap-3 cursor-pointer group"
         onClick={() => navigate('/home')}
       >
-        <div className="w-9 h-9 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-xl flex items-center justify-center shadow-lg shadow-pink-100">
-          <Heart size={20} fill="white" className="text-white" />
+        <div className="relative w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-xl shadow-lg opacity-90 blur-[1px]" />
+          <div className="relative z-10 w-full h-full bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-xl flex items-center justify-center border border-white/20">
+             <Heart size={20} fill="white" className="text-white drop-shadow-md" />
+          </div>
         </div>
-        <span className="text-2xl font-black text-[#1A1F36] tracking-tighter">Roundy</span>
+        
+        <span className="text-2xl font-black text-[#1A1F36] dark:text-white tracking-tighter group-hover:text-[#FF4D94] transition-colors drop-shadow-sm">
+          Roundy
+        </span>
       </div>
 
       <div className="flex flex-col gap-3">
-        {menuItems.map((item) => (
-          <div
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className={`flex items-center gap-4 px-5 py-4 rounded-2xl cursor-pointer transition-all ${
-              location.pathname === item.path
-                ? 'bg-[#FDF2F8] text-[#FF4D94] shadow-sm'
-                : 'text-[#8792A2] hover:bg-gray-50 hover:text-[#1A1F36]'
-            }`}
-          >
-            <div className={location.pathname === item.path ? 'text-[#FF4D94]' : 'text-[#8792A2]'}>
-              {item.icon}
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <div
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`relative flex items-center gap-4 px-5 py-4 rounded-[20px] cursor-pointer transition-all duration-300 overflow-hidden
+                ${
+                  isActive
+                    ? 'shadow-[0_4px_20px_rgba(255,77,148,0.15)] text-[#FF4D94]' 
+                    : 'text-[#697386] dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/5 hover:text-[#1A1F36] dark:hover:text-white'
+                }
+              `}
+            >
+              {isActive && (
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-md" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white/50 to-transparent opacity-80" />
+                    <div className="absolute inset-0 border border-white/60 rounded-[20px]" />
+                </div>
+              )}
+
+              <div className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>
+                {item.icon}
+              </div>
+              <span className={`relative z-10 text-[16px] font-bold ${isActive ? 'tracking-wide' : ''}`}>
+                {item.label}
+              </span>
             </div>
-            <span className="font-bold text-[16px]">{item.label}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </nav>
   );

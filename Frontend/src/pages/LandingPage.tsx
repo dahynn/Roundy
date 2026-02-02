@@ -26,7 +26,7 @@ export default function LandingPage() {
   const satisfactionCount = useCountUp(98);
 
   return (
-    <div className="min-h-screen bg-[#FDF2F8] font-['Pretendard'] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#FDF2F8] font-['Pretendard'] flex flex-col relative overflow-x-hidden">
       {/* 배경 그라데이션 유닛 (동일) */}
       <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-pink-200/30 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[-5%] w-[500px] h-[500px] bg-purple-200/20 rounded-full blur-[120px] pointer-events-none"></div>

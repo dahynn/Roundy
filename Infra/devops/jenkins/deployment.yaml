@@ -27,9 +27,11 @@ spec:
           env:
             - name: JENKINS_OPTS
               value: "--prefix=/jenkins --httpPort=8889"
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx768m -Djava.awt.headless=true"
           resources:
             limits:
-              memory: "2Gi"
+              memory: "1Gi"
               cpu: "1000m"
             requests:
               memory: "500Mi"
