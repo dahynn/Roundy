@@ -1,0 +1,128 @@
+pipeline {
+    agent{
+        kubernetes{
+            yaml '''
+              apiVersion: v1
+              kind: Pod
+              spec:
+                containers:
+                - name: node
+                  image: node:20-alpine
+                  command:
+                  - cat
+                  tty: true
+                - name: docker
+                  image: docker:29.1.3
+                  command:
+                  - cat
+                  tty: true
+                  volumeMounts:
+                  - mountPath: /var/run/docker.sock
+                    name: docker-sock
+                - name: git
+                  image: alpine/git:latest
+                  command:
+                  - cat
+                  tty: true
+                volumes:
+                - name: docker-sock
+                  hostPath:
+                    path: /var/run/docker.sock
+            '''
+        }
+    }
+
+    environment {
+        DOCKER_USER = 'smj100394' 
+        REPO_NAME = 'roundy_front'
+        IMAGE_TAG = "${DOCKER_USER}/${REPO_NAME}:${BUILD_NUMBER}"
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub'
+
+        MANIFEST_REPO_URL = 'lab.ssafy.com/s14-webmobile1-sub1/S14P11A701.git'
+        TARGET_BRANCH = 'dev'
+        GIT_CREDENTIALS_ID = 'gitlab'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                scmSkip(deleteBuild: true, skipPattern:'.*\\[skip ci\\].*')
+            }
+        }
+
+        stage('Build npm') {
+            steps {
+                container('node') {
+                    dir('Frontend') {
+                        sh "npm install"
+                        sh "npm run build"
+                    }
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", 
+                                                      passwordVariable: 'DOCKER_PASSWORD', 
+                                                      usernameVariable: 'DOCKER_USERNAME')]) {
+                        dir('Frontend') {
+                            script {
+                                sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                                
+                                sh "docker build -t ${IMAGE_TAG} ."
+                                sh "docker push ${IMAGE_TAG}"
+                                
+                                sh "docker tag ${IMAGE_TAG} ${DOCKER_USER}/${REPO_NAME}:latest"
+                                sh "docker push ${DOCKER_USER}/${REPO_NAME}:latest"
+                                
+                                sh "docker logout"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifest') {
+            steps {
+                container('git') {
+                    script {
+                        withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", 
+                                         passwordVariable: 'GIT_PASSWORD', 
+                                         usernameVariable: 'GIT_USERNAME')]) {
+                            
+                            sh '''
+                                git clone -b ${TARGET_BRANCH} https://${GIT_USERNAME}:${GIT_PASSWORD}@${MANIFEST_REPO_URL} config-repo
+                            '''
+                            
+                            dir('config-repo') {
+                                def filePath = "Infra/devops/argocd/frontend/deployment.yaml"
+                                
+                                sh "sed -i 's|image: ${DOCKER_USER}/${REPO_NAME}:.*|image: ${IMAGE_TAG}|g' ${filePath}"
+                                
+                                sh """
+                                    git config user.email "jenkins@ssafy.com"
+                                    git config user.name "jenkins"
+                                    git add ${filePath}
+                                    git commit -m "Chore: Update frontend image to ${IMAGE_TAG} [skip ci]"
+                                    git push origin ${TARGET_BRANCH}
+                                """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                container('docker') {
+                    sh "docker rmi ${IMAGE_TAG}"
+                    sh "docker rmi ${DOCKER_USER}/${REPO_NAME}:latest"
+                }
+            }
+        }
+    }
+}
