@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as authApi from '@/api/auth';
+import { useToast } from '@/components/ui/toast-context';
 // api.defaults... 등을 위해 client가 필요하다면 import (단, 여기선 온보딩 성공 후 토큰 수동 세팅 등 로직 확인 필요)
 import client from '@/api/_client';
 
@@ -11,12 +12,14 @@ import PreferenceForm from '@/components/onboarding/PreferenceForm';
 export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [step, setStep] = useState<number>(location.state?.step || 1);
 
   const [basicInfo, setBasicInfo] = useState<BasicInfoData>({
     profileFile: null,
     previewUrl: '',
     name: '',
+    email: '',
     nickName: '',
     gender: null,
     birth: { year: '', month: '', day: '' },
@@ -37,7 +40,8 @@ export default function Onboarding() {
           setBasicInfo((prev) => ({
             ...prev,
             name: userData.name || '',
-            nickName: userData.nickname || userData.name || '',
+            email: userData.email || '',
+            nickName: userData.nickname || '', // 닉네임이 없으면 빈 값으로 (사용자 입력 유도)
             gender: userData.gender as 'MALE' | 'FEMALE',
             birth: {
               year: dateParts[0] || '',
@@ -142,28 +146,36 @@ export default function Onboarding() {
       // ✅ 2. 성공 판단 기준 변경 (핵심 수정)
       // "success: true"를 찾지 말고, "accessToken"이 있는지를 확인합니다.
       const newAccessToken = resData?.accessToken || resData?.data?.accessToken;
+      const newRefreshToken = resData?.refreshToken || resData?.data?.refreshToken;
 
       if (newAccessToken) {
         console.log('✅ 가입 성공! 토큰 확인됨.');
 
         // 3. 토큰 저장
         localStorage.setItem('accessToken', newAccessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
         client.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         console.log('🔑 토큰 저장 완료');
 
-        alert('가입 완료! 🎉');
+        toast('가입 완료! 환영합니다 🎉', 'success');
 
         // 4. 강제 이동
-        window.location.href = '/home';
+        setTimeout(() => {
+          window.location.href = '/home';
+        }, 1500);
       } else {
         console.warn('⚠️ 응답은 왔으나 토큰이 없습니다:', resData);
         // 혹시 모르니 그냥 이동 시도 (서버가 200이면 가입은 된 것이므로)
-        alert('가입 완료 (토큰 없음). 홈으로 이동합니다.');
-        window.location.href = '/home';
+        toast('가입 완료 (토큰 없음). 홈으로 이동합니다.', 'warning');
+        setTimeout(() => {
+          window.location.href = '/home';
+        }, 1500);
       }
     } catch (error: any) {
       console.error('❌ 가입 에러:', error);
-      alert('가입 처리 중 오류가 발생했습니다.');
+      toast('가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.', 'error');
     }
   };
   return (

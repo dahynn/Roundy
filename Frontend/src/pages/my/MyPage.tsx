@@ -12,6 +12,7 @@ import Header from '@/components/layout/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { logout, withdraw } from '@/api/user';
 import { useUser } from '@/context/UserContext';
+import { useToast } from '@/components/ui/toast-context';
 
 // ✅ 만나이 계산 유틸리티
 const calculateAge = (birthDateString: string) => {
@@ -30,37 +31,45 @@ export default function MyPage() {
   const navigate = useNavigate();
   const { userInfo: serverData, isLoading: loading, refreshUser } = useUser();
 
+  const { toast, confirm } = useToast();
+
   useEffect(() => {
     if (!serverData) {
       refreshUser();
     }
   }, [serverData, refreshUser]);
 
-  const handleLogout = async () => {
-    if (!confirm('로그아웃 하시겠습니까?')) return;
-    try {
-      await logout();
-      localStorage.removeItem('accessToken');
-      alert('로그아웃 되었습니다.');
-      window.location.href = '/';
-    } catch (error) {
-      console.error('로그아웃 실패:', error);
-      localStorage.removeItem('accessToken');
-      window.location.href = '/';
-    }
+  const handleLogout = () => {
+    confirm('정말 로그아웃 하시겠습니까?', async () => {
+      try {
+        await logout();
+        localStorage.removeItem('accessToken');
+        toast('로그아웃 되었습니다.', 'success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } catch (error) {
+        console.error('로그아웃 실패:', error);
+        localStorage.removeItem('accessToken');
+        window.location.href = '/';
+      }
+    });
   };
 
-  const handleWithdraw = async () => {
-    if (!confirm('정말로 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.')) return;
-    try {
-      await withdraw();
-      localStorage.removeItem('accessToken');
-      alert('회원 탈퇴가 완료되었습니다.');
-      window.location.href = '/';
-    } catch (error) {
-      console.error('회원탈퇴 실패:', error);
-      alert('탈퇴 처리 중 오류가 발생했습니다.');
-    }
+  const handleWithdraw = () => {
+    confirm('정말로 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.', async () => {
+      try {
+        await withdraw();
+        localStorage.removeItem('accessToken');
+        toast('회원 탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.', 'success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
+      } catch (error) {
+        console.error('회원탈퇴 실패:', error);
+        toast('탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'error');
+      }
+    });
   };
 
   const userInfo = {

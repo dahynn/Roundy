@@ -68,9 +68,13 @@ public class UserController {
         com.ssafya701.roundy.auth.entity.User user = principal.getUser();
         UserResponse response = UserResponse.from(user);
 
-        // 파일 경로 대신 실제 접근 가능한 Presigned URL 설정
-        response.setProfileImageUrl(userService.getImageUrl(user.getId(), "profile"));
-        response.setVerificationImageUrl(userService.getImageUrl(user.getId(), "verification"));
+        // 실제 파일이 있을 때만 Presigned URL 생성, 없으면 null 유지
+        if (user.getProfileImageUrl() != null) {
+            response.setProfileImageUrl(userService.getImageUrl(user.getId(), "profile"));
+        }
+        if (user.getVerificationImageUrl() != null) {
+            response.setVerificationImageUrl(userService.getImageUrl(user.getId(), "verification"));
+        }
 
         return ResponseEntity.ok(CommonResponse.ofSuccess(response));
     }
