@@ -189,38 +189,56 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // }
             // gender = user.getGender(); // DB에서 gender 가져오기
             
-            // 1. OpenVidu Session 보장
-            String openViduSessionId = openViduService.ensureSession(roomId);
-
-            // 2. 방 생성 또는 조회 (URL 파라미터로 mode 지정)
-            // TODO: [DB 연동] Room 엔티티에서 방 정보 조회
-            // Room roomEntity = roomService.findById(roomId)
-            //     .orElseThrow(() -> new RoomNotFoundException(roomId));
-            // RotationMode mode = RotationMode.valueOf(roomEntity.getMode());
-            RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
+            // 1. 방 자동 배정 (재시도 로직 포함)
+            // 매칭 로직: 모드, 성별, 대기 상태, 인원 수 고려
+            RoomState room = null;
+            int maxRetries = 3;
             
-            // ✅ 입장 가능 여부 검증
-            int currentCount = room.getParticipantCount();
-            int maxParticipants = 4;
-            
-            if (currentCount >= maxParticipants) {
-                sendError(session, "ROOM_FULL", "방이 가득 찼습니다. 다른 방을 이용해주세요.");
-                return;
+            for (int i = 0; i < maxRetries; i++) {
+                try {
+                    room = roomRegistry.findAvailableOrCreateRoom(mode, gender, openViduService);
+                    roomId = room.getRoomId();
+                    
+                    // 3. 참가자 추가 시도 (여기서 정원 초과 예외 발생 가능)
+                    roomRegistry.addParticipant(roomId, userId, username, gender, session);
+                    
+                    // 성공하면 루프 탈출
+                    break;
+                } catch (IllegalStateException e) {
+                    // 정원 초과 등 경쟁 상태 발생 시 재시도
+                    log.warn("방 참가 실패 (재시도 {}/{}): roomId={}, error={}", i+1, maxRetries, roomId, e.getMessage());
+                    if (i == maxRetries - 1) {
+                        throw e; // 마지막 시도도 실패하면 예외 던짐
+                    }
+                    // 잠시 대기 후 재시도 가능
+                }
             }
             
-            if (room.getCurrentStage() != Stage.WAITING) {
-                sendError(session, "GAME_IN_PROGRESS", "이미 진행 중인 방입니다. 다음 매칭 시간을 이용해주세요.");
-                return;
-            }
+            // Session attributes에 roomId 저장 (disconnect detection을 위해)
+            session.getAttributes().put("roomId", roomId);
+            
+            log.info(">>> 사용자 방 배정 완료: userId={}, roomId={}, mode={}", userId, roomId, mode);
+            
+            // 2. (생략) OpenVidu Session은 findAvailableOrCreateRoom 내부에서 이미 보장됨
+            // String openViduSessionId = openViduService.ensureSession(roomId);
 
-            // 3. 참가자 추가 (Gender 포함)
+            // 3. (생략) RoomState 조회도 이미 완료됨
+            // RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
+            
+            // 4. 참가자 추가 (Gender 포함)
             roomRegistry.addParticipant(roomId, userId, username, gender, session);
 
             // 4. OpenVidu Token 발급
             String token = openViduService.generateToken(roomId, userId);
             room.setParticipantToken(userId, token);
 
-            // 5. JOIN_OK 응답 전송
+            // 5. 방 자동 시작 조건 확인
+            if (shouldStartRoom(room)) {
+                log.info("🚀 방 인원 충족 - 로테이션 자동 시작: roomId={}", roomId);
+                stageScheduler.startStageRotation(room);
+            }
+
+            // JOIN_OK 응답 전송
             JoinOkMessage.RoundInfoDto roundInfo = null;
             if (room.getCurrentRound() != null) {
                 roundInfo = new JoinOkMessage.RoundInfoDto(
@@ -404,6 +422,24 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         }
     }
     
+    /**
+     * 방 자동 시작 조건 검사
+     */
+    private boolean shouldStartRoom(RoomState room) {
+        if (room.getCurrentStage() != Stage.WAITING) {
+            return false;
+        }
+        
+        if (room.getMode() == RotationMode.PAIR_ONLY) {
+            // 남녀 동수 체크 (2:2)
+            // 주의: getMaleCount() 등은 addParticipant 이전에 호출되면 안 됨 (지금은 이후에 호출됨)
+            return room.getMaleCount() >= 2 && room.getFemaleCount() >= 2;
+        } else {
+            // FREE_TALK: 4명 되면 시작
+            return room.getParticipantCount() >= 4;
+        }
+    }
+
     // ========== 8단계 로테이션 메시지 처리 ==========
     
     /**
