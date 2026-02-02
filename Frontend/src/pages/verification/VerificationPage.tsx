@@ -1,10 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import { RefreshCcw } from 'lucide-react';
-import api from '@/utils/api';
+import * as verificationApi from '@/api/verification.ts';
 
 import faceMatchImg from '@/assets/face-verification.png';
 
@@ -40,13 +40,11 @@ export default function VerificationPage() {
   useEffect(() => {
     const fetchVerificationImage = async () => {
       try {
-        const data = await api.get<VerificationImageResponse>('/verification/verify');
-        // axios response wrapper가 없다면 generic 사용 시 주의.
-        // utils/api.ts를 보면 response.data.data를 리턴함.
-        // typescript에서는 return type을 명시적으로 casting 해줘야 할 수 있음.
-        const responseData = data as unknown as VerificationImageResponse;
+        const responseData: any = await verificationApi.getVerificationImage();
+        console.log('📡 [VerifyPage] 대표 이미지 응답:', responseData);
 
         if (responseData && responseData.verificationImgUrl) {
+          console.log('🖼️ [VerifyPage] 이미지 URL:', responseData.verificationImgUrl);
           setPreviewRep(responseData.verificationImgUrl);
         }
       } catch (error: any) {
@@ -95,13 +93,7 @@ export default function VerificationPage() {
       formData.append('realtimeImage', liveBlob, 'realtime.jpg');
 
       // POST 요청
-      const data = await api.post<VerificationResultResponse>('/verification/verify', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      const responseData = data as unknown as VerificationResultResponse;
+      const responseData: any = await verificationApi.verifyFaceMatch(formData);
 
       // 응답: { requestId: "UUID", verified: true }
       if (responseData.verified) {
@@ -289,8 +281,8 @@ export default function VerificationPage() {
             onClick={handleVerify}
             disabled={!previewRep || !liveBlob || isVerifying || isSuccess}
             className={`w-full py-8 rounded-[24px] text-xl font-bold shadow-xl transition-all ${previewRep && liveBlob && !isSuccess
-                ? 'bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] text-white hover:scale-[1.02] hover:shadow-2xl'
-                : 'bg-[#E6E9EF] text-[#A3ACBA] cursor-not-allowed'
+              ? 'bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] text-white hover:scale-[1.02] hover:shadow-2xl'
+              : 'bg-[#E6E9EF] text-[#A3ACBA] cursor-not-allowed'
               }`}
           >
             {isVerifying
