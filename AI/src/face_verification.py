@@ -96,11 +96,8 @@ class RoundyVision:
                 self.reference_cache[img_input] = face_img
             return face_img
 
-        # 3. 추출 실패 시 원본 반환 (이미지 데이터인 경우)
-        if hasattr(img_input, 'shape'): # numpy array check
-            return img_input
-            
-        return cv2.imread(img_input)
+        # 3. 추출 실패 시 None 반환 (얼굴을 찾지 못함)
+        return None
 
     def verify_face(self, img1, img2, threshold=0.4):
         """정밀 정렬 및 안면 인증 수행 (Stateless: img2 is image data)"""
@@ -120,9 +117,9 @@ class RoundyVision:
 
             if cap_face is not None:
                 img1 = cap_face
-                cv2.imwrite("asset/debug/debug_cap_face_refined.jpg", img1)
             else:
-                 pass
+                # 실시간 이미지에서 얼굴을 찾지 못한 경우
+                return {"verified": False, "distance": None, "error": "실시간 이미지에서 얼굴을 인식할 수 없습니다. 카메라를 정면으로 향하고 얼굴 전체가 보이도록 해주세요."}
 
             # 4. DeepFace 비교 (ArcFace + GPU 가속 활용)
             result = DeepFace.verify(
