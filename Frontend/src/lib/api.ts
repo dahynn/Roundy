@@ -7,13 +7,14 @@ export const api = axios.create({
   },
 });
 
-// 인터셉터: 토큰 삽입
+// 인터셉터: 토큰 자동 삽입
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  // GET 요청 시 Body가 있으면 서버에 따라 500 에러를 유발하므로 방지
   if (config.method?.toLowerCase() === 'get') {
     delete config.data;
   }
@@ -30,9 +31,8 @@ export const getUserInfo = async () => {
 };
 
 /**
- * [추가] 로그아웃 API
- * Method: POST
- * URL: /auth/logout
+ * 로그아웃 API
+ * Method: POST / URL: /auth/logout
  */
 export const logout = async () => {
   const response = await api.post('/auth/logout');
@@ -40,9 +40,8 @@ export const logout = async () => {
 };
 
 /**
- * [추가] 회원탈퇴 API
- * Method: DELETE
- * URL: /auth/withdraw
+ * 회원탈퇴 API
+ * Method: DELETE / URL: /auth/withdraw
  */
 export const withdraw = async () => {
   const response = await api.delete('/auth/withdraw');
