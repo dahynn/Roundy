@@ -84,7 +84,7 @@ public class User extends BaseEntity {
 
     // 회원 탈퇴 (Soft Delete)
     public void withdraw() {
-        this.nickName = "탈퇴한 회원";
+        this.nickName = "(알 수 없음)";
         this.email = null;
         this.name = null;
         this.kakaoId = null;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
-import api from '@/utils/api';
+import { getPreferences } from '@/api/preference';
 
 // ✅ 타입 정의
 type PreferenceType =
@@ -43,24 +43,8 @@ export default function PreferenceForm({
     const fetchPreferences = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get('/preferences');
-
-        let finalData: PreferenceItem[] = [];
-
-        // 1. response 자체가 배열인 경우 (Interceptor가 data를 바로 반환할 때)
-        if (Array.isArray(response)) {
-          finalData = response;
-        }
-        // 2. response.data가 배열인 경우 (일반적인 구조)
-        else if (Array.isArray(response.data)) {
-          finalData = response.data;
-        }
-        // 3. response.data.data가 배열인 경우 (백엔드 공통 응답 포맷)
-        else if (response.data && Array.isArray(response.data.data)) {
-          finalData = response.data.data;
-        }
-
-        setServerItems(finalData);
+        const finalData: any = await getPreferences();
+        setServerItems(finalData || []);
       } catch (error) {
         console.error('데이터 호출 에러:', error);
       } finally {
@@ -145,13 +129,12 @@ export default function PreferenceForm({
                           type="button"
                           onClick={() => toggleItem(item.id, section.type, section.limit)}
                           disabled={isDisabled}
-                          className={`px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all duration-200 ${
-                            isSelected
+                          className={`px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all duration-200 ${isSelected
                               ? 'border-[#FF4D94] text-[#FF4D94] bg-pink-50 shadow-sm'
                               : isDisabled
                                 ? 'border-gray-100 text-gray-300 bg-gray-50 cursor-not-allowed opacity-60'
                                 : 'border-gray-50 text-gray-400 bg-white hover:border-gray-200 hover:text-gray-600'
-                          }`}
+                            }`}
                         >
                           {item.content}
                         </button>
@@ -169,11 +152,10 @@ export default function PreferenceForm({
             type="button"
             disabled={selectedIds.length !== 14}
             onClick={() => onSubmit(selectedIds.map((id) => id.toString()))}
-            className={`w-full py-8 rounded-2xl text-xl font-black transition-all ${
-              selectedIds.length === 14
+            className={`w-full py-8 rounded-2xl text-xl font-black transition-all ${selectedIds.length === 14
                 ? 'bg-[#FF4D94] text-white shadow-lg hover:bg-[#ff3385]'
                 : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-            }`}
+              }`}
           >
             {selectedIds.length === 14 ? '가입 완료' : `${selectedIds.length} / 14 선택됨`}
           </Button>
