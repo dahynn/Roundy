@@ -115,8 +115,8 @@ export default function VerificationPage() {
     } catch (error: any) {
       console.error('인증 요청 실패:', error);
 
-      // 400 에러: 얼굴 감지 실패 (특정 에러 메시지)
-      if (error.response?.status === 400) {
+      // success: false인 경우 (얼굴 감지 실패)
+      if (error.response?.data?.success === false) {
         const errorMessage = error.response.data?.message || '얼굴을 인식할 수 없습니다.';
         alert(`⚠️ ${errorMessage}\n\n다시 촬영해주세요.`);
       } else {
