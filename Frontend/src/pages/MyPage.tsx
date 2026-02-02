@@ -53,7 +53,7 @@ export default function MyPage() {
                           <img src={userInfo.profileImage} alt="프로필" className="w-full h-full object-cover" />
                         ) : (
                           <div className="flex flex-col items-center gap-1 text-gray-300 dark:text-gray-600">
-                             <UserIconPlaceholder />
+                            <UserIconPlaceholder />
                           </div>
                         )}
                       </div>
@@ -77,15 +77,15 @@ export default function MyPage() {
                   </div>
 
                   <div className="flex items-center gap-3 w-full justify-center md:justify-start">
-                     <div className="w-full md:w-auto min-w-[140px] bg-gray-50 dark:bg-white/5 rounded-2xl p-3 border border-gray-100 dark:border-white/5 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-[#7C3AED] dark:text-[#A78BFA]">
-                          <Star size={16} fill="currentColor" />
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="text-[11px] text-gray-400 dark:text-gray-500 font-bold">매칭 확률</span>
-                          <span className="text-sm font-black text-[#1A1F36] dark:text-white transition-colors">{userInfo.matchRate}%</span>
-                        </div>
-                     </div>
+                    <div className="w-full md:w-auto min-w-[140px] bg-gray-50 dark:bg-white/5 rounded-2xl p-3 border border-gray-100 dark:border-white/5 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-[#7C3AED] dark:text-[#A78BFA]">
+                        <Star size={16} fill="currentColor" />
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500 font-bold">매칭 확률</span>
+                        <span className="text-sm font-black text-[#1A1F36] dark:text-white transition-colors">{userInfo.matchRate}%</span>
+                      </div>
+                    </div>
                   </div>
 
                   <button className="w-full md:w-auto mt-1 px-8 py-3 bg-[#1A1F36] dark:bg-white text-white dark:text-[#1A1F36] rounded-xl font-bold text-sm shadow-lg hover:bg-[#FF4D94] dark:hover:bg-[#FF4D94] dark:hover:text-white hover:shadow-pink-200 hover:-translate-y-0.5 transition-all duration-300">
@@ -125,9 +125,18 @@ export default function MyPage() {
                   label="개인정보 수정"
                 />
                 <div className="h-[1px] bg-gray-50 dark:bg-white/5 mx-6" />
-                <MenuLink icon={<LogOut size={20} className="text-gray-400 dark:text-gray-500 group-hover:text-[#7C3AED] dark:group-hover:text-[#A78BFA]" />} label="로그아웃" />
+                <MenuLink
+                  icon={<LogOut size={20} className="text-gray-400 dark:text-gray-500 group-hover:text-[#7C3AED] dark:group-hover:text-[#A78BFA]" />}
+                  label="로그아웃"
+                  onClick={handleLogout}
+                />
                 <div className="h-[1px] bg-gray-50 dark:bg-white/5 mx-6" />
-                <MenuLink icon={<UserMinus size={20} className="text-gray-400 dark:text-gray-500 group-hover:text-red-500 dark:group-hover:text-red-400" />} label="회원탈퇴" isDanger />
+                <MenuLink
+                  icon={<UserMinus size={20} className="text-gray-400 dark:text-gray-500 group-hover:text-red-500 dark:group-hover:text-red-400" />}
+                  label="회원탈퇴"
+                  isDanger
+                  onClick={handleWithdraw}
+                />
               </div>
             </section>
           </div>
@@ -137,9 +146,12 @@ export default function MyPage() {
   );
 }
 
-function MenuLink({ icon, label, isDanger = false }: { icon: React.ReactNode; label: string, isDanger?: boolean }) {
+function MenuLink({ icon, label, onClick, isDanger = false }: { icon: React.ReactNode; label: string, onClick?: () => void, isDanger?: boolean }) {
   return (
-    <button className="w-full flex items-center justify-between px-6 py-5 hover:bg-gray-50/80 dark:hover:bg-white/5 transition-all group active:scale-[0.99]">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-6 py-5 hover:bg-gray-50/80 dark:hover:bg-white/5 transition-all group active:scale-[0.99]"
+    >
       <div className="flex items-center gap-4">
         <div className={`p-2.5 rounded-2xl bg-gray-50 dark:bg-white/5 group-hover:bg-white dark:group-hover:bg-white/10 group-hover:shadow-sm transition-all duration-300 ${isDanger ? 'group-hover:bg-red-50 dark:group-hover:bg-red-900/10' : ''}`}>
           {icon}
@@ -153,7 +165,7 @@ function MenuLink({ icon, label, isDanger = false }: { icon: React.ReactNode; la
 
 const UserIconPlaceholder = () => (
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-40">
-    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
