@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
   Megaphone,
@@ -10,38 +11,99 @@ import {
   Star
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import { getUserInfo, logout, withdraw } from '@/lib/api';
 
 export default function MyPage() {
+  const navigate = useNavigate();
+  const [serverData, setServerData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // TODO : 유저 연결 후 여기도 연동하기
+  // 1. 초기 데이터 페칭
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        const response = await getUserInfo();
+        if (response && response.success) {
+          setServerData(response.data);
+        }
+      } catch (error: any) {
+        console.error('유저 정보를 불러오지 못했습니다:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  // 2. 로그아웃 핸들러
+  const handleLogout = async () => {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
+    try {
+      const res = await logout();
+      if (res.success) {
+        localStorage.removeItem('accessToken');
+        alert('로그아웃 되었습니다.');
+        navigate('/'); // 랜딩 페이지로 이동
+      }
+    } catch (error) {
+      console.error('로그아웃 실패:', error);
+      alert('로그아웃 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 3. 회원탈퇴 핸들러
+  const handleWithdraw = async () => {
+    if (!confirm('정말로 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.')) return;
+    try {
+      const res = await withdraw();
+      if (res.success) {
+        localStorage.removeItem('accessToken');
+        alert('회원 탈퇴가 완료되었습니다.');
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('회원탈퇴 실패:', error);
+      alert('탈퇴 처리 중 오류가 발생했습니다.');
+    }
+  };
+
   const userInfo = {
-    name: '김민수',
-    age: 29,
-    profileImage: null,
+    name: serverData?.nickname || serverData?.name || '라운디 유저',
+    age: serverData?.age || 29,
+    profileImage: serverData?.profilePhotoUrl || serverData?.profileImageUrl || null,
     matchRate: 85,
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#FAFBFF]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-[#FF4D94]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-y-auto font-['Pretendard'] no-scrollbar transition-colors duration-300">
       <Header />
-      
+
       {/* 메인 컨텐츠 영역 */}
       <main className="flex-1 p-6 md:p-10 lg:px-20 pb-20">
         <div className="max-w-3xl mx-auto">
-          
+
           {/* 타이틀 영역 */}
           <div className="flex items-center justify-between mb-8 px-2">
             <h1 className="text-3xl font-black text-[#1A1F36] dark:text-white tracking-tight transition-colors">My page</h1>
           </div>
 
           <div className="space-y-12">
-            
+
             {/* 프로필 카드 섹션 */}
             <div className="relative group">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[80%] bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] opacity-20 blur-[60px] rounded-full pointer-events-none" />
 
               <div className="relative bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white dark:border-white/10 rounded-[40px] p-8 md:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center gap-8 overflow-hidden transition-colors duration-300">
-                
+
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-pink-50 dark:from-pink-900/20 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
 
                 {/* 1. 프로필 이미지 */}
@@ -66,7 +128,7 @@ export default function MyPage() {
 
                 {/* 2. 유저 정보 */}
                 <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-5 w-full">
-                  
+
                   <div>
                     <h2 className="text-3xl font-black text-[#1A1F36] dark:text-white mb-1 flex items-center gap-2 justify-center md:justify-start transition-colors">
                       {userInfo.name}
