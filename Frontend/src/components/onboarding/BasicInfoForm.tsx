@@ -12,7 +12,8 @@ import {
 export interface BasicInfoData {
   profileFile: File | null;
   previewUrl: string;
-  nickName: string;
+  name: string; // 성함(인증됨) 추가
+  nickName: string; // 닉네임(수정가능)
   gender: 'MALE' | 'FEMALE' | null;
   birth: { year: string; month: string; day: string };
   mbti: { ei: string; ns: string; ft: string; jp: string };
@@ -106,14 +107,26 @@ export default function BasicInfoForm({ initialData, onNext }: BasicInfoFormProp
             </div>
           </div>
 
-          {/* 2. 닉네임 (성함 고정) */}
-          <div className="space-y-4">
-            <label className="text-sm font-black text-[#1A1F36] ml-1">성함(인증됨)</label>
-            <input
-              value={formData.nickName || '정보를 불러오는 중...'}
-              readOnly
-              className="w-full bg-gray-100 border border-gray-100 rounded-2xl py-5 px-7 text-gray-400 font-bold cursor-not-allowed outline-none shadow-sm"
-            />
+          {/* 2. 성함 (고정) 및 닉네임 (입력) */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <label className="text-sm font-black text-[#1A1F36] ml-1">성함(인증됨)</label>
+              <input
+                value={formData.name || '정보를 불러오는 중...'}
+                readOnly
+                className="w-full bg-gray-100 border border-gray-100 rounded-2xl py-5 px-7 text-gray-400 font-bold cursor-not-allowed outline-none shadow-sm"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-sm font-black text-[#1A1F36] ml-1">닉네임</label>
+              <input
+                value={formData.nickName}
+                onChange={(e) => updateField('nickName', e.target.value)}
+                placeholder="사용하실 닉네임을 입력해주세요"
+                className="w-full bg-white border border-gray-100 rounded-2xl py-5 px-7 text-[#1A1F36] font-bold outline-none shadow-sm focus:border-[#FF4D94] transition-colors"
+              />
+            </div>
           </div>
 
           {/* 3. 성별 */}

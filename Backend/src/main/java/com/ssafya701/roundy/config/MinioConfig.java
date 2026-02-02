@@ -18,6 +18,9 @@ public class MinioConfig {
     @Value("${minio.url}")
     private String url;
 
+    @Value("${minio.external-url}")
+    private String externalUrl;
+
     @Value("${minio.access-key}")
     private String accessKey;
 
@@ -26,11 +29,22 @@ public class MinioConfig {
 
     @Bean
     public MinioClient minioClient() {
-        log.info("Initializing MinIO client: url={}", url);
-        
+        log.info("Initializing Internal MinIO client: url={}", url);
         return MinioClient.builder()
                 .endpoint(url)
                 .credentials(accessKey, secretKey)
+                .region("us-east-1")
+                .build();
+    }
+
+    @Bean
+    public MinioClient externalMinioClient() {
+        String targetUrl = (externalUrl != null && !externalUrl.isEmpty()) ? externalUrl : url;
+        log.info("Initializing External MinIO client for Presigned URLs: url={}", targetUrl);
+        return MinioClient.builder()
+                .endpoint(targetUrl)
+                .credentials(accessKey, secretKey)
+                .region("us-east-1")
                 .build();
     }
 }
