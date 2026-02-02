@@ -23,8 +23,8 @@ def verify():
     # if not os.path.exists(REFERENCE_PATH):
     #    return jsonify({"error": "Reference image not found."}), 500
 
-    file = request.files['image']
-    ref_file = request.files['reference_image']
+    file = request.files['realtimeImage']
+    ref_file = request.files['originalImage']
     # landmarks_json = request.form.get('landmarks') # Removed
 
     img_array = np.frombuffer(file.read(), np.uint8)
