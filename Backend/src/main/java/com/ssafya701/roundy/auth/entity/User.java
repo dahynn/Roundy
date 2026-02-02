@@ -47,11 +47,13 @@ public class User extends BaseEntity {
     private UserStatus status;
 
     @Builder
-    public User(Long kakaoId, String name, String email, GenderType gender, LocalDate birthDate, UserRole role,
+    public User(Long kakaoId, String name, String email, String nickName, GenderType gender, LocalDate birthDate,
+            UserRole role,
             UserStatus status) {
         this.kakaoId = kakaoId;
         this.name = name;
         this.email = email;
+        this.nickName = nickName;
         this.gender = gender;
         this.birthDate = birthDate;
         this.role = role;
