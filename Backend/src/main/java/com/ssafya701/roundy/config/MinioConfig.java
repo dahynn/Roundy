@@ -18,6 +18,9 @@ public class MinioConfig {
     @Value("${minio.url}")
     private String url;
 
+    @Value("${minio.external-url}")
+    private String externalUrl;
+
     @Value("${minio.access-key}")
     private String accessKey;
 
@@ -26,11 +29,38 @@ public class MinioConfig {
 
     @Bean
     public MinioClient minioClient() {
-        log.info("Initializing MinIO client: url={}", url);
-        
+        log.info("Initializing Internal MinIO client: url={}", url);
         return MinioClient.builder()
-                .endpoint(url)
+                .endpoint(stripPath(url))
                 .credentials(accessKey, secretKey)
+                .region("us-east-1")
                 .build();
+    }
+
+    @Bean
+    public MinioClient externalMinioClient() {
+        String targetUrl = (externalUrl != null && !externalUrl.isEmpty()) ? externalUrl : url;
+        log.info("Initializing External MinIO client for Presigned URLs: url={}", targetUrl);
+        return MinioClient.builder()
+                .endpoint(stripPath(targetUrl))
+                .credentials(accessKey, secretKey)
+                .region("us-east-1")
+                .build();
+    }
+
+    /**
+     * URL에서 경로 부분을 제거하여 MinioClient가 수용 가능한 형태로 변환합니다.
+     * 예: https://example.com/minio -> https://example.com
+     */
+    private String stripPath(String urlString) {
+        if (urlString == null || urlString.isEmpty())
+            return urlString;
+        try {
+            java.net.URI uri = new java.net.URI(urlString);
+            return new java.net.URI(uri.getScheme(), uri.getAuthority(), null, null, null).toString();
+        } catch (Exception e) {
+            log.warn("Failed to strip path from URL: {}, using as is.", urlString);
+            return urlString;
+        }
     }
 }
