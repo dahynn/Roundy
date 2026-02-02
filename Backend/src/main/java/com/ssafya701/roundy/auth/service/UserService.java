@@ -210,8 +210,16 @@ public class UserService {
     @Transactional
     public void withdrawUser(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorEnum.USER_NOT_FOUND));
-        kakaoService.unlink(user.getKakaoId());
-        userRepository.delete(user);
+
+        // 1. 카카오 연동 해제
+        if (user.getKakaoId() != null) {
+            kakaoService.unlink(user.getKakaoId());
+        }
+
+        // 2. 소프트 딜리트 (상태 변경 및 정보 익명화)
+        user.withdraw();
+
+        // 3. 리프레시 토큰 삭제
         redisTemplate.delete("RT:" + userId);
     }
 
