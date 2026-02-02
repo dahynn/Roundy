@@ -4,10 +4,12 @@ import com.ssafya701.roundy.auth.entity.User;
 import com.ssafya701.roundy.auth.enums.GenderType;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
+@Setter
 @Builder
 public class UserResponse {
     private Long id;

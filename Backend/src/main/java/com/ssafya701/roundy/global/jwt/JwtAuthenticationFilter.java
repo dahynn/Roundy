@@ -46,23 +46,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String token = resolveToken(request);
+        try {
+            String token = resolveToken(request);
 
-        // 유효한 토큰이라면
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            // 토큰으로 인증 객체(Authentication)를 만듬 (DB 조회 발생)
-            Authentication authentication = jwtTokenProvider.getAuthentication(token);
+            // 유효한 토큰이라면
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                // 토큰으로 인증 객체(Authentication)를 만듬 (DB 조회 발생)
+                Authentication authentication = jwtTokenProvider.getAuthentication(token);
 
-            // SecurityContext에 저장 (이래야 컨트롤러에서 @AuthenticationPrincipal 사용 가능)
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                // SecurityContext에 저장
+                SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            log.info("🔑 Security Context Set - UserID: {}, URI: {}", authentication.getName(),
-                    request.getRequestURI());
-        } else {
-            log.info("⚠️ No valid token found for URI: {}", request.getRequestURI());
+                log.info("🔑 Security Context Set - UserID: {}, URI: {}", authentication.getName(),
+                        request.getRequestURI());
+            }
+            filterChain.doFilter(request, response);
+        } catch (com.ssafya701.roundy.global.error.CustomException e) {
+            // JWT 관련 커스텀 예외 발생 시 401 응답 처리
+            log.info("⚠️ JWT Auth Failed: {} for URI: {}", e.getMessage(), request.getRequestURI());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"success\":false, \"message\":\"" + e.getMessage() + "\"}");
+        } catch (Exception e) {
+            log.error("🔥 Security Filter Error: ", e);
+            filterChain.doFilter(request, response);
         }
-
-        filterChain.doFilter(request, response);
     }
 
     private String resolveToken(HttpServletRequest request) {
