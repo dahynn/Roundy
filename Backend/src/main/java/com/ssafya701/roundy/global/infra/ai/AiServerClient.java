@@ -36,13 +36,13 @@ public class AiServerClient {
      *
      * @param realtimeImage 실시간 이미지 (MultipartFile)
      * @param originalImage 원본 이미지 (InputStream from MinIO)
-     * @return 검증 결과 (true: 일치, false: 불일치)
+     * @return 검증 결과 (verified + errorMessage)
      */
-    public boolean verifyFace(MultipartFile realtimeImage, InputStream originalImage) {
+    public AiVerificationResult verifyFace(MultipartFile realtimeImage, InputStream originalImage) {
         try {
             // InputStream을 byte[]로 변환하여 Content-Length 제공 (Chunked Encoding 방지)
             byte[] originalImageBytes = originalImage.readAllBytes();
-
+            
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
             builder.part("realtimeImage", realtimeImage.getResource());
             builder.part("originalImage", new org.springframework.core.io.ByteArrayResource(originalImageBytes) {
@@ -65,27 +65,27 @@ public class AiServerClient {
 
             if (response == null) {
                 log.error("AI server response is null");
-                return false;
+                return AiVerificationResult.faceDetectionError("AI 서버 응답 없음");
             }
 
             // AI 서버 응답에서 error 필드가 있으면 얼굴 감지 실패
             if (response.containsKey("error")) {
                 String errorMessage = (String) response.get("error");
                 log.warn("AI server returned error: {}", errorMessage);
-                throw new RuntimeException("얼굴 인식 실패: " + errorMessage);
+                return AiVerificationResult.faceDetectionError(errorMessage);
             }
 
             // verified 필드 확인 (success가 아님!)
             boolean verified = Boolean.TRUE.equals(response.get("verified"));
             Object distance = response.get("distance");
-
+            
             log.info("AI verification result: verified={}, distance={}", verified, distance);
-
-            return verified;
+            
+            return AiVerificationResult.success(verified);
 
         } catch (Exception e) {
             log.error("AI server call failed", e);
-            throw new RuntimeException(e.getMessage(), e);
+            return AiVerificationResult.faceDetectionError("AI 서버 호출 실패: " + e.getMessage());
         }
     }
 }
