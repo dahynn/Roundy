@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '@/utils/api';
 
 import BasicInfoForm, { type BasicInfoData } from '@/components/onboarding/BasicInfoForm';
@@ -8,7 +8,8 @@ import PreferenceForm from '@/components/onboarding/PreferenceForm';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<number>(1);
+  const location = useLocation();
+  const [step, setStep] = useState<number>(location.state?.step || 1);
 
   const [basicInfo, setBasicInfo] = useState<BasicInfoData>({
     profileFile: null,
@@ -27,11 +28,13 @@ export default function Onboarding() {
       try {
         const response = await api.get('/auth/signup/details');
         const userData = response.data?.data || response.data || response;
-        if (userData && userData.name) {
+
+        if (userData) {
+          // 1. 기본 정보 세팅
           const dateParts = userData.birthDate ? userData.birthDate.split('-') : [];
           setBasicInfo((prev) => ({
             ...prev,
-            nickName: userData.name,
+            nickName: userData.nickname || userData.name || '',
             gender: userData.gender as 'MALE' | 'FEMALE',
             birth: {
               year: dateParts[0] || '',
@@ -39,6 +42,20 @@ export default function Onboarding() {
               day: dateParts[2] ? String(parseInt(dateParts[2], 10)) : '',
             },
           }));
+
+          // 2. 만약 location.state로 받은 step이 없다면, status에 따라 자동 점프
+          if (!location.state?.step) {
+            const status = userData.status;
+            const hasNickname = !!userData.nickname;
+
+            if (status === 'VALID') {
+              navigate('/home');
+            } else if (status === 'PENDING_VERIFICATION') {
+              setStep(3);
+            } else if (status === 'JOINED' && hasNickname) {
+              setStep(2);
+            }
+          }
         }
       } catch (error) {
         console.error('API 호출 실패:', error);
