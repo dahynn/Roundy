@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.webrtc.util;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
@@ -20,7 +21,8 @@ public class TestJwtGenerator {
     }
 
     public TestJwtGenerator(String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     /**
@@ -47,10 +49,11 @@ public class TestJwtGenerator {
         Date validity = new Date(now.getTime() + validityMs);
 
         return Jwts.builder()
-                .subject(username)
+                .setSubject(String.valueOf(userId))
+                .claim("username", username)
                 .claim("userId", userId)
-                .issuedAt(now)
-                .expiration(validity)
+                .setIssuedAt(now)
+                .setExpiration(validity)
                 .signWith(secretKey)
                 .compact();
     }
@@ -67,10 +70,11 @@ public class TestJwtGenerator {
         Date expiredDate = new Date(now.getTime() - 1000); // 1초 전에 만료
 
         return Jwts.builder()
-                .subject(username)
+                .setSubject(String.valueOf(userId))
+                .claim("username", username)
                 .claim("userId", userId)
-                .issuedAt(new Date(now.getTime() - 2000))
-                .expiration(expiredDate)
+                .setIssuedAt(new Date(now.getTime() - 2000))
+                .setExpiration(expiredDate)
                 .signWith(secretKey)
                 .compact();
     }
@@ -89,10 +93,11 @@ public class TestJwtGenerator {
         Date validity = new Date(now.getTime() + 3600000);
 
         return Jwts.builder()
-                .subject(username)
+                .setSubject(String.valueOf(userId))
+                .claim("username", username)
                 .claim("userId", userId)
-                .issuedAt(now)
-                .expiration(validity)
+                .setIssuedAt(now)
+                .setExpiration(validity)
                 .signWith(wrongKey)
                 .compact();
     }

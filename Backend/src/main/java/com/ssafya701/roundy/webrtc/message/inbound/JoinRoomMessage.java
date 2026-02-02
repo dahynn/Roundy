@@ -14,6 +14,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class JoinRoomMessage implements WsMessage {
     private String roomId;
+    private String requestId;
+
+    public JoinRoomMessage(String roomId) {
+        this.roomId = roomId;
+    }
     
     @Override
     public WsMessageType getType() {
