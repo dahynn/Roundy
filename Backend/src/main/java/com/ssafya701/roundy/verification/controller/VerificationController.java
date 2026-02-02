@@ -66,11 +66,11 @@ public class VerificationController {
             com.ssafya701.roundy.global.infra.ai.AiVerificationResult result = 
                     aiServerClient.verifyFace(realtimeImage, originalImage);
 
-            // 얼굴 감지 실패 시 에러 응답
+            // 얼굴 감지 실패 시 에러 응답 (200 OK + error message)
             if (result.hasFaceDetectionError()) {
                 log.warn("Face detection failed: userId={}, error={}", userId, result.getErrorMessage());
                 
-                return ResponseEntity.status(400)
+                return ResponseEntity.ok()
                         .body(CommonResponse.ofFailure(result.getErrorMessage()));
             }
 
