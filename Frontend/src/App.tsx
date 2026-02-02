@@ -1,35 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import LandingPage from './pages/LandingPage';
+import HomePage from './pages/HomePage';
+import VerificationPage from '@/pages/VerificationPage';
+import WaitingLobby from './pages/meeting/WaitingLobby';
+import MessageListPage from './pages/message/MessageListPage';
+import ChatRoomPage from './pages/message/ChatRoomPage';
+import MyPage from './pages/MyPage'; // ★ 마이페이지 임포트 추가
+import Onboarding from "@/pages/auth/Onboarding.tsx";
+import RotationTestPage from './pages/meeting/RotationTest';
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppLayout() {
+  const location = useLocation();
+
+  // Navbar를 숨길 경로 정의 (마이페이지는 숨기지 않음)
+  const hideNavbarPaths = ['/', '/verify', '/loading'];
+  const isOnboarding = location.pathname.startsWith('/onboarding');
+  const shouldHideNavbar = hideNavbarPaths.includes(location.pathname) || isOnboarding;
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="flex h-screen w-full overflow-hidden bg-[#FAFBFF]">
+      {/* 1. 온보딩/랜딩/인증 등이 아닐 때만 Navbar 표시 */}
+      {!shouldHideNavbar && <Navbar />}
+
+      {/* 2. 메인 영역: 네브바 유무에 따라 좌측 여백(ml) 자동 조절 */}
+      <main
+        className={`flex-1 h-full ${shouldHideNavbar ? 'ml-0' : 'ml-64'} ${isOnboarding ? 'overflow-y-auto' : 'overflow-hidden'}`}
+      >
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/messages" element={<MessageListPage />} />
+          <Route path="/messages/:matchId" element={<ChatRoomPage />} />
+
+          {/* ★ 마이페이지 경로 연결 확인 */}
+          <Route path="/mypage" element={<MyPage />} />
+
+          <Route path="/verify" element={<VerificationPage />} />
+          <Route path="/loading" element={<WaitingLobby />} />
+          <Route path="/meeting/rotation" element={<RotationTestPage />} />
+        </Routes>
+      </main>
+    </div>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Router>
+      <AppLayout />
+    </Router>
+  );
+}
+
+export default App;
