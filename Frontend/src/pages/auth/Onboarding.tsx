@@ -17,6 +17,7 @@ export default function Onboarding() {
     profileFile: null,
     previewUrl: '',
     name: '',
+    email: '',
     nickName: '',
     gender: null,
     birth: { year: '', month: '', day: '' },
@@ -37,7 +38,8 @@ export default function Onboarding() {
           setBasicInfo((prev) => ({
             ...prev,
             name: userData.name || '',
-            nickName: userData.nickname || userData.name || '',
+            email: userData.email || '',
+            nickName: userData.nickname || '', // 닉네임이 없으면 빈 값으로 (사용자 입력 유도)
             gender: userData.gender as 'MALE' | 'FEMALE',
             birth: {
               year: dateParts[0] || '',

@@ -14,6 +14,7 @@ import java.time.LocalDate;
 public class UserResponse {
     private Long id;
     private String name;
+    private String email;
     private LocalDate birthDate;
     private GenderType gender;
     private String nickname;
@@ -26,6 +27,7 @@ public class UserResponse {
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
+                .email(user.getEmail())
                 .birthDate(user.getBirthDate())
                 .gender(user.getGender())
                 .nickname(user.getNickName())
