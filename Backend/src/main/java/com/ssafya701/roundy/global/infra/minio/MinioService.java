@@ -31,7 +31,6 @@ public class MinioService {
     @Value("${minio.url}")
     private String minioUrl;
 
-
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final java.util.List<String> ALLOWED_CONTENT_TYPES = java.util.Arrays.asList(
             "image/jpeg", "image/png", "image/webp");
@@ -62,8 +61,7 @@ public class MinioService {
                             .object(objectName)
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .contentType(file.getContentType())
-                            .build()
-            );
+                            .build());
 
             log.info("Image uploaded: userId={}, type={}, path={}", userId, type, objectName);
             return objectName;
@@ -103,10 +101,10 @@ public class MinioService {
                 throw new com.ssafya701.roundy.global.error.CustomException(
                         com.ssafya701.roundy.global.error.ErrorEnum.CORRUPTED_IMAGE);
             }
-            
+
             // 압축 폭탄 방지
             if (image.getWidth() * image.getHeight() > 10000 * 10000) {
-                 throw new com.ssafya701.roundy.global.error.CustomException(
+                throw new com.ssafya701.roundy.global.error.CustomException(
                         com.ssafya701.roundy.global.error.ErrorEnum.FILE_SIZE_EXCEEDED);
             }
         } catch (IOException e) {
@@ -130,8 +128,7 @@ public class MinioService {
                     GetObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
-                            .build()
-            );
+                            .build());
 
             log.info("Image downloaded: userId={}, type={}", userId, type);
             return stream;
@@ -143,15 +140,27 @@ public class MinioService {
     }
 
     /**
-     * 이미지 URL 생성 (공개 접근 가능)
-     *
-     * @param userId 사용자 ID
-     * @param type   이미지 타입
-     * @return 이미지 URL
+     * 이미지 URL 생성 (Presigned URL 방식)
+     * - 브라우저에서 10분간만 유효한 보안 주소를 생성합니다.
+     * - 새로고침을 해도 이 시간 동안은 이미지가 유지됩니다.
      */
     public String getImageUrl(Long userId, String type) {
-        String objectName = String.format("user/%d/%s.jpg", userId, type);
-        return String.format("%s/%s/%s", minioUrl, bucketName, objectName);
+        try {
+            String objectName = String.format("user/%d/%s.jpg", userId, type);
+
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(io.minio.http.Method.GET)
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .expiry(10, java.util.concurrent.TimeUnit.MINUTES) // 10분 설정
+                            .build());
+        } catch (Exception e) {
+            log.error("Failed to generate presigned URL: {}", e.getMessage());
+            // 실패 시 기본 고정 주소 반환
+            String objectName = String.format("user/%d/%s.jpg", userId, type);
+            return String.format("%s/%s/%s", minioUrl, bucketName, objectName);
+        }
     }
 
     /**
@@ -162,15 +171,13 @@ public class MinioService {
             boolean exists = minioClient.bucketExists(
                     BucketExistsArgs.builder()
                             .bucket(bucketName)
-                            .build()
-            );
+                            .build());
 
             if (!exists) {
                 minioClient.makeBucket(
                         MakeBucketArgs.builder()
                                 .bucket(bucketName)
-                                .build()
-                );
+                                .build());
                 log.info("Bucket created: {}", bucketName);
             }
         } catch (Exception e) {

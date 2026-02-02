@@ -72,7 +72,7 @@ public class UserService {
     @Transactional
     public void signUp(Long userId, UserSignUpRequest request, MultipartFile file) {
         User user = findUserById(userId);
-        
+
         // MinIO에 프로필 이미지 업로드 (경로 반환)
         String profilePath = minioService.uploadImage(userId, file, "profile");
 
@@ -83,7 +83,7 @@ public class UserService {
     @Transactional
     public void uploadVerificationPhoto(Long userId, MultipartFile file) {
         User user = findUserById(userId);
-        
+
         // MinIO에 인증용 이미지 업로드 (경로 반환)
         String verificationUrl = minioService.uploadImage(userId, file, "verification");
 
@@ -127,6 +127,12 @@ public class UserService {
 
         // 토큰 재발급 (Role이 변경되었으므로 필수)
         return issueTokens(user);
+    }
+
+    // 이미지 URL 조회 (MinIO Presigned URL)
+    @Transactional(readOnly = true)
+    public String getImageUrl(Long userId, String type) {
+        return minioService.getImageUrl(userId, type);
     }
 
     // 공통 유저 조회 메서드
@@ -218,7 +224,21 @@ public class UserService {
                 .count();
 
         if (count != expectedCount) { // 정확히 N개
-            throw new CustomException(ErrorEnum.INVALID_PREFERENCE_COUNT);
+            String errorMessage = String.format("%s 항목은 %d개를 선택해야 합니다. (현재: %d개)",
+                    convertToKorean(com.ssafya701.roundy.preference.enums.PreferenceType.valueOf(type)), expectedCount,
+                    count);
+            throw new CustomException(ErrorEnum.INVALID_PREFERENCE_COUNT, errorMessage);
         }
+    }
+
+    private String convertToKorean(com.ssafya701.roundy.preference.enums.PreferenceType type) {
+        return switch (type) {
+            case RELATIONSHIP_GOAL -> "연애 목표";
+            case DATING_STYLE -> "데이트 스타일";
+            case DATE_PREFERENCE -> "선호 데이트";
+            case PERSONALITY -> "성격";
+            case APPEARANCE -> "외모";
+            case TALENT -> "재능/특기";
+        };
     }
 }
