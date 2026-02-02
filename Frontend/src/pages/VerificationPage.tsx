@@ -45,13 +45,20 @@ export default function VerificationPage() {
         // utils/api.ts를 보면 response.data.data를 리턴함.
         // typescript에서는 return type을 명시적으로 casting 해줘야 할 수 있음.
         const responseData = data as unknown as VerificationImageResponse;
-        
+
         if (responseData && responseData.verificationImgUrl) {
           setPreviewRep(responseData.verificationImgUrl);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('인증 이미지 조회 실패:', error);
-        alert('인증 이미지를 불러오는데 실패했습니다.');
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+          alert('인증 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('accessToken');
+          navigate('/');
+        } else {
+          alert('인증 이미지를 불러오는데 실패했습니다.');
+        }
       }
     };
 
@@ -93,7 +100,7 @@ export default function VerificationPage() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       const responseData = data as unknown as VerificationResultResponse;
 
       // 응답: { requestId: "UUID", verified: true }
@@ -109,7 +116,7 @@ export default function VerificationPage() {
       console.error('인증 요청 실패:', error);
       alert('인증 과정에서 오류가 발생했습니다.');
     } finally {
-        setIsVerifying(false);
+      setIsVerifying(false);
     }
   };
 
@@ -143,7 +150,7 @@ export default function VerificationPage() {
 
       <div className="flex flex-col items-center w-full max-w-5xl">
         <div className="flex flex-col md:flex-row gap-6 w-full justify-center mb-10 items-stretch h-[600px]">
-          
+
           {/* --- 왼쪽 카드: 원본 사진 (서버에서 가져옴) --- */}
           <Card className="flex-1 max-w-[400px] h-full bg-white/90 backdrop-blur-md border-none shadow-xl rounded-[28px] overflow-hidden">
             <CardContent className="px-6 h-full flex flex-col">
@@ -155,9 +162,8 @@ export default function VerificationPage() {
               </div>
 
               <div
-                className={`w-full h-[340px] shrink-0 rounded-[24px] border-2 border-dashed relative overflow-hidden mb-6 transition-all ${
-                  previewRep ? 'cursor-move border-[#FF4D94]' : 'border-[#E0E2E7] bg-gray-50'
-                }`}
+                className={`w-full h-[340px] shrink-0 rounded-[24px] border-2 border-dashed relative overflow-hidden mb-6 transition-all ${previewRep ? 'cursor-move border-[#FF4D94]' : 'border-[#E0E2E7] bg-gray-50'
+                  }`}
                 onMouseDown={(e) => {
                   if (!previewRep) return;
                   setIsDragging(true);
@@ -181,14 +187,14 @@ export default function VerificationPage() {
 
               <div className="shrink-0 w-full flex flex-col items-center mt-auto">
                 <p className="mb-8 text-[14px] text-[#8792A2] font-medium text-center">
-                   회원가입 시 등록한 본인 사진입니다.
+                  회원가입 시 등록한 본인 사진입니다.
                 </p>
-                 <Button
-                    disabled
-                    className="w-full h-14 bg-[#E0E2E7] text-[#A3ACBA] rounded-[1.2rem] text-lg font-bold shadow-none cursor-default"
-                 >
-                   사진 확인 완료
-                 </Button>
+                <Button
+                  disabled
+                  className="w-full h-14 bg-[#E0E2E7] text-black rounded-[1.2rem] text-lg font-bold shadow-none cursor-default"
+                >
+                  사진 확인 완료
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -256,9 +262,9 @@ export default function VerificationPage() {
                 ) : previewLive ? (
                   <Button
                     onClick={() => {
-                        setPreviewLive('');
-                        setLiveBlob(null);
-                        setShowWebcam(true);
+                      setPreviewLive('');
+                      setLiveBlob(null);
+                      setShowWebcam(true);
                     }}
                     className="w-full h-14 bg-[#1A1F36] text-white rounded-[1.2rem] text-lg font-bold flex gap-2 justify-center items-center shadow-md hover:scale-[1.01]"
                   >
@@ -282,17 +288,16 @@ export default function VerificationPage() {
           <Button
             onClick={handleVerify}
             disabled={!previewRep || !liveBlob || isVerifying || isSuccess}
-            className={`w-full py-8 rounded-[24px] text-xl font-bold shadow-xl transition-all ${
-                previewRep && liveBlob && !isSuccess
+            className={`w-full py-8 rounded-[24px] text-xl font-bold shadow-xl transition-all ${previewRep && liveBlob && !isSuccess
                 ? 'bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] text-white hover:scale-[1.02] hover:shadow-2xl'
                 : 'bg-[#E6E9EF] text-[#A3ACBA] cursor-not-allowed'
-            }`}
+              }`}
           >
             {isVerifying
               ? 'AI 대조 분석 중...'
               : isSuccess
-              ? '인증 완료'
-              : '인증 시작하기'}
+                ? '인증 완료'
+                : '인증 시작하기'}
           </Button>
         </div>
       </div>

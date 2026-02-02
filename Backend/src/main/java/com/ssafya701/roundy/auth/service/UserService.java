@@ -129,6 +129,12 @@ public class UserService {
         return issueTokens(user);
     }
 
+    // 이미지 URL 조회 (MinIO Presigned URL)
+    @Transactional(readOnly = true)
+    public String getImageUrl(Long userId, String type) {
+        return minioService.getImageUrl(userId, type);
+    }
+
     // 공통 유저 조회 메서드
     private User findUserById(Long userId) {
         return userRepository.findById(userId)
