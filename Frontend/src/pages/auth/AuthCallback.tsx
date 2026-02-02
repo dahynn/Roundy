@@ -7,11 +7,15 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = searchParams.get('token'); // 쿼리 파라미터에서 토큰 추출
+    const accessToken = searchParams.get('token'); // Access Token
+    const refreshToken = searchParams.get('refreshToken'); // Refresh Token
 
-    if (token) {
+    if (accessToken) {
       // 1. 브라우저 로컬 스토리지에 토큰 저장
-      localStorage.setItem('accessToken', token);
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
 
       // 2. 사용자 상태 확인 후 라우팅
       const checkUserStatus = async () => {
