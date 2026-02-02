@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { X, Heart } from 'lucide-react';
 import kakaoLoginBtn from '@/assets/kakao_login_medium_wide.png';
 
@@ -7,15 +6,11 @@ interface Props {
 }
 
 export default function LoginModal({ onClose }: Props) {
-  const navigate = useNavigate();
-
-  // 카카오 로그인 시뮬레이션 핸들러
+  // 카카오 로그인 핸들러: 백엔드 인증 서버로 리다이렉트
   const handleKakaoLogin = () => {
-    console.log('카카오 로그인 시뮬레이션 성공');
-
-    // 모달을 닫고 '온보딩' 페이지로 이동하도록 수정했습니다.
-    onClose();
-    navigate('/onboarding');
+    // 백엔드 명세에 정의된 로그인 엔드포인트로 이동합니다.
+    // 이동 후 카카오 로그인이 완료되면 자동으로 프론트엔드 콜백 URL로 돌아옵니다.
+    window.location.href = 'http://localhost:8080/api/auth/login';
   };
 
   return (
@@ -38,7 +33,7 @@ export default function LoginModal({ onClose }: Props) {
           <Heart size={48} fill="white" className="text-white" />
         </div>
 
-        {/* 2. 헤더 메시지 & 상세 메시지 */}
+        {/* 2. 헤더 메시지 */}
         <div className="text-center mb-14">
           <h2 className="text-3xl font-black text-[#1A1F36] mb-4 tracking-tight">
             라운디에 오신 것을 환영합니다!
