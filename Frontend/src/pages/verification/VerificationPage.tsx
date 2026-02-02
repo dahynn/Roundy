@@ -1,10 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import { RefreshCcw } from 'lucide-react';
-import * as verificationApi from '@/api/verification';
+import * as verificationApi from '@/api/verification.ts';
 
 import faceMatchImg from '@/assets/face-verification.png';
 
