@@ -17,6 +17,7 @@ import { getMyInfo, logout, withdraw } from '@/api/user';
 interface UserProfile {
   id: number;
   name: string;
+  email: string;
   birthDate: string;
   gender: string;
   nickname: string;

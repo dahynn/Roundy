@@ -18,13 +18,13 @@ interface PreferenceItem {
   content: string;
 }
 
-const UI_SECTIONS: { type: PreferenceType; title: string; limit: number }[] = [
-  { type: 'RELATIONSHIP_GOAL', title: '연애 목표', limit: 2 },
-  { type: 'DATING_STYLE', title: '데이트 스타일', limit: 2 },
-  { type: 'DATE_PREFERENCE', title: '선호 데이트', limit: 3 },
-  { type: 'PERSONALITY', title: '성격', limit: 2 },
-  { type: 'APPEARANCE', title: '외모', limit: 3 },
-  { type: 'TALENT', title: '재능/특기', limit: 2 },
+const UI_SECTIONS: { type: PreferenceType; title: string; limit: number; color: string }[] = [
+  { type: 'RELATIONSHIP_GOAL', title: '연애 목표', limit: 2, color: '#FF4D94' },
+  { type: 'DATING_STYLE', title: '데이트 스타일', limit: 2, color: '#7C3AED' },
+  { type: 'DATE_PREFERENCE', title: '선호 데이트', limit: 3, color: '#FFB800' },
+  { type: 'PERSONALITY', title: '성격', limit: 2, color: '#10B981' },
+  { type: 'APPEARANCE', title: '외모', limit: 3, color: '#3B82F6' },
+  { type: 'TALENT', title: '재능/특기', limit: 2, color: '#F43F5E' },
 ];
 
 export default function PreferenceForm({
@@ -38,7 +38,7 @@ export default function PreferenceForm({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ 데이터 호출 (안전한 파싱 로직 적용)
+  // ✅ 데이터 호출
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -54,7 +54,7 @@ export default function PreferenceForm({
     fetchPreferences();
   }, []);
 
-  // ✅ 렌더링 최적화 (데이터 그룹화)
+  // ✅ 데이터 그룹화
   const groupedItems = useMemo(() => {
     const groups: Partial<Record<PreferenceType, PreferenceItem[]>> = {};
     serverItems.forEach((item) => {
@@ -78,18 +78,24 @@ export default function PreferenceForm({
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="w-full max-w-2xl flex items-center mb-4 px-4">
+      <div className="w-full max-w-2xl flex items-center mb-6 px-4">
         <button
           type="button"
           onClick={onBack}
-          className="p-2 hover:bg-white/50 rounded-full transition-all"
+          className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-sm hover:bg-white hover:shadow-md transition-all active:scale-95"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={24} className="text-[#1A1F36]" />
         </button>
       </div>
 
-      <div className="w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[40px] p-8 shadow-2xl flex flex-col h-[75vh]">
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
+      <div className="w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[50px] p-10 md:p-14 shadow-2xl flex flex-col h-[80vh] border border-white">
+        {/* 헤더 부분 */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-black text-[#1A1F36] mb-3">취향 수집</h1>
+          <p className="text-gray-400 font-bold text-sm">마음에 드는 키워드를 선택해주세요!</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-2 no-scrollbar space-y-12">
           {isLoading ? (
             <div className="flex justify-center items-center h-full">
               <Loader2 className="animate-spin text-[#FF4D94]" size={40} />
@@ -102,44 +108,53 @@ export default function PreferenceForm({
             UI_SECTIONS.map((section) => {
               const items = groupedItems[section.type] || [];
               const currentSectionIds = items.map((i) => i.id);
-              const selectedCountInfo = selectedIds.filter((id) =>
+              const selectedCount = selectedIds.filter((id) =>
                 currentSectionIds.includes(id),
               ).length;
-              const isSectionFull = selectedCountInfo >= section.limit;
+              const isSectionFull = selectedCount >= section.limit;
 
-              // 아이템이 없는 섹션은 렌더링 생략
               if (items.length === 0) return null;
 
               return (
-                <section key={section.type} className="mb-10 last:mb-0">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-black text-[#1A1F36] text-lg">{section.title}</h3>
-                    <span className="text-xs font-bold text-gray-400">
-                      {selectedCountInfo} / {section.limit}
-                    </span>
+                <section key={section.type} className="space-y-6">
+                  {/* 마이페이지 스타일 헤더 */}
+                  <div className="flex items-center justify-between px-2">
+                    <h3 className="text-lg font-black text-[#1A1F36] flex items-center gap-3">
+                      <div className="w-[4px] h-5 rounded-full" style={{ backgroundColor: section.color }} />
+                      {section.title}
+                    </h3>
+                    <div className="bg-gray-50 px-3 py-1 rounded-lg">
+                      <span className={`text-xs font-black ${isSectionFull ? 'text-[#FF4D94]' : 'text-gray-400'}`}>
+                        {selectedCount} / {section.limit}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {items.map((item) => {
-                      const isSelected = selectedIds.includes(item.id);
-                      const isDisabled = !isSelected && isSectionFull;
 
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => toggleItem(item.id, section.type, section.limit)}
-                          disabled={isDisabled}
-                          className={`px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all duration-200 ${isSelected
-                              ? 'border-[#FF4D94] text-[#FF4D94] bg-pink-50 shadow-sm'
+                  {/* 마이페이지 스타일 컨테이너 */}
+                  <div className="bg-gray-50/50 rounded-[32px] p-6 border border-gray-100/50 shadow-inner">
+                    <div className="flex flex-wrap gap-2.5">
+                      {items.map((item) => {
+                        const isSelected = selectedIds.includes(item.id);
+                        const isDisabled = !isSelected && isSectionFull;
+
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => toggleItem(item.id, section.type, section.limit)}
+                            disabled={isDisabled}
+                            className={`px-5 py-3 rounded-2xl text-[13px] font-bold border-2 transition-all duration-300 ${isSelected
+                              ? 'border-[#FF4D94] text-[#FF4D94] bg-white shadow-md shadow-pink-100 scale-105'
                               : isDisabled
-                                ? 'border-gray-100 text-gray-300 bg-gray-50 cursor-not-allowed opacity-60'
-                                : 'border-gray-50 text-gray-400 bg-white hover:border-gray-200 hover:text-gray-600'
-                            }`}
-                        >
-                          {item.content}
-                        </button>
-                      );
-                    })}
+                                ? 'border-transparent text-gray-300 bg-gray-100/50 cursor-not-allowed opacity-60'
+                                : 'border-white text-gray-400 bg-white hover:border-[#FF4D94]/20 hover:text-[#FF4D94] shadow-sm'
+                              }`}
+                          >
+                            {item.content}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </section>
               );
@@ -153,8 +168,8 @@ export default function PreferenceForm({
             disabled={selectedIds.length !== 14}
             onClick={() => onSubmit(selectedIds.map((id) => id.toString()))}
             className={`w-full py-8 rounded-2xl text-xl font-black transition-all ${selectedIds.length === 14
-                ? 'bg-[#FF4D94] text-white shadow-lg hover:bg-[#ff3385]'
-                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              ? 'bg-[#FF4D94] text-white shadow-lg hover:bg-[#ff3385]'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
               }`}
           >
             {selectedIds.length === 14 ? '가입 완료' : `${selectedIds.length} / 14 선택됨`}
