@@ -12,6 +12,7 @@ CORS(app)
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 ASSET_DIR = os.path.join(PROJECT_ROOT, "asset")
+REFERENCE_PATH = os.path.join(ASSET_DIR, "reference1.jpg")
 
 # Initialize AI Module
 vision = RoundyVision()
@@ -19,28 +20,26 @@ vision = RoundyVision()
 
 @app.route('/verify', methods=['POST'])
 def verify():
-    if 'image' not in request.files or 'reference_image' not in request.files:
-        return jsonify({"error": "Both 'image' and 'reference_image' must be provided."}), 400
+    # if not os.path.exists(REFERENCE_PATH):
+    #    return jsonify({"error": "Reference image not found."}), 500
 
-    file_cap = request.files['image']
-    file_ref = request.files['reference_image']
-    landmarks_json = request.form.get('landmarks')
+    file = request.files['image']
+    ref_file = request.files['reference_image']
+    # landmarks_json = request.form.get('landmarks') # Removed
 
-    # 1. Decode Captured Image (Target)
-    img_array_cap = np.frombuffer(file_cap.read(), np.uint8)
-    captured_img = cv2.imdecode(img_array_cap, cv2.IMREAD_COLOR)
+    img_array = np.frombuffer(file.read(), np.uint8)
+    captured_img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-    # 2. Decode Reference Image (Source)
-    img_array_ref = np.frombuffer(file_ref.read(), np.uint8)
-    reference_img = cv2.imdecode(img_array_ref, cv2.IMREAD_COLOR)
+    ref_array = np.frombuffer(ref_file.read(), np.uint8)
+    ref_img = cv2.imdecode(ref_array, cv2.IMREAD_COLOR)
 
     try:
         # Strict threshold for security
         result = vision.verify_face(
             img1=captured_img,
-            img2_source=reference_img,
-            threshold=0.4,
-            landmarks=landmarks_json
+            img2=ref_img,
+            threshold=0.4
+            # landmarks=landmarks_json # Removed
         )
 
         # --- 📍 CRITICAL FIX: Safe Logging ---
