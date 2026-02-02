@@ -58,21 +58,3 @@ export const verifyFace = async (representativeImage: File, liveImage: Blob) => 
   });
 };
 
-export const getSessions = async () => {
-  return {
-    data: [
-      {
-        sessionId: 1,
-        title: 'ASMR Session',
-        description: '조용한 카페에서 속삭이듯 대화하는 기분...',
-        currentCount: 3,
-        maxCount: 6,
-        status: 'RECRUITING',
-      },
-    ],
-  };
-};
-
-export const joinSession = async (sessionId: number) => {
-  return { data: { success: true } };
-};

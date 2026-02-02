@@ -169,7 +169,27 @@ public class MinioService {
                             .expiry(10, java.util.concurrent.TimeUnit.MINUTES)
                             .build());
 
-            log.info("Generated Presigned URL (External): {}", url);
+            log.info("Original External Presigned URL: {}", url);
+
+            // 외부 URL에 경로(/minio 등)가 포함된 경우, 생성된 URL에 다시 입혀줍니다.
+            // MinioClient는 엔드포인트에서 경로를 허용하지 않으므로 여기서 수동 보정이 필요합니다.
+            if (externalUrl != null && !externalUrl.isEmpty()) {
+                try {
+                    java.net.URI baseUri = new java.net.URI(externalUrl);
+                    String path = baseUri.getPath();
+                    if (path != null && !path.isEmpty() && !path.equals("/")) {
+                        java.net.URI currentUri = new java.net.URI(url);
+                        // 이미 경로가 포함되어 있지 않은 경우에만 추가
+                        if (!currentUri.getPath().startsWith(path)) {
+                            url = url.replace(currentUri.getAuthority(), currentUri.getAuthority() + path);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to check/apply proxy path: {}", e.getMessage());
+                }
+            }
+
+            log.info("Final Presigned URL: {}", url);
             return url;
         } catch (Exception e) {
             log.warn("Failed to generate presigned URL for {}: {}", objectName, e.getMessage());
