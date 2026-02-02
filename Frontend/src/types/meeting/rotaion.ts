@@ -12,7 +12,7 @@ export type RotationStage =
 
 // 문서에 정의된 메시지 타입 목록
 export type WsMessageType =
-// Client -> Server
+    // Client -> Server
     | 'JOIN_ROOM'
     | 'LEAVE_ROOM'
     | 'SUBMIT_VOTE'
@@ -24,6 +24,7 @@ export type WsMessageType =
     | 'PAIR_ASSIGNED'
     | 'VOTE_SUBMITTED'
     | 'MATCH_RESULT'
+    | 'KICK'
     | 'ERROR';
 
 // --- 기본 메시지 구조 ---
@@ -103,4 +104,17 @@ export interface RotationState {
 
     // 시스템 메시지/에러
     lastMessage: string | null;
+}
+
+// KICK: 강제 퇴장
+export interface KickPayload {
+    type: 'KICK';
+    reason: string;
+}
+
+// ERROR: 에러 메시지
+export interface ErrorPayload {
+    type: 'ERROR';
+    code: string;
+    message: string;
 }

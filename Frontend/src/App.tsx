@@ -39,7 +39,7 @@ function AppLayout() {
 
           <Route path="/verify" element={<VerificationPage />} />
           <Route path="/loading" element={<WaitingLobby />} />
-          <Route path="/meeting" element={<RotationTestPage />} />
+          <Route path="/meeting/rotation" element={<RotationTestPage />} />
         </Routes>
       </main>
     </div>

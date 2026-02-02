@@ -7,6 +7,8 @@ import type {
     StageChangePayload,
     PairAssignedPayload,
     MatchResultPayload,
+    KickPayload,
+    ErrorPayload,
     // RotationStage // Import Stage Type
 } from '../../types/meeting/rotaion';
 
@@ -146,6 +148,38 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                 case 'VOTE_SUBMITTED':
                     setState(prev => ({ ...prev, lastMessage: '투표 완료!' }));
                     break;
+
+                case 'KICK': {
+                    const payload = data as KickPayload;
+                    alert(`강제 퇴장: ${payload.reason}`);
+                    socketRef.current?.close();
+                    // 홈으로 리다이렉트
+                    window.location.href = '/';
+                    break;
+                }
+
+                case 'ERROR': {
+                    const payload = data as ErrorPayload;
+                    console.error(`[WS-ERROR] ${payload.code}:`, payload.message);
+
+                    // 입장 관련 에러 처리
+                    if (payload.code === 'ROOM_FULL' || payload.code === 'GAME_IN_PROGRESS') {
+                        alert(payload.message);
+                        setState(prev => ({
+                            ...prev,
+                            connected: false,
+                            roomId: null,
+                            lastMessage: payload.message
+                        }));
+                    } else {
+                        // 기타 에러는 메시지만 표시
+                        setState(prev => ({
+                            ...prev,
+                            lastMessage: `오류: ${payload.message}`
+                        }));
+                    }
+                    break;
+                }
             }
         } catch (err) {
             console.error('[WS] Parsing Error:', err);
