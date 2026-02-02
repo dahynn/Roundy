@@ -38,7 +38,7 @@ public class VerificationController {
      * @return 검증 결과 (requestId + verified)
      */
     @PostMapping("/verify")
-    public ResponseEntity<CommonResponse<com.ssafya701.roundy.verification.dto.response.VerificationResponse>> verify(
+    public ResponseEntity<CommonResponse<?>> verify(
             @RequestHeader("Authorization") String jwt,
             @RequestParam("realtimeImage") org.springframework.web.multipart.MultipartFile realtimeImage) {
 
@@ -63,18 +63,27 @@ public class VerificationController {
             java.io.InputStream originalImage = minioService.downloadImage(userId, "verification");
 
             // 6. AI 검증 요청 (동기, 5~10초 대기)
-            boolean verified = aiServerClient.verifyFace(realtimeImage, originalImage);
+            com.ssafya701.roundy.global.infra.ai.AiVerificationResult result = 
+                    aiServerClient.verifyFace(realtimeImage, originalImage);
+
+            // 얼굴 감지 실패 시 에러 응답 (200 OK + error message)
+            if (result.hasFaceDetectionError()) {
+                log.warn("Face detection failed: userId={}, error={}", userId, result.getErrorMessage());
+                
+                return ResponseEntity.ok()
+                        .body(CommonResponse.ofFailure(result.getErrorMessage()));
+            }
 
             // 7. Redis 상태 업데이트
-            verificationService.updateVerificationStatus(requestId, verified);
+            verificationService.updateVerificationStatus(requestId, result.isVerified());
 
             log.info("Verification completed: userId={}, requestId={}, verified={}",
-                    userId, requestId, verified);
+                    userId, requestId, result.isVerified());
 
             // 8. 응답
             com.ssafya701.roundy.verification.dto.response.VerificationResponse response =
                     new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
-                            requestId, verified
+                            requestId, result.isVerified()
                     );
 
             return ResponseEntity.ok(CommonResponse.ofSuccess(response));

@@ -20,22 +20,26 @@ vision = RoundyVision()
 
 @app.route('/verify', methods=['POST'])
 def verify():
-    if not os.path.exists(REFERENCE_PATH):
-        return jsonify({"error": "Reference image not found."}), 500
+    # if not os.path.exists(REFERENCE_PATH):
+    #    return jsonify({"error": "Reference image not found."}), 500
 
-    file = request.files['image']
-    landmarks_json = request.form.get('landmarks')
+    file = request.files['realtimeImage']
+    ref_file = request.files['originalImage']
+    # landmarks_json = request.form.get('landmarks') # Removed
 
     img_array = np.frombuffer(file.read(), np.uint8)
     captured_img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+    ref_array = np.frombuffer(ref_file.read(), np.uint8)
+    ref_img = cv2.imdecode(ref_array, cv2.IMREAD_COLOR)
 
     try:
         # Strict threshold for security
         result = vision.verify_face(
             img1=captured_img,
-            img2_path=REFERENCE_PATH,
-            threshold=0.4,
-            landmarks=landmarks_json
+            img2=ref_img,
+            threshold=0.4
+            # landmarks=landmarks_json # Removed
         )
 
         # --- 📍 CRITICAL FIX: Safe Logging ---
@@ -55,6 +59,26 @@ def verify():
         return jsonify({"error": str(e)}), 500
 
 
+def warmup_gpu():
+    """서버 시작 시 GPU 및 모델 웜업"""
+    print("\n🔥 GPU 웜업 시작...")
+    try:
+        # 더미 이미지 생성 (100x100 RGB)
+        dummy_img1 = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+        dummy_img2 = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+        
+        # 한 번 검증 수행 (모델 로딩 및 GPU 메모리 할당)
+        vision.verify_face(dummy_img1, dummy_img2, threshold=0.4)
+        
+        print("✅ GPU 웜업 완료! 모델이 메모리에 로드되었습니다.\n")
+    except Exception as e:
+        print(f"⚠️ 웜업 중 오류 발생 (무시 가능): {e}\n")
+
+
 if __name__ == "__main__":
     print(f"🚀 Roundy AI Server is running...")
+    
+    # GPU 웜업 실행
+    warmup_gpu()
+    
     app.run(host='0.0.0.0', port=8000, debug=True)
