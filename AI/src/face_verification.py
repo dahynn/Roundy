@@ -89,7 +89,7 @@ class RoundyVision:
 
         # 2. 얼굴 추출 시도 (retinaface)
         face_img, backend = self.extract_face_robust(img_input, 'retinaface')
-
+        
         if face_img is not None:
             # 경로라면 캐시에 저장
             if isinstance(img_input, str):
@@ -97,9 +97,9 @@ class RoundyVision:
             return face_img
 
         # 3. 추출 실패 시 원본 반환 (이미지 데이터인 경우)
-        if hasattr(img_input, 'shape'):  # numpy array check
+        if hasattr(img_input, 'shape'): # numpy array check
             return img_input
-
+            
         return cv2.imread(img_input)
 
     def verify_face(self, img1, img2, threshold=0.4):
@@ -122,7 +122,7 @@ class RoundyVision:
                 img1 = cap_face
                 cv2.imwrite("asset/debug/debug_cap_face_refined.jpg", img1)
             else:
-                pass
+                 pass
 
             # 4. DeepFace 비교 (ArcFace + GPU 가속 활용)
             result = DeepFace.verify(
