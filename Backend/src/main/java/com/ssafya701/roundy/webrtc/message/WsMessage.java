@@ -23,7 +23,8 @@ import com.ssafya701.roundy.webrtc.message.outbound.*;
     @JsonSubTypes.Type(value = RoundStartMessage.class, name = "ROUND_START"),
     @JsonSubTypes.Type(value = RoundEndMessage.class, name = "ROUND_END"),
     @JsonSubTypes.Type(value = PairAssignedMessage.class, name = "PAIR_ASSIGNED"),
-    @JsonSubTypes.Type(value = ErrorMessage.class, name = "ERROR")
+    @JsonSubTypes.Type(value = ErrorMessage.class, name = "ERROR"),
+    @JsonSubTypes.Type(value = KickMessage.class, name = "KICK")
 })
 public interface WsMessage {
     WsMessageType getType();

@@ -94,6 +94,23 @@ public class RoomState {
     private Integer maleMax = 6;   // 기본값 6명, DB에서 조회 가능
     private Integer femaleMax = 6;  // 기본값 6명, DB에서 조회 가능
     
+    /**
+     * 게임 투표 데이터
+     * questionNumber -> (voterId -> targetUserId)
+     */
+    private Map<Integer, Map<Long, Long>> gameVotes = new ConcurrentHashMap<>();
+    
+    /**
+     * 현재 게임 문제 번호
+     */
+    private int currentGameQuestion = 0;
+    
+    /**
+     * 연결 해제된 참가자 추적 (userId -> 연결 해제 시간)
+     * 재연결 유예 기간 동안 유지
+     */
+    private Map<Long, Long> disconnectedParticipants = new ConcurrentHashMap<>();
+    
     public RoomState(String roomId, RotationMode mode, String openViduSessionId) {
         this.roomId = roomId;
         this.mode = mode;
@@ -280,10 +297,61 @@ public class RoomState {
     }
     
     /**
-     * 게임 답변 제출 (뱃지 부여)
-     * @param userId 사용자 ID
-     * @param badge 부여할 뱃지 (예: "FAST_THINKER", "CREATIVE")
+     * 게임 투표 제출
+     * @param questionNumber 문제 번호
+     * @param voterId 투표자 ID
+     * @param targetUserId 투표 대상 ID
      */
+    public void submitGameVote(int questionNumber, Long voterId, Long targetUserId) {
+        gameVotes.computeIfAbsent(questionNumber, k -> new ConcurrentHashMap<>())
+                 .put(voterId, targetUserId);
+    }
+    
+    /**
+     * 특정 문제의 투표 데이터 조회
+     * @param questionNumber 문제 번호
+     * @return voterId -> targetUserId 맵
+     */
+    public Map<Long, Long> getVotesForQuestion(int questionNumber) {
+        return gameVotes.getOrDefault(questionNumber, Collections.emptyMap());
+    }
+    
+    /**
+     * 특정 문제의 투표 결과 집계
+     * @param questionNumber 문제 번호
+     * @return targetUserId -> voteCount 맵 (득표수 순)
+     */
+    public Map<Long, Integer> calculateGameResults(int questionNumber) {
+        Map<Long, Long> votes = getVotesForQuestion(questionNumber);
+        Map<Long, Integer> voteCounts = new HashMap<>();
+        
+        // 득표수 집계
+        for (Long targetUserId : votes.values()) {
+            voteCounts.put(targetUserId, voteCounts.getOrDefault(targetUserId, 0) + 1);
+        }
+        
+        return voteCounts;
+    }
+    
+    /**
+     * 현재 게임 문제 번호 설정
+     */
+    public void setCurrentGameQuestion(int questionNumber) {
+        this.currentGameQuestion = questionNumber;
+    }
+    
+    /**
+     * 현재 게임 문제 번호 조회
+     */
+    public int getCurrentGameQuestion() {
+        return currentGameQuestion;
+    }
+    
+    /**
+     * 게임 답변 제출 (뱃지 부여) - DEPRECATED
+     * @deprecated Use submitGameVote() instead
+     */
+    @Deprecated
     public void submitGameAnswer(Long userId, String badge) {
         gameBadges.put(userId, badge);
     }
@@ -494,10 +562,101 @@ public class RoomState {
         return currentPairing.get(userId);
     }
     
+    
     /**
      * 방 정리 시 페어링 정보도 초기화
      */
     public void clearPairing() {
         currentPairing.clear();
+    }
+    
+    // ==================================================================
+    // 재연결 관련 메서드
+    // ==================================================================
+    
+    /**
+     * 참가자를 연결 해제 상태로 표시
+     */
+    public void markDisconnected(Long userId) {
+        disconnectedParticipants.put(userId, System.currentTimeMillis());
+    }
+    
+    /**
+     * 연결 해제 표시 제거 (재연결 성공)
+     */
+    public void clearDisconnected(Long userId) {
+        disconnectedParticipants.remove(userId);
+    }
+    
+    /**
+     * 사용자가 유예 기간 내에 있는지 확인
+     * 
+     * @param userId 사용자 ID
+     * @param gracePeriodMs 유예 기간 (밀리초)
+     * @return 유예 기간 내이면 true
+     */
+    public boolean isInGracePeriod(Long userId, long gracePeriodMs) {
+        Long disconnectTime = disconnectedParticipants.get(userId);
+        if (disconnectTime == null) {
+            return false;
+        }
+        
+        long elapsedTime = System.currentTimeMillis() - disconnectTime;
+        return elapsedTime < gracePeriodMs;
+    }
+    
+    /**
+     * 사용자의 파트너 ID 조회 (currentPairing 사용)
+     * 
+     * @param userId 사용자 ID
+     * @return 파트너 ID, 없으면 null
+     */
+    public Long getPartner(Long userId) {
+        return currentPairing.get(userId);
+    }
+    
+    /**
+     * 참가자의 세션 업데이트 (재연결 시)
+     * 
+     * @param userId 사용자 ID
+     * @param newSession 새 WebSocket 세션
+     */
+    public void updateParticipantSession(Long userId, WebSocketSession newSession) {
+        ParticipantState participant = participants.get(userId);
+        if (participant != null) {
+            participant.updateSession(newSession);
+        }
+    }
+    
+    // ==================================================================
+    // 방 초기화 및 정리 메서드
+    // ==================================================================
+    
+    /**
+     * 방 완전 초기화 (소개팅 종료 후 재사용 준비)
+     */
+    public void reset() {
+        this.currentStage = Stage.WAITING;
+        this.participants.clear();
+        this.maleCount = 0;
+        this.femaleCount = 0;
+        this.matchedCouples.clear();
+        clearStageData();
+        clearPairing();
+    }
+    
+    /**
+     * 매칭 실패한(싱글) 사용자 ID 목록 조회
+     */
+    public List<Long> getSingleUsers() {
+        Set<Long> matchedUserIds = new HashSet<>();
+        for (MatchPair pair : matchedCouples) {
+            matchedUserIds.add(pair.getUserId1());
+            matchedUserIds.add(pair.getUserId2());
+        }
+        
+        return participants.keySet().stream()
+            .filter(userId -> !matchedUserIds.contains(userId))
+            .collect(Collectors.toList());
     }
 }

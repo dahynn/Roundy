@@ -7,21 +7,26 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 게임 답변 제출 메시지 (클라이언트 → 서버)
+ * 게임 투표 제출 메시지 (클라이언트 → 서버)
  * 이미지 게임(IMAGE_GAME) 단계에서 사용
  */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubmitGameAnswerMessage implements WsMessage {
+public class SubmitGameVoteMessage implements WsMessage {
     
     /**
-     * 게임 문제에 대한 답변
+     * 문제 번호 (1~5)
      */
-    private String answer;
+    private int questionNumber;
+    
+    /**
+     * 투표 대상 사용자 ID
+     */
+    private Long targetUserId;
     
     @Override
     public WsMessageType getType() {
-        return WsMessageType.SUBMIT_GAME_ANSWER;
+        return WsMessageType.SUBMIT_GAME_VOTE;
     }
 }

@@ -15,14 +15,22 @@ import org.springframework.web.socket.WebSocketSession;
  * - gender ↔ users.gender (성별별 인원수 관리)
  */
 @Getter
-@AllArgsConstructor
 @ToString
 public class ParticipantState {
     private final Long userId;
     private final String nickname;
     private final Gender gender;  // 성별 (MALE/FEMALE)
-    private final WebSocketSession session;
+    private WebSocketSession session;  // final 제거 (재연결 시 업데이트 가능)
     private String openViduToken;
+    
+    public ParticipantState(Long userId, String nickname, Gender gender, 
+                            WebSocketSession session, String openViduToken) {
+        this.userId = userId;
+        this.nickname = nickname;
+        this.gender = gender;
+        this.session = session;
+        this.openViduToken = openViduToken;
+    }
     
     /**
      * OpenVidu 토큰 설정
@@ -43,5 +51,12 @@ public class ParticipantState {
      */
     public boolean isSessionOpen() {
         return session.isOpen();
+    }
+    
+    /**
+     * 세션 업데이트 (재연결 시)
+     */
+    public void updateSession(WebSocketSession newSession) {
+        this.session = newSession;
     }
 }

@@ -160,7 +160,8 @@ public class RotationScheduler {
             List<ParticipantState> participants = room.getParticipantList();
             List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(
                 participants, 
-                currentRound.getCurrentRound()
+                currentRound.getCurrentRound(),
+                false  // FREE_TALK 모드: 성별 무관 페어링
             );
             
             // userId -> partnerId 맵 생성
