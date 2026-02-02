@@ -63,18 +63,32 @@ public class VerificationController {
             java.io.InputStream originalImage = minioService.downloadImage(userId, "verification");
 
             // 6. AI 검증 요청 (동기, 5~10초 대기)
-            boolean verified = aiServerClient.verifyFace(realtimeImage, originalImage);
+            com.ssafya701.roundy.global.infra.ai.AiVerificationResult result = 
+                    aiServerClient.verifyFace(realtimeImage, originalImage);
+
+            // 얼굴 감지 실패 시 에러 응답
+            if (result.hasFaceDetectionError()) {
+                log.warn("Face detection failed: userId={}, error={}", userId, result.getErrorMessage());
+                
+                com.ssafya701.roundy.verification.dto.response.VerificationResponse errorResponse =
+                        new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
+                                requestId, false
+                        );
+                
+                return ResponseEntity.status(400)
+                        .body(CommonResponse.ofFailure(result.getErrorMessage()));
+            }
 
             // 7. Redis 상태 업데이트
-            verificationService.updateVerificationStatus(requestId, verified);
+            verificationService.updateVerificationStatus(requestId, result.isVerified());
 
             log.info("Verification completed: userId={}, requestId={}, verified={}",
-                    userId, requestId, verified);
+                    userId, requestId, result.isVerified());
 
             // 8. 응답
             com.ssafya701.roundy.verification.dto.response.VerificationResponse response =
                     new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
-                            requestId, verified
+                            requestId, result.isVerified()
                     );
 
             return ResponseEntity.ok(CommonResponse.ofSuccess(response));
