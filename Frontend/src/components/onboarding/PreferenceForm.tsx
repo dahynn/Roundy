@@ -1,83 +1,184 @@
-import { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
+import api from '@/utils/api';
 
-const PREFERENCE_DATA = [
-    { id: 'RELATIONSHIP', title: '선호 관계', limit: 2, items: ['결혼 의향', '진지한 연애', '가벼운 연애', '친구부터'] },
-    { id: 'STYLE', title: '연애 스타일', limit: 2, items: ['다정한', '리드하는', '연락 자주', '각자 시간 존중'] },
-    { id: 'DATE', title: '선호 데이트', limit: 3, items: ['집데이트', '맛집탐방', '드라이브', '전시회', 'PC방', '술한잔', '산책'] },
-    { id: 'PERSONALITY', title: '선호 성격', limit: 2, items: ['유머러스', '차분한', '활발한', '섬세한', '지적인'] },
-    { id: 'APPEARANCE', title: '선호 외모', limit: 3, items: ['강아지상', '고양이상', '무쌍', '큰 키', '패션피플'] },
-    { id: 'TALENT', title: '매력 포인트', limit: 2, items: ['요리왕', '노래', '운동', '외국어', '유머'] },
-];
+// ✅ 타입 정의
+type PreferenceType =
+  | 'RELATIONSHIP_GOAL'
+  | 'DATING_STYLE'
+  | 'DATE_PREFERENCE'
+  | 'PERSONALITY'
+  | 'APPEARANCE'
+  | 'TALENT';
 
-interface PreferenceFormProps {
-    onBack: () => void;
-    onSubmit: (selectedIds: string[]) => void;
+interface PreferenceItem {
+  id: number;
+  type: PreferenceType;
+  content: string;
 }
 
-export default function PreferenceForm({ onBack, onSubmit }: PreferenceFormProps) {
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const TOTAL_GOAL = 14;
+const UI_SECTIONS: { type: PreferenceType; title: string; limit: number }[] = [
+  { type: 'RELATIONSHIP_GOAL', title: '연애 목표', limit: 2 },
+  { type: 'DATING_STYLE', title: '데이트 스타일', limit: 2 },
+  { type: 'DATE_PREFERENCE', title: '선호 데이트', limit: 3 },
+  { type: 'PERSONALITY', title: '성격', limit: 2 },
+  { type: 'APPEARANCE', title: '외모', limit: 3 },
+  { type: 'TALENT', title: '재능/특기', limit: 2 },
+];
 
-    const toggleItem = (groupId: string, item: string, limit: number) => {
-        const itemKey = `${groupId}:${item}`;
-        const groupCount = selectedIds.filter((id) => id.startsWith(groupId)).length;
+export default function PreferenceForm({
+  onBack,
+  onSubmit,
+}: {
+  onBack: () => void;
+  onSubmit: (ids: string[]) => void;
+}) {
+  const [serverItems, setServerItems] = useState<PreferenceItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-        if (selectedIds.includes(itemKey)) {
-            setSelectedIds(selectedIds.filter((id) => id !== itemKey));
-        } else if (groupCount < limit) {
-            setSelectedIds([...selectedIds, itemKey]);
+  // ✅ 데이터 호출 (안전한 파싱 로직 적용)
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('/preferences');
+
+        let finalData: PreferenceItem[] = [];
+
+        // 1. response 자체가 배열인 경우 (Interceptor가 data를 바로 반환할 때)
+        if (Array.isArray(response)) {
+          finalData = response;
         }
+        // 2. response.data가 배열인 경우 (일반적인 구조)
+        else if (Array.isArray(response.data)) {
+          finalData = response.data;
+        }
+        // 3. response.data.data가 배열인 경우 (백엔드 공통 응답 포맷)
+        else if (response.data && Array.isArray(response.data.data)) {
+          finalData = response.data.data;
+        }
+
+        setServerItems(finalData);
+      } catch (error) {
+        console.error('데이터 호출 에러:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    fetchPreferences();
+  }, []);
 
-    return (
-        <div className="w-full flex flex-col items-center">
-            <div className="w-full max-w-2xl flex items-center justify-between mb-8 z-10 px-4">
-                <button onClick={onBack} className="p-2 hover:bg-white/50 rounded-full transition-all">
-                    <ChevronLeft size={24} />
-                </button>
-                <h1 className="text-xl font-black text-[#1A1F36]">취향 선택</h1>
-                <div className="w-10" />
+  // ✅ 렌더링 최적화 (데이터 그룹화)
+  const groupedItems = useMemo(() => {
+    const groups: Partial<Record<PreferenceType, PreferenceItem[]>> = {};
+    serverItems.forEach((item) => {
+      if (!groups[item.type]) groups[item.type] = [];
+      groups[item.type]!.push(item);
+    });
+    return groups;
+  }, [serverItems]);
+
+  // ✅ 선택 토글 로직
+  const toggleItem = (id: number, type: string, limit: number) => {
+    const sectionItems = serverItems.filter((i) => i.type === type);
+    const currentCount = selectedIds.filter((sid) => sectionItems.some((i) => i.id === sid)).length;
+
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((sid) => sid !== id));
+    } else if (currentCount < limit) {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  return (
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full max-w-2xl flex items-center mb-4 px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="p-2 hover:bg-white/50 rounded-full transition-all"
+        >
+          <ChevronLeft size={24} />
+        </button>
+      </div>
+
+      <div className="w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[40px] p-8 shadow-2xl flex flex-col h-[75vh]">
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <Loader2 className="animate-spin text-[#FF4D94]" size={40} />
             </div>
+          ) : serverItems.length === 0 ? (
+            <div className="text-center py-20 text-gray-400 font-bold">
+              데이터를 불러올 수 없습니다.
+            </div>
+          ) : (
+            UI_SECTIONS.map((section) => {
+              const items = groupedItems[section.type] || [];
+              const currentSectionIds = items.map((i) => i.id);
+              const selectedCountInfo = selectedIds.filter((id) =>
+                currentSectionIds.includes(id),
+              ).length;
+              const isSectionFull = selectedCountInfo >= section.limit;
 
-            <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[40px] shadow-2xl border border-white z-10 overflow-hidden flex flex-col h-[75vh]">
-                <div className="flex-1 overflow-y-auto p-8 md:p-12">
-                    {PREFERENCE_DATA.map((group) => {
-                        const count = selectedIds.filter((id) => id.startsWith(group.id)).length;
-                        return (
-                            <section key={group.id} className="mb-12 last:mb-0">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <h3 className="text-lg font-black">{group.title}</h3>
-                                    <span className={`text-sm font-bold ${count === group.limit ? 'text-[#FF4D94]' : 'text-gray-300'}`}>
-                    {count}/{group.limit}
-                  </span>
-                                </div>
-                                <div className="flex flex-wrap gap-3">
-                                    {group.items.map((item) => (
-                                        <button
-                                            key={item}
-                                            onClick={() => toggleItem(group.id, item, group.limit)}
-                                            className={`px-5 py-3 rounded-full text-sm font-bold border-2 transition-all ${selectedIds.includes(`${group.id}:${item}`) ? 'border-[#FF4D94] bg-pink-50 text-[#FF4D94]' : 'border-gray-50 bg-white text-gray-400'}`}
-                                        >
-                                            {item}
-                                        </button>
-                                    ))}
-                                </div>
-                            </section>
-                        );
+              // 아이템이 없는 섹션은 렌더링 생략
+              if (items.length === 0) return null;
+
+              return (
+                <section key={section.type} className="mb-10 last:mb-0">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-black text-[#1A1F36] text-lg">{section.title}</h3>
+                    <span className="text-xs font-bold text-gray-400">
+                      {selectedCountInfo} / {section.limit}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {items.map((item) => {
+                      const isSelected = selectedIds.includes(item.id);
+                      const isDisabled = !isSelected && isSectionFull;
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleItem(item.id, section.type, section.limit)}
+                          disabled={isDisabled}
+                          className={`px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all duration-200 ${
+                            isSelected
+                              ? 'border-[#FF4D94] text-[#FF4D94] bg-pink-50 shadow-sm'
+                              : isDisabled
+                                ? 'border-gray-100 text-gray-300 bg-gray-50 cursor-not-allowed opacity-60'
+                                : 'border-gray-50 text-gray-400 bg-white hover:border-gray-200 hover:text-gray-600'
+                          }`}
+                        >
+                          {item.content}
+                        </button>
+                      );
                     })}
-                </div>
-                <div className="p-8 bg-white border-t border-gray-50">
-                    <Button
-                        disabled={selectedIds.length !== TOTAL_GOAL}
-                        onClick={() => onSubmit(selectedIds)}
-                        className={`w-full py-8 rounded-[24px] text-xl font-bold ${selectedIds.length === TOTAL_GOAL ? 'bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] text-white' : 'bg-gray-100 text-gray-300'}`}
-                    >
-                        {selectedIds.length === TOTAL_GOAL ? '가입 완료' : `${selectedIds.length} / ${TOTAL_GOAL} 선택됨`}
-                    </Button>
-                </div>
-            </div>
+                  </div>
+                </section>
+              );
+            })
+          )}
         </div>
-    );
+
+        <div className="mt-8 border-t pt-6">
+          <Button
+            type="button"
+            disabled={selectedIds.length !== 14}
+            onClick={() => onSubmit(selectedIds.map((id) => id.toString()))}
+            className={`w-full py-8 rounded-2xl text-xl font-black transition-all ${
+              selectedIds.length === 14
+                ? 'bg-[#FF4D94] text-white shadow-lg hover:bg-[#ff3385]'
+                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            {selectedIds.length === 14 ? '가입 완료' : `${selectedIds.length} / 14 선택됨`}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
