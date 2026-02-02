@@ -51,16 +51,18 @@ public class AiServerClient {
                 }
             });
 
+
             log.info("Calling AI server verification via WebClient...");
 
-            Map response = webClient.post()
+            Map<String, Object> response = webClient.post()
                     .uri("/verify")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(builder.build()))
                     .retrieve()
-                    .bodyToMono(Map.class)
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                     .timeout(Duration.ofSeconds(30)) // 타임아웃 30초 (GPU 초기화 고려)
                     .block();
+
 
             if (response == null) {
                 log.error("AI server response is null");
