@@ -146,12 +146,16 @@ export default function Onboarding() {
       // ✅ 2. 성공 판단 기준 변경 (핵심 수정)
       // "success: true"를 찾지 말고, "accessToken"이 있는지를 확인합니다.
       const newAccessToken = resData?.accessToken || resData?.data?.accessToken;
+      const newRefreshToken = resData?.refreshToken || resData?.data?.refreshToken;
 
       if (newAccessToken) {
         console.log('✅ 가입 성공! 토큰 확인됨.');
 
         // 3. 토큰 저장
         localStorage.setItem('accessToken', newAccessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
         client.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         console.log('🔑 토큰 저장 완료');
 
