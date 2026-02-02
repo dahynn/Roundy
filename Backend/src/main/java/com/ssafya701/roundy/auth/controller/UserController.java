@@ -66,8 +66,13 @@ public class UserController {
             return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
         }
         com.ssafya701.roundy.auth.entity.User user = principal.getUser();
+        UserResponse response = UserResponse.from(user);
 
-        return ResponseEntity.ok(CommonResponse.ofSuccess(UserResponse.from(user)));
+        // 파일 경로 대신 실제 접근 가능한 Presigned URL 설정
+        response.setProfileImageUrl(userService.getImageUrl(user.getId(), "profile"));
+        response.setVerificationImageUrl(userService.getImageUrl(user.getId(), "verification"));
+
+        return ResponseEntity.ok(CommonResponse.ofSuccess(response));
     }
 
     // 회원가입 : 추가 정보 입력 (토큰 재발급 안 함)
