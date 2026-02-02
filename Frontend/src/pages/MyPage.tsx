@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
   Megaphone,
@@ -10,38 +11,123 @@ import {
   Star
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import { getMyInfo, logout, withdraw } from '@/api/user';
+
+// ✅ 백엔드 데이터 타입 정의
+interface UserProfile {
+  id: number;
+  name: string;
+  birthDate: string;
+  gender: string;
+  nickname: string;
+  profileImageUrl: string | null;
+  verificationImageUrl: string | null;
+  role: string;
+  status: string;
+}
+
+// ✅ 만나이 계산 유틸리티 함수
+const calculateAge = (birthDateString: string) => {
+  if (!birthDateString) return 0;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
 
 export default function MyPage() {
+  const navigate = useNavigate();
+  const [serverData, setServerData] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // TODO : 유저 연결 후 여기도 연동하기
-  const userInfo = {
-    name: '김민수',
-    age: 29,
-    profileImage: null,
-    matchRate: 85,
+  // 1. 초기 데이터 페칭
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        const data = await getMyInfo() as any;
+        console.log('📡 [MyPage] API 응답 데이터:', data);
+        if (data) {
+          console.log('🖼️ [MyPage] 프로필 이미지 URL:', data.profileImageUrl);
+          setServerData(data as UserProfile);
+        }
+      } catch (error: any) {
+        console.error('❌ [MyPage] 유저 정보를 불러오지 못했습니다:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  // 2. 로그아웃 핸들러
+  const handleLogout = async () => {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
+    try {
+      await logout();
+      localStorage.removeItem('accessToken');
+      alert('로그아웃 되었습니다.');
+      navigate('/'); // 랜딩 페이지로 이동
+    } catch (error) {
+      console.error('로그아웃 실패:', error);
+      // 토큰 만료 등의 이슈일 수 있으므로 강제 로그아웃 처리 고려
+      localStorage.removeItem('accessToken');
+      navigate('/');
+    }
   };
+
+  // 3. 회원탈퇴 핸들러
+  const handleWithdraw = async () => {
+    if (!confirm('정말로 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.')) return;
+    try {
+      await withdraw();
+      localStorage.removeItem('accessToken');
+      alert('회원 탈퇴가 완료되었습니다.');
+      navigate('/');
+    } catch (error) {
+      console.error('회원탈퇴 실패:', error);
+      alert('탈퇴 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const userInfo = {
+    name: serverData?.nickname || serverData?.name || '라운디 유저',
+    age: serverData?.birthDate ? calculateAge(serverData.birthDate) : 0,
+    profileImage: serverData?.profileImageUrl || null,
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#FAFBFF]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-[#FF4D94]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-y-auto font-['Pretendard'] no-scrollbar transition-colors duration-300">
       <Header />
-      
-      {/* 메인 컨텐츠 영역 */}
+
       <main className="flex-1 p-6 md:p-10 lg:px-20 pb-20">
         <div className="max-w-3xl mx-auto">
-          
+
           {/* 타이틀 영역 */}
           <div className="flex items-center justify-between mb-8 px-2">
             <h1 className="text-3xl font-black text-[#1A1F36] dark:text-white tracking-tight transition-colors">My page</h1>
           </div>
 
           <div className="space-y-12">
-            
+
             {/* 프로필 카드 섹션 */}
             <div className="relative group">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[80%] bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] opacity-20 blur-[60px] rounded-full pointer-events-none" />
 
               <div className="relative bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white dark:border-white/10 rounded-[40px] p-8 md:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center gap-8 overflow-hidden transition-colors duration-300">
-                
+
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-pink-50 dark:from-pink-900/20 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
 
                 {/* 1. 프로필 이미지 */}
@@ -50,12 +136,25 @@ export default function MyPage() {
                     <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 p-1">
                       <div className="w-full h-full rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden relative group-hover:scale-105 transition-transform duration-500">
                         {userInfo.profileImage ? (
-                          <img src={userInfo.profileImage} alt="프로필" className="w-full h-full object-cover" />
+                          <img
+                            src={userInfo.profileImage}
+                            alt="프로필"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // 이미지 로드 실패 시 플레이스홀더로 대체 (MinIO URL 만료 등 대비)
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.querySelector('.placeholder-icon')?.classList.remove('hidden');
+                            }}
+                          />
                         ) : (
                           <div className="flex flex-col items-center gap-1 text-gray-300 dark:text-gray-600">
                             <UserIconPlaceholder />
                           </div>
                         )}
+                        {/* 이미지 로드 실패 시 보여줄 백업 아이콘 */}
+                        <div className="placeholder-icon hidden absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800 text-gray-300">
+                          <UserIconPlaceholder />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -66,27 +165,18 @@ export default function MyPage() {
 
                 {/* 2. 유저 정보 */}
                 <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-5 w-full">
-                  
+
                   <div>
                     <h2 className="text-3xl font-black text-[#1A1F36] dark:text-white mb-1 flex items-center gap-2 justify-center md:justify-start transition-colors">
                       {userInfo.name}
+                      {/* 나이 표시 */}
                       <span className="text-lg font-bold text-[#FF4D94] bg-[#FF4D94]/10 dark:bg-[#FF4D94]/20 px-3 py-1 rounded-full">
                         {userInfo.age}
                       </span>
                     </h2>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full justify-center md:justify-start">
-                    <div className="w-full md:w-auto min-w-[140px] bg-gray-50 dark:bg-white/5 rounded-2xl p-3 border border-gray-100 dark:border-white/5 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-[#7C3AED] dark:text-[#A78BFA]">
-                        <Star size={16} fill="currentColor" />
-                      </div>
-                      <div className="flex flex-col items-start">
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500 font-bold">매칭 확률</span>
-                        <span className="text-sm font-black text-[#1A1F36] dark:text-white transition-colors">{userInfo.matchRate}%</span>
-                      </div>
-                    </div>
-                  </div>
+
 
                   <button className="w-full md:w-auto mt-1 px-8 py-3 bg-[#1A1F36] dark:bg-white text-white dark:text-[#1A1F36] rounded-xl font-bold text-sm shadow-lg hover:bg-[#FF4D94] dark:hover:bg-[#FF4D94] dark:hover:text-white hover:shadow-pink-200 hover:-translate-y-0.5 transition-all duration-300">
                     프로필 상세 수정
@@ -95,7 +185,6 @@ export default function MyPage() {
 
               </div>
             </div>
-
 
             {/* 고객 지원 */}
             <section className="space-y-7">

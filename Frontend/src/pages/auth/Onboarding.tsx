@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '@/utils/api';
+import * as authApi from '@/api/auth';
+// api.defaults... 등을 위해 client가 필요하다면 import (단, 여기선 온보딩 성공 후 토큰 수동 세팅 등 로직 확인 필요)
+import client from '@/api/_client';
 
 import BasicInfoForm, { type BasicInfoData } from '@/components/onboarding/BasicInfoForm';
 import PhotoVerification from '@/components/onboarding/PhotoVerification';
@@ -14,6 +16,7 @@ export default function Onboarding() {
   const [basicInfo, setBasicInfo] = useState<BasicInfoData>({
     profileFile: null,
     previewUrl: '',
+    name: '',
     nickName: '',
     gender: null,
     birth: { year: '', month: '', day: '' },
@@ -26,14 +29,14 @@ export default function Onboarding() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await api.get('/auth/signup/details');
-        const userData = response.data?.data || response.data || response;
+        const userData: any = await authApi.getSignupDetails();
 
         if (userData) {
           // 1. 기본 정보 세팅
           const dateParts = userData.birthDate ? userData.birthDate.split('-') : [];
           setBasicInfo((prev) => ({
             ...prev,
+            name: userData.name || '',
             nickName: userData.nickname || userData.name || '',
             gender: userData.gender as 'MALE' | 'FEMALE',
             birth: {
@@ -64,10 +67,40 @@ export default function Onboarding() {
     fetchUserData();
   }, []);
 
-  const handleNextStep1 = (data: BasicInfoData) => {
-    setBasicInfo(data);
-    setStep(2);
-    window.scrollTo(0, 0);
+  const handleNextStep1 = async (data: BasicInfoData) => {
+    try {
+      console.log('🚀 [Step 1] 기본 정보 저장 중...');
+
+      const requestData = {
+        nickName: data.nickName,
+        gender: data.gender,
+        birthDate: `${data.birth.year}-${data.birth.month.padStart(2, '0')}-${data.birth.day.padStart(2, '0')}`,
+        mbti: `${data.mbti.ei}${data.mbti.ns}${data.mbti.ft}${data.mbti.jp}`,
+      };
+
+      const formData = new FormData();
+      // 백엔드의 @RequestPart("data")와 @RequestPart("file")에 대응
+      formData.append(
+        'data',
+        new Blob([JSON.stringify(requestData)], { type: 'application/json' })
+      );
+
+      if (data.profileFile) {
+        formData.append('file', data.profileFile);
+      } else {
+        throw new Error('프로필 사진이 없습니다.');
+      }
+
+      await authApi.signUp(formData);
+      console.log('✅ [Step 1] 저장 완료');
+
+      setBasicInfo(data);
+      setStep(2);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('❌ [Step 1] 저장 실패:', error);
+      alert('기본 정보 저장에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   const handleNextStep2 = (file: File, preview: string) => {
@@ -81,9 +114,7 @@ export default function Onboarding() {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        await api.post('/auth/verify', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await authApi.uploadVerifyPhoto(formData);
       } catch (error) {
         console.error('❌ 사진 업로드 실패:', error);
       }
@@ -100,18 +131,11 @@ export default function Onboarding() {
     try {
       const numericIds = selectedIds.map((id) => parseInt(id, 10));
       const finalPayload = {
-        mbti: `${basicInfo.mbti.ei}${basicInfo.mbti.ns}${basicInfo.mbti.ft}${basicInfo.mbti.jp}`,
-        birthDate: `${basicInfo.birth.year}-${basicInfo.birth.month.padStart(2, '0')}-${basicInfo.birth.day.padStart(2, '0')}`,
-        gender: basicInfo.gender,
         preferenceIds: numericIds,
       };
 
       console.log('🚀 [최종 제출] 데이터 전송...');
-      const response = await api.post('/auth/onboarding', finalPayload);
-
-      // ✅ 1. 응답 데이터 확보
-      // Axios 설정에 따라 response 자체가 데이터일 수도 있고 response.data일 수도 있음
-      const resData = response.data || response;
+      const resData: any = await authApi.completeOnboarding(finalPayload);
 
       console.log('📡 [응답 데이터]:', resData);
 
@@ -124,7 +148,7 @@ export default function Onboarding() {
 
         // 3. 토큰 저장
         localStorage.setItem('accessToken', newAccessToken);
-        api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+        client.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         console.log('🔑 토큰 저장 완료');
 
         alert('가입 완료! 🎉');

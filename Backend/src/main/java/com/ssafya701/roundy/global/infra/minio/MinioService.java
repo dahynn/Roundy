@@ -1,7 +1,11 @@
 package com.ssafya701.roundy.global.infra.minio;
 
-import io.minio.*;
-import io.minio.errors.*;
+import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 
 /**
  * MinIO 이미지 관리 서비스
@@ -24,12 +26,23 @@ import java.security.NoSuchAlgorithmException;
 public class MinioService {
 
     private final MinioClient minioClient;
+    private final MinioClient externalMinioClient;
 
-    @Value("${minio.bucket-name}")
-    private String bucketName;
+    private static final String BUCKET_NAME = "roundy";
 
     @Value("${minio.url}")
     private String minioUrl;
+
+    @Value("${minio.external-url}")
+    private String externalUrl;
+
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        if (minioUrl != null)
+            minioUrl = minioUrl.trim();
+        if (externalUrl != null)
+            externalUrl = externalUrl.trim();
+    }
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final java.util.List<String> ALLOWED_CONTENT_TYPES = java.util.Arrays.asList(
@@ -57,7 +70,7 @@ public class MinioService {
             // 업로드
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(BUCKET_NAME)
                             .object(objectName)
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .contentType(file.getContentType())
@@ -126,7 +139,7 @@ public class MinioService {
 
             InputStream stream = minioClient.getObject(
                     GetObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(BUCKET_NAME)
                             .object(objectName)
                             .build());
 
@@ -145,21 +158,25 @@ public class MinioService {
      * - 새로고침을 해도 이 시간 동안은 이미지가 유지됩니다.
      */
     public String getImageUrl(Long userId, String type) {
+        String objectName = String.format("user/%d/%s.jpg", userId, type);
         try {
-            String objectName = String.format("user/%d/%s.jpg", userId, type);
-
-            return minioClient.getPresignedObjectUrl(
+            // 외부망 클라이언트를 사용하여 Presigned URL 생성 (서명에 외부 호스트 포함)
+            String url = externalMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(io.minio.http.Method.GET)
-                            .bucket(bucketName)
+                            .bucket(BUCKET_NAME)
                             .object(objectName)
-                            .expiry(10, java.util.concurrent.TimeUnit.MINUTES) // 10분 설정
+                            .expiry(10, java.util.concurrent.TimeUnit.MINUTES)
                             .build());
+
+            log.info("Generated Presigned URL (External): {}", url);
+            return url;
         } catch (Exception e) {
-            log.error("Failed to generate presigned URL: {}", e.getMessage());
-            // 실패 시 기본 고정 주소 반환
-            String objectName = String.format("user/%d/%s.jpg", userId, type);
-            return String.format("%s/%s/%s", minioUrl, bucketName, objectName);
+            log.warn("Failed to generate presigned URL for {}: {}", objectName, e.getMessage());
+
+            // 실패 시 Fallback URL도 외부망 주소 적용
+            String baseUrl = (externalUrl != null && !externalUrl.isEmpty()) ? externalUrl : minioUrl;
+            return String.format("%s/%s/%s", baseUrl, BUCKET_NAME, objectName);
         }
     }
 
@@ -170,18 +187,18 @@ public class MinioService {
         try {
             boolean exists = minioClient.bucketExists(
                     BucketExistsArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(BUCKET_NAME)
                             .build());
 
             if (!exists) {
                 minioClient.makeBucket(
                         MakeBucketArgs.builder()
-                                .bucket(bucketName)
+                                .bucket(BUCKET_NAME)
                                 .build());
-                log.info("Bucket created: {}", bucketName);
+                log.info("Bucket created: {}", BUCKET_NAME);
             }
         } catch (Exception e) {
-            log.error("Failed to ensure bucket exists: {}", bucketName, e);
+            log.error("Failed to ensure bucket exists: {}", BUCKET_NAME, e);
             throw new RuntimeException("버킷 확인 실패", e);
         }
     }

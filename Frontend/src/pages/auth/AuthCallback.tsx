@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import api from '@/utils/api';
+import { getSignupDetails } from '@/api/auth';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -16,9 +16,7 @@ export default function AuthCallback() {
       // 2. 사용자 상태 확인 후 라우팅
       const checkUserStatus = async () => {
         try {
-          // api/utils/api.ts를 사용하여 사용자 정보 조회
-          const response = await api.get('/auth/signup/details');
-          const userData = response.data?.data || response.data || response;
+          const userData: any = await getSignupDetails();
 
           const status = userData.status;
           const hasNickname = !!userData.nickname;

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 1. Axios 인스턴스 생성
-const api = axios.create({
+export const api = axios.create({
   // Vite 환경에서는 import.meta.env를 사용합니다.
   baseURL: `${import.meta.env.VITE_API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
@@ -35,5 +35,63 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+/**
+ * 유저 정보 조회 API
+ */
+export const getUserInfo = async (): Promise<any> => {
+  return await api.get('/auth/signup/details') as any;
+};
+
+/**
+ * 로그아웃 API
+ */
+export const logout = async (): Promise<any> => {
+  return await api.post('/auth/logout') as any;
+};
+
+/**
+ * 회원탈퇴 API
+ */
+export const withdraw = async (): Promise<any> => {
+  return await api.delete('/auth/withdraw') as any;
+};
+
+/**
+ * 전용 인증 사진 전송 (얼굴 대조용)
+ */
+export const verifyFace = async (representativeImage: File, liveImage: Blob): Promise<any> => {
+  const formData = new FormData();
+  formData.append('profile_image', representativeImage);
+  formData.append('live_image', liveImage, 'live_capture.jpg');
+  return await api.post('/users/verify', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }) as any;
+};
+
+/**
+ * 세션 목록 조회 (Mock/Test 임시 유지)
+ */
+export const getSessions = async () => {
+  return {
+    data: [
+      {
+        sessionId: 1,
+        title: 'ASMR Session',
+        description: '조용한 카페에서 속삭이듯 대화하는 기분...',
+        currentCount: 3,
+        maxCount: 6,
+        status: 'RECRUITING',
+      },
+    ],
+  };
+};
+
+/**
+ * 세션 입장 (Mock/Test 임시 유지)
+ */
+export const joinSession = async (sessionId: number) => {
+  return { data: { success: true } };
+};
 
 export default api;
