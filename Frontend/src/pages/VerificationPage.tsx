@@ -104,9 +104,17 @@ export default function VerificationPage() {
       } else {
         alert('본인 인증에 실패했습니다. 다시 시도해주세요.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('인증 요청 실패:', error);
-      alert('인증 과정에서 오류가 발생했습니다.');
+
+      // 400 에러: 얼굴 감지 실패 (특정 에러 메시지)
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.message || '얼굴을 인식할 수 없습니다.';
+        alert(`⚠️ ${errorMessage}\n\n다시 촬영해주세요.`);
+      } else {
+        // 기타 에러 (네트워크, 서버 오류 등)
+        alert('인증 과정에서 오류가 발생했습니다.');
+      }
     } finally {
       setIsVerifying(false);
     }
