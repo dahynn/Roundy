@@ -38,7 +38,7 @@ public class VerificationController {
      * @return 검증 결과 (requestId + verified)
      */
     @PostMapping("/verify")
-    public ResponseEntity<CommonResponse<com.ssafya701.roundy.verification.dto.response.VerificationResponse>> verify(
+    public ResponseEntity<CommonResponse<?>> verify(
             @RequestHeader("Authorization") String jwt,
             @RequestParam("realtimeImage") org.springframework.web.multipart.MultipartFile realtimeImage) {
 
@@ -69,11 +69,6 @@ public class VerificationController {
             // 얼굴 감지 실패 시 에러 응답
             if (result.hasFaceDetectionError()) {
                 log.warn("Face detection failed: userId={}, error={}", userId, result.getErrorMessage());
-                
-                com.ssafya701.roundy.verification.dto.response.VerificationResponse errorResponse =
-                        new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
-                                requestId, false
-                        );
                 
                 return ResponseEntity.status(400)
                         .body(CommonResponse.ofFailure(result.getErrorMessage()));
