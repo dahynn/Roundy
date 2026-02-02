@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -19,7 +21,10 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserPreference> userPreferences = new ArrayList<>();
+
+    @Column(nullable = true) // 탈퇴 시 null 처리를 위해 unique 제거 및 nullable 허용
     private Long kakaoId;
 
     private String name;
@@ -75,5 +80,17 @@ public class User extends BaseEntity {
     public void authorizeUser() {
         this.role = UserRole.USER;
         this.status = UserStatus.VALID;
+    }
+
+    // 회원 탈퇴 (Soft Delete)
+    public void withdraw() {
+        this.nickName = "탈퇴한 회원";
+        this.email = null;
+        this.name = null;
+        this.kakaoId = null;
+        this.profileImageUrl = null;
+        this.verificationImageUrl = null;
+        this.mbti = null;
+        this.status = UserStatus.WITHDRAWN;
     }
 }
