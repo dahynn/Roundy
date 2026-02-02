@@ -351,7 +351,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
      */
     public void broadcastRoomState(RoomState room) throws IOException {
         List<RoomStateMessage.ParticipantDto> participantDtos = room.getParticipantList().stream()
-                .map(p -> new RoomStateMessage.ParticipantDto(p.getUserId(), p.getNickname()))
+                .map(p -> new RoomStateMessage.ParticipantDto(p.getUserId(), p.getNickname(), p.getGender().name()))
                 .collect(Collectors.toList());
 
         RoomStateMessage roomState = new RoomStateMessage(

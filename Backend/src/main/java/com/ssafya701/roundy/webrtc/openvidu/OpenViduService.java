@@ -47,7 +47,8 @@ public class OpenViduService {
         }
 
         // Session 생성
-        String customSessionId = "room-" + roomId;
+        // String customSessionId = "room-" + roomId; // 중복 prefix 방지: 호출자가 이미 고유 ID를 관리함
+        String customSessionId = roomId;
         try {
             OpenViduSessionResponse response = openViduClient.createSession(customSessionId);
             String sessionId = response.getId();

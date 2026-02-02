@@ -69,9 +69,13 @@ public class StageExecutor {
         // 🧪 테스트용 하드코딩: 자동 투표 시뮬레이션
         // TODO: 테스트 완료 후 삭제 또는 주석 처리 필요!
         // ========================================
-        if (!isFirst) {  // 최종 투표에만 적용
-            injectTestVotes(room);
-        }
+        // ========================================
+        // 🧪 테스트용 하드코딩: 자동 투표 시뮬레이션
+        // TODO: 테스트 완료 후 삭제 또는 주석 처리 필요!
+        // ========================================
+        // if (!isFirst) {  // 최종 투표에만 적용
+        //     injectTestVotes(room);
+        // }
         // ========================================
     }
     
@@ -86,39 +90,39 @@ public class StageExecutor {
      * 
      * TODO: 테스트 완료 후 이 메서드와 호출 부분 모두 삭제!
      */
-    private void injectTestVotes(RoomState room) {
-        java.util.List<com.ssafya701.roundy.webrtc.room.ParticipantState> participants = room.getParticipantList();
-        
-        if (participants.size() < 4) {
-            log.warn("⚠️  테스트 투표 주입 실패: 참가자 4명 미만 ({}명)", participants.size());
-            return;
-        }
-        
-        // 참가자 ID 추출 (입장 순서대로 Alice, Bob, Charlie, Diana라고 가정)
-        Long aliceId = participants.get(0).getUserId();
-        Long bobId = participants.get(1).getUserId();
-        Long charlieId = participants.get(2).getUserId();
-        Long dianaId = participants.get(3).getUserId();
-        
-        // 첫인상 투표 주입
-        room.submitVote(aliceId, bobId, false);    // Alice → Bob
-        room.submitVote(bobId, aliceId, false);    // Bob → Alice
-        room.submitVote(charlieId, dianaId, false); // Charlie → Diana
-        room.submitVote(dianaId, bobId, false);    // Diana → Bob
-        
-        // 최종 투표 주입 (동일)
-        room.submitVote(aliceId, bobId, true);     // Alice → Bob
-        room.submitVote(bobId, aliceId, true);     // Bob → Alice
-        room.submitVote(charlieId, dianaId, true); // Charlie → Diana
-        room.submitVote(dianaId, bobId, true);     // Diana → Bob
-        
-        log.warn("🧪 [테스트] 자동 투표 주입 완료!");
-        log.warn("   - {} → {} (매칭 예정)", aliceId, bobId);
-        log.warn("   - {} → {} (매칭 예정)", bobId, aliceId);
-        log.warn("   - {} → {} (일방적)", charlieId, dianaId);
-        log.warn("   - {} → {} (일방적)", dianaId, bobId);
-        log.warn("   ✅ 예상 매칭: Alice({})-Bob({}) 1쌍", aliceId, bobId);
-    }
+    // private void injectTestVotes(RoomState room) {
+    //     java.util.List<com.ssafya701.roundy.webrtc.room.ParticipantState> participants = room.getParticipantList();
+    //     
+    //     if (participants.size() < 4) {
+    //         log.warn("⚠️  테스트 투표 주입 실패: 참가자 4명 미만 ({}명)", participants.size());
+    //         return;
+    //     }
+    //     
+    //     // 참가자 ID 추출 (입장 순서대로 Alice, Bob, Charlie, Diana라고 가정)
+    //     Long aliceId = participants.get(0).getUserId();
+    //     Long bobId = participants.get(1).getUserId();
+    //     Long charlieId = participants.get(2).getUserId();
+    //     Long dianaId = participants.get(3).getUserId();
+    //     
+    //     // 첫인상 투표 주입
+    //     room.submitVote(aliceId, bobId, false);    // Alice → Bob
+    //     room.submitVote(bobId, aliceId, false);    // Bob → Alice
+    //     room.submitVote(charlieId, dianaId, false); // Charlie → Diana
+    //     room.submitVote(dianaId, bobId, false);    // Diana → Bob
+    //     
+    //     // 최종 투표 주입 (동일)
+    //     room.submitVote(aliceId, bobId, true);     // Alice → Bob
+    //     room.submitVote(bobId, aliceId, true);     // Bob → Alice
+    //     room.submitVote(charlieId, dianaId, true); // Charlie → Diana
+    //     room.submitVote(dianaId, bobId, true);     // Diana → Bob
+    //     
+    //     log.warn("🧪 [테스트] 자동 투표 주입 완료!");
+    //     log.warn("   - {} → {} (매칭 예정)", aliceId, bobId);
+    //     log.warn("   - {} → {} (매칭 예정)", bobId, aliceId);
+    //     log.warn("   - {} → {} (일방적)", charlieId, dianaId);
+    //     log.warn("   - {} → {} (일방적)", dianaId, bobId);
+    //     log.warn("   ✅ 예상 매칭: Alice({})-Bob({}) 1쌍", aliceId, bobId);
+    // }
     
     /**
      * 1:1 대화 단계 실행

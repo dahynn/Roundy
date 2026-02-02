@@ -438,7 +438,7 @@ public class RoomEventPublisher {
      */
     public void broadcastRoomState(RoomState room) throws IOException {
         List<RoomStateMessage.ParticipantDto> participantDtos = room.getParticipantList().stream()
-                .map(p -> new RoomStateMessage.ParticipantDto(p.getUserId(), p.getNickname()))
+                .map(p -> new RoomStateMessage.ParticipantDto(p.getUserId(), p.getNickname(), p.getGender().name()))
                 .collect(java.util.stream.Collectors.toList());
         RoomStateMessage roomState = new RoomStateMessage(
                 room.getRoomId(),
