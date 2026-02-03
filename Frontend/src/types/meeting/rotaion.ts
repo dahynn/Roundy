@@ -52,6 +52,7 @@ export interface JoinOkPayload {
 export interface Participant {
     userId: number;
     nickname: string;
+    gender: 'MALE' | 'FEMALE';
 }
 
 export interface RoomStatePayload {
@@ -82,6 +83,12 @@ export interface MatchResultPayload {
     isMatched: boolean;
     partnerId: number | null;
     partnerNickname: string | null;
+}
+
+// 게임 답변 페이로드 타입
+export interface GameAnswerPayload {
+    questionIndex: number;
+    targetUserId: number;
 }
 
 // --- State Interface ---
