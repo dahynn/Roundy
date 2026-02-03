@@ -1,4 +1,4 @@
-// 문서에 정의된 스테이지 목록
+// 문서에 정의된 스테이지 목록 (UI 상태용)
 export type RotationStage =
     | 'WAITING'
     | 'SELF_INTRO'
@@ -20,7 +20,8 @@ export type WsMessageType =
     // Server -> Client
     | 'JOIN_OK'
     | 'ROOM_STATE'
-    | 'STAGE_CHANGE'
+    | 'ROUND_START' // Changed from STAGE_CHANGE
+    | 'ROUND_END'
     | 'PAIR_ASSIGNED'
     | 'VOTE_SUBMITTED'
     | 'MATCH_RESULT'
@@ -61,11 +62,17 @@ export interface RoomStatePayload {
     participantCount: number;
 }
 
-// STAGE_CHANGE: 스테이지 전환
-export interface StageChangePayload {
+// ROUND_START: 라운드 시작
+export interface RoundStartPayload {
     roomId: string;
-    stage: RotationStage;
+    roundNumber: number;
     durationSeconds: number;
+}
+
+// ROUND_END: 라운드 종료
+export interface RoundEndPayload {
+    roomId: string;
+    roundNumber: number;
 }
 
 // PAIR_ASSIGNED: 1:1 매칭 (핵심)
@@ -74,8 +81,9 @@ export interface PairAssignedPayload {
     roundNumber: number;
     partnerId: number | null;
     partnerNickname: string | null;
-    privateSessionId: string;
-    privateToken: string; // 1:1 대화용 토큰
+    // Spec doesn't explicitly mention private tokens anymore, but keeping optional for compatibility if needed.
+    privateSessionId?: string;
+    privateToken?: string; 
 }
 
 // MATCH_RESULT: 최종 매칭 결과
@@ -95,7 +103,10 @@ export interface GameAnswerPayload {
 export interface RotationState {
     connected: boolean;
     roomId: string | null;
-    currentStage: RotationStage;
+    mode: 'FREE_TALK' | 'PAIR_ONLY' | null; // Added mode
+    currentStage: RotationStage | 'ROUND_IN_PROGRESS' | 'ROUND_WAITING'; // Extended
+    currentRound: number; // Added
+    totalRounds: number; // Added
     remainingTime: number;
 
     // 사용자 정보
@@ -105,8 +116,8 @@ export interface RotationState {
     currentPartner: {
         id: number | null;
         nickname: string | null;
-        sessionId: string | null; // OpenVidu Session ID
-        token: string | null;     // OpenVidu Token
+        sessionId?: string | null;
+        token?: string | null;
     } | null;
 
     // 시스템 메시지/에러
