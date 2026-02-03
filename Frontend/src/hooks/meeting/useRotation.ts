@@ -9,6 +9,10 @@ import type {
     MatchResultPayload,
     KickPayload,
     ErrorPayload,
+    FaceRevealStartPayload, // Import FaceRevealStartPayload
+    SpeakerChangePayload, // Import SpeakerChangePayload
+    GameQuestionPayload, // Import GameQuestionPayload
+    GameResultPayload, // Import GameResultPayload
     // RotationStage // Import Stage Type
 } from '../../types/meeting/rotaion';
 
@@ -35,6 +39,9 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         currentStage: 'WAITING',
         remainingTime: 0,
         participants: [],
+        currentSpeaker: null,
+        currentGame: null,
+        redirectInfo: null,
         currentPartner: null,
         lastMessage: null,
         lobbyCredentials: undefined, // 초기 대기실 토큰 저장용
@@ -105,12 +112,17 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                             };
                         }
 
+                        // FACE_REVEAL_START 메시지가 먼저 도착했을 경우 성공 메시지를 유지하기 위함
+                        const shouldKeepMessage = payload.stage === 'FACE_REVEAL' && prev.lastMessage?.includes('매칭되었습니다');
+
                         return {
                             ...prev,
                             currentStage: payload.stage,
                             remainingTime: payload.durationSeconds,
                             currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
-                            lastMessage: `스테이지 변경: ${payload.stage}`
+                            currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
+                            currentGame: null, // 이미지 게임 정보 초기화
+                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`
                         };
                     });
                     break;
@@ -145,16 +157,95 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                     break;
                 }
 
+                case 'FACE_REVEAL_START': {
+                    const payload = data as FaceRevealStartPayload;
+                    setState(prev => ({
+                        ...prev,
+                        // 1:1 매칭이 되었을 때, 프라이빗 룸 연결 정보로 업데이트
+                        currentPartner: {
+                            id: payload.partnerId,
+                            nickname: payload.partnerNickname,
+                            sessionId: payload.privateSessionId,
+                            token: payload.privateToken
+                        },
+                        redirectInfo: null, // 혹시 설정되었을 수 있는 강퇴/리다이렉트 정보 제거
+                        // 사용자 요청: 매칭된 사용자 이름 + 님과 매칭되었습니다. 안내
+                        lastMessage: `${payload.partnerNickname}님과 매칭되었습니다! 프라이빗 룸으로 이동합니다.`
+                    }));
+                    break;
+                }
+
+                case 'SPEAKER_CHANGE': {
+                    const payload = data as SpeakerChangePayload;
+                    setState(prev => ({
+                        ...prev,
+                        currentSpeaker: {
+                            id: payload.speakerId,
+                            speakerNickname: payload.speakerNickname, // 백엔드 필드명 일치
+                            remainingTime: payload.remainingSeconds
+                        },
+                        // 타이머 동기화 (선택 사항: 서버에서 주는 remainingTime 사용)
+                        remainingTime: payload.remainingSeconds
+                    }));
+                    break;
+                }
+
+                case 'GAME_QUESTION': {
+                    const payload = data as GameQuestionPayload;
+                    setState(prev => ({
+                        ...prev,
+                        currentGame: {
+                            state: 'QUESTION',
+                            question: payload.question,
+                            questionNumber: payload.questionNumber,
+                            totalQuestions: payload.totalQuestions,
+                            data: payload
+                        },
+                        remainingTime: payload.timeLimitSeconds, // 5초 타이머 설정
+                        lastMessage: `Q${payload.questionNumber}. ${payload.question}`
+                    }));
+                    break;
+                }
+
+                case 'GAME_RESULT': {
+                    const payload = data as GameResultPayload;
+                    setState(prev => ({
+                        ...prev,
+                        currentGame: {
+                            state: 'RESULT',
+                            question: payload.question,
+                            questionNumber: payload.questionNumber,
+                            data: payload
+                        },
+                        // 결과 보여주는 시간 (약 5초) 동안은 remainingTime이 별도로 주어지지 않으므로 0 혹은 유지
+                        // 하지만 일반적인 흐름상 다음 문제가 오기 전까지 대기이므로 0으로 처리하거나 유지
+                        // 여기서는 명시적으로 0 혹은 UI 제어용으로 둡니다.
+                        remainingTime: 0,
+                        lastMessage: payload.winners.length > 0
+                            ? `정답: ${payload.winners.map(w => w.nickname).join(', ')}`
+                            : '결과 발표'
+                    }));
+                    break;
+                }
+
                 case 'VOTE_SUBMITTED':
                     setState(prev => ({ ...prev, lastMessage: '투표 완료!' }));
                     break;
 
                 case 'KICK': {
                     const payload = data as KickPayload;
-                    alert(`강제 퇴장: ${payload.reason}`);
-                    socketRef.current?.close();
-                    // 홈으로 리다이렉트
-                    window.location.href = '/';
+                    // alert(`강제 퇴장: ${payload.reason}`); // 제거
+                    // socketRef.current?.close(); // 리다이렉트 직전에 종료하도록 변경
+
+                    setState(prev => ({
+                        ...prev,
+                        lastMessage: `퇴장 안내: ${payload.reason}`,
+                        redirectInfo: {
+                            message: `매칭 실패. ${payload.reason}\n잠시 후 홈으로 이동합니다.`,
+                            targetPath: '/',
+                            remainingSeconds: 3 // 3초 카운트다운
+                        }
+                    }));
                     break;
                 }
 
@@ -214,7 +305,7 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         return () => socket.close();
     }, [roomId, userProfile.userId, sendMessage, handleMessage]);
 
-    // 타이머
+    // 타이머 (기존 게임 타이머)
     useEffect(() => {
         if (state.remainingTime > 0) {
             timerRef.current = window.setInterval(() => {
@@ -223,6 +314,32 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         }
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [state.remainingTime]);
+
+    // 리다이렉트 카운트다운 처리
+    useEffect(() => {
+        let redirectTimer: number | null = null;
+        if (state.redirectInfo && state.redirectInfo.remainingSeconds > 0) {
+            redirectTimer = window.setInterval(() => {
+                setState(prev => {
+                    if (!prev.redirectInfo) return prev;
+                    if (prev.redirectInfo.remainingSeconds <= 1) {
+                        // 카운트다운 종료 시 리다이렉트 수행
+                        if (socketRef.current) socketRef.current.close();
+                        window.location.href = prev.redirectInfo.targetPath;
+                        return { ...prev, redirectInfo: { ...prev.redirectInfo, remainingSeconds: 0 } };
+                    }
+                    return {
+                        ...prev,
+                        redirectInfo: {
+                            ...prev.redirectInfo,
+                            remainingSeconds: prev.redirectInfo.remainingSeconds - 1
+                        }
+                    };
+                });
+            }, 1000);
+        }
+        return () => { if (redirectTimer) clearInterval(redirectTimer); };
+    }, [state.redirectInfo]);
 
     const submitVote = (targetUserId: number) => sendMessage('SUBMIT_VOTE', { targetUserId });
     const submitGameAnswer = (answer: string) => sendMessage('SUBMIT_GAME_ANSWER', { answer });
