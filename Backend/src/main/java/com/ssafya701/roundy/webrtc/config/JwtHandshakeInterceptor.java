@@ -28,33 +28,37 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes) throws Exception {
 
-        // ========== 테스트용: JWT 검증 비활성화 ==========
-        // TODO: 운영 배포 전 반드시 아래 주석 해제하고 테스트 코드 삭제할 것!
+        /* 
+         * [테스트용 수정] 
+         * 클라이언트에서 ?userId=123&username=Bob&gender=MALE&mode=PAIR_ONLY 형태로 접속하면
+         * JWT 검증을 건너뛰고 해당 정보로 세션을 생성합니다.
+         */
         
         String query = request.getURI().getQuery();
         
-        // 테스트용: userId, username, gender, mode를 쿼리 파라미터에서 직접 추출
+        // 1. 테스트 파라미터 확인 (userId가 있으면 테스트 모드 진입)
         String userIdParam = extractQueryParam(query, "userId");
-        String usernameParam = extractQueryParam(query, "username");
-        String genderParam = extractQueryParam(query, "gender");
-        String modeParam = extractQueryParam(query, "mode");
-        
-        Long userId = userIdParam != null ? Long.parseLong(userIdParam) : 1L;
-        String username = usernameParam != null ? usernameParam : "testUser";
-        String gender = genderParam != null ? genderParam : "MALE";  // 기본값: MALE
-        String mode = modeParam != null ? modeParam : "FREE_TALK";  // 기본값: FREE_TALK
-        
-        attributes.put("userId", userId);
-        attributes.put("username", username);
-        attributes.put("gender", gender);
-        attributes.put("mode", mode);
-        
-        log.warn("🔓 [테스트 모드] JWT 검증 SKIP - userId={}, username={}, gender={}, mode={}", 
-                userId, username, gender, mode);
-        return true;
-        
-        /* ========== 원래 JWT 검증 로직 (주석 처리) ==========
-        if (query == null) {
+        if (userIdParam != null) {
+            String usernameParam = extractQueryParam(query, "username");
+            String genderParam = extractQueryParam(query, "gender");
+            String modeParam = extractQueryParam(query, "mode");
+            
+            Long userId = Long.parseLong(userIdParam);
+            String username = usernameParam != null ? usernameParam : "TestUser" + userId;
+            String gender = genderParam != null ? genderParam : "MALE";
+            String mode = modeParam != null ? modeParam : "FREE_TALK";
+            
+            attributes.put("userId", userId);
+            attributes.put("username", username);
+            attributes.put("gender", gender);
+            attributes.put("mode", mode);
+            
+            log.warn("🔓 [테스트 모드] JWT SKIP - userId={}, username={}, gender={}", userId, username, gender);
+            return true;
+        }
+
+        /* 원래 JWT 검증 로직 */
+         if (query == null) {
             log.warn("WebSocket 연결 실패: 쿼리 파라미터 없음");
             return false;
         }
@@ -84,6 +88,11 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             // 사용자 정보를 WebSocket 세션 속성에 저장
             attributes.put("userId", userId);
             attributes.put("username", String.valueOf(userId)); // username은 userId로 대체
+            
+            // TODO: 실제 서비스에서는 DB에서 Gender, Nickname 등을 조회해서 넣어야 함
+            // 임시: 기본값 설정
+            attributes.put("gender", "MALE"); 
+            attributes.put("mode", "FREE_TALK");
 
             log.info("WebSocket 핸드셰이크 성공: userId={}", userId);
             return true;
@@ -92,7 +101,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             log.warn("WebSocket 연결 실패: JWT 검증 실패 - {}", e.getMessage());
             return false;
         }
-        ========== 원래 JWT 검증 로직 끝 ========== */
     }
 
     @Override

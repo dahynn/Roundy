@@ -24,7 +24,7 @@ public class OpenViduService {
     private final WebRtcEventLogger eventLogger;
 
     /**
-     * 방 ID별 OpenVidu Session ID 캐시
+     * 방 ID별 OpenVidu Session ID 캐시F
      * Key: roomId, Value: openViduSessionId
      */
     private final Map<String, String> sessionCache = new ConcurrentHashMap<>();

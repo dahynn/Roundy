@@ -172,9 +172,9 @@ public class MessageTestController {
             case "ROOM_STATE" -> new RoomStateMessage(
                     "room-123",
                     Arrays.asList(
-                            new RoomStateMessage.ParticipantDto(1L, "Alice"),
-                            new RoomStateMessage.ParticipantDto(2L, "Bob"),
-                            new RoomStateMessage.ParticipantDto(3L, "Charlie")
+                            new RoomStateMessage.ParticipantDto(1L, "Alice", "FEMALE"),
+                            new RoomStateMessage.ParticipantDto(2L, "Bob", "MALE"),
+                            new RoomStateMessage.ParticipantDto(3L, "Charlie", "MALE")
                     ),
                     3
             );

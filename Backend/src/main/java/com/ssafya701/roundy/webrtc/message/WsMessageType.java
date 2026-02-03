@@ -18,6 +18,7 @@ public enum WsMessageType {
     
     // 기존: 방 관리
     JOIN_OK,
+    ROOM_ISSUED,
     ROOM_STATE,
     
     // 기존: 로테이션 (PAIR_ONLY 모드)
