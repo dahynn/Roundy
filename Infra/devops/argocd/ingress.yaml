@@ -30,3 +30,17 @@ spec:
             name: roundy-backend-svc
             port:
               number: 8080
+      - path: /minio-api
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-svc
+            port:
+              number: 8887
+      - path: /minio-console
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-svc
+            port:
+              number: 8886
