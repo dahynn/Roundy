@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRotationSystem } from '../../hooks/meeting/useRotation';
+// import { useRotationSystem } from '../../hooks/meeting/useRotation';
 import { useOpenVidu } from '../../hooks/meeting/useOpenVidu';
 import UserVideo from '../../components/meeting/UserVideo';
 

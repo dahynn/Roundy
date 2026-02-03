@@ -31,7 +31,7 @@ export default function LoginModal({ onClose }: Props) {
         {/* 1. 로고 */}
         <div className="mb-10 p-2">
           <img
-            src="/favicon.svg"
+            src="/roundy_logo.svg"
             alt="Roundy Logo"
             className="w-24 h-24 object-contain drop-shadow-xl animate-float"
           />
