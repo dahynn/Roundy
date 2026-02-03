@@ -6,11 +6,9 @@ interface Props {
 }
 
 export default function LoginModal({ onClose }: Props) {
-  // 카카오 로그인 핸들러: 백엔드 인증 서버로 리다이렉트
   const handleKakaoLogin = () => {
-    // 백엔드 명세에 정의된 로그인 엔드포인트로 이동합니다.
-    // 이동 후 카카오 로그인이 완료되면 자동으로 프론트엔드 콜백 URL로 돌아옵니다.
-    window.location.href = 'http://localhost:8080/api/auth/login';
+    // window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/login`;
+    window.location.href = `http://localhost:8080/api/auth/login`;
   };
 
   return (
@@ -31,7 +29,7 @@ export default function LoginModal({ onClose }: Props) {
         {/* 1. 로고 */}
         <div className="mb-10 p-2">
           <img
-            src="/favicon.svg"
+            src="/roundy_logo.svg"
             alt="Roundy Logo"
             className="w-24 h-24 object-contain drop-shadow-xl animate-float"
           />

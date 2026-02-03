@@ -1,0 +1,11 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: minio-strip
+  namespace: roundy-app
+spec:
+  stripPrefix:
+    prefixes:
+      - /minio-console
+      - /minio-api
+    forceSlash: true # 이 옵션이 중요합니다.
