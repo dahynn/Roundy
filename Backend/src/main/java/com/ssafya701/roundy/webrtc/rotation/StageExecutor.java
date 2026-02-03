@@ -280,10 +280,34 @@ public class StageExecutor {
         // 매칭 결과 계산 (쌍방 선택 확인)
         java.util.List<RoomState.MatchPair> matches = room.calculateMatches();
         
-        // 각 참가자에게 개별 전송
+        // 각 참가자에게 개별 전송 및 DB 저장
         for (ParticipantState participant : room.getParticipantList()) {
             RoomState.MatchPair result = room.getMatchResultForUser(participant.getUserId());
             eventPublisher.publishMatchResult(participant, result);
+        }
+        
+        // 매칭 성공 시 DB 저장 (중복 저장 방지 위해 matches 리스트 순회)
+        for (RoomState.MatchPair match : matches) {
+            try {
+                // 남녀 구분하여 저장 (MatchPair는 순서 보장 안됨, 성별 확인 필요하지만 일단 ID 크기 순 등으로 저장하거나 MatchService에 위임)
+                // MatchService.createMatch(roomId, maleId, femaleId)
+                // 현재 MatchPair에는 성별 정보가 없으므로 RoomState에서 조회 필요
+                
+                Long userId1 = match.getUserId1();
+                Long userId2 = match.getUserId2();
+                
+                com.ssafya701.roundy.webrtc.room.enums.Gender gender1 = room.getParticipant(userId1)
+                    .map(ParticipantState::getGender).orElse(com.ssafya701.roundy.webrtc.room.enums.Gender.MALE);
+                
+                Long maleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId1 : userId2;
+                Long femaleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId2 : userId1;
+                
+                matchService.createMatch(room.getRoomId(), maleId, femaleId);
+                log.info("✅ 매칭 DB 저장 완료: male={}, female={}", maleId, femaleId);
+                
+            } catch (Exception e) {
+                log.error("매칭 정보 DB 저장 실패: match={}", match, e);
+            }
         }
         
         log.info("💕 매칭 결과: roomId={}, 성공 커플 {}쌍", room.getRoomId(), matches.size());
