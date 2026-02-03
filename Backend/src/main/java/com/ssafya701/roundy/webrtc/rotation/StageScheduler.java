@@ -61,6 +61,15 @@ public class StageScheduler {
         Stage nextStage = null;
         boolean isRepeating = false;
         
+        if (currentStage == Stage.SELF_INTRO) {
+            // 남은 발언자가 있으면 스테이지 반복
+            if (room.getRemainingspeakers() > 0) {
+                nextStage = currentStage;
+                isRepeating = true;
+                log.info("📢 자기소개 반복: roomId={}, 남은발언자={}", roomId, room.getRemainingspeakers());
+            }
+        }
+
         if (currentStage.isRotationStage()) {
             int currentRound = room.getCurrentRotationRound();
             int maxRounds = room.getMaxRotationRounds();

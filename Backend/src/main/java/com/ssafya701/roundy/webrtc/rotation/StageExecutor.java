@@ -37,19 +37,24 @@ public class StageExecutor {
      * 자기소개 단계 실행
      */
     public void executeSelfIntro(RoomState room) {
-        // 발언자 큐 초기화 (랜덤 순서)
-        room.initializeSpeakerQueue();
-        
-        // STAGE_CHANGE 브로드캐스트
-        eventPublisher.publishStageChange(room, Stage.SELF_INTRO);
-        
-        // 첫 번째 발언자 지정
-        Long speakerId = room.assignNextSpeaker();
-        if (speakerId != null) {
-            eventPublisher.publishSpeakerChange(room, speakerId, 60);
+        // 발언자 큐가 비어있다면 초기화 (처음 시작할 때)
+        if (room.getRemainingspeakers() == 0) {
+            room.initializeSpeakerQueue();
+            log.info("자기소개 큐 초기화: roomId={}, 인원={}", room.getRoomId(), room.getParticipantCount());
         }
         
-        log.info("자기소개 시작: roomId={}, 첫 발언자={}", room.getRoomId(), speakerId);
+        // STAGE_CHANGE 브로드캐스트 (매 턴마다 시간을 리셋하기 위해 전송)
+        eventPublisher.publishStageChange(room, Stage.SELF_INTRO);
+        
+        // 다음 발언자 지정
+        Long speakerId = room.assignNextSpeaker();
+        if (speakerId != null) {
+            // Stage에 정의된 시간(5초) 사용
+            eventPublisher.publishSpeakerChange(room, speakerId, Stage.SELF_INTRO.getDurationSeconds());
+        }
+        
+        log.info("자기소개 진행: roomId={}, 발언자={}, 남은사람={}", 
+                room.getRoomId(), speakerId, room.getRemainingspeakers());
     }
     
     /**
@@ -270,7 +275,10 @@ public class StageExecutor {
         
         log.info("💕 매칭 결과: roomId={}, 성공 커플 {}쌍", room.getRoomId(), matches.size());
         
-        // ✅ 10초 후 방 자동 초기화
+        
+        // ❌ 기존에는 여기서 방을 초기화했으나, FACE_REVEAL 단계와 겹쳐서 참가자 삭제되는 버그 발생.
+        // 해당 로직은 executeFaceReveal 메서드로 이동됨.
+        /*
         java.util.concurrent.ScheduledExecutorService scheduler = 
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         scheduler.schedule(() -> {
@@ -283,6 +291,7 @@ public class StageExecutor {
             }
             scheduler.shutdown();
         }, 10, java.util.concurrent.TimeUnit.SECONDS);
+        */
     }
     
     /**
@@ -325,5 +334,24 @@ public class StageExecutor {
         eventPublisher.publishFaceRevealStart(room, matches);
         log.info("얼굴 공개: roomId={}, 매칭 커플 {}쌍, 강퇴 {}명", 
             room.getRoomId(), matches.size(), singleUsers.size());
+            
+        // ✅ [버그 수정] 유저 요청: "FACE_REVEAL 시작 후 몇 초 뒤에 방 정리(데이터 초기화)"
+        // 원래는 MATCHING_RESULT 끝나고 바로 했으나, 그러면 참가자 데이터가 지워져서 에러 발생함.
+        // 여기서 10초 정도 여유를 두고 정리하도록 변경.
+        java.util.concurrent.ScheduledExecutorService cleanupScheduler = 
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        cleanupScheduler.schedule(() -> {
+            log.info("🔄 방 자동 데이터 정리 (얼굴 공개 시작 후): roomId={}", room.getRoomId());
+            // 주의: room.reset()은 참가자 목록을 다 지우므로, 
+            // 혹시라도 이후에 서버에서 데이터를 조회해야 한다면 문제가 될 수 있음.
+            // 하지만 현재는 OpenVidu 세션이 이미 생성되었으므로 P2P 통신에는 문제 없음.
+            room.reset();
+            try {
+                eventPublisher.broadcastRoomState(room);
+            } catch (java.io.IOException e) {
+                log.warn("방 정리 후 상태 전송 실패 (정상): {}", e.getMessage());
+            }
+            cleanupScheduler.shutdown();
+        }, 10, java.util.concurrent.TimeUnit.SECONDS);
     }
 }
