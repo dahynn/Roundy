@@ -10,7 +10,8 @@ import NoticePage from '@/pages/my/NoticePage';
 import FAQPage from '@/pages/my/FAQPage';
 import VerificationPage from '@/pages/verification/VerificationPage';
 import WaitingLobby from '@/pages/meeting/WaitingLobby';
-import RotationTestPage from '@/pages/meeting/RotationTest';
+import RotationTestPage from '@/pages/meeting/RotationTest'
+import RotationMeeting from '@/pages/meeting/RotationMeeting'
 import Onboarding from '@/pages/auth/Onboarding';
 import AuthCallback from '@/pages/auth/AuthCallback';
 import { useTheme } from '@/components/theme-provider';
