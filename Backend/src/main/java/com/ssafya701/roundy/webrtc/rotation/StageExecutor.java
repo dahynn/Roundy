@@ -137,9 +137,13 @@ public class StageExecutor {
         // PAIR_ONLY 모드는 성별 기반 매칭, FREE_TALK 모드는 성별 무관 매칭
         boolean genderBased = room.isPairMode();
         
-        java.util.List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(
+        // StageScheduler에서 관리하는 동적 라운드 번호 사용
+        // (1, 2, ... 인원수만큼 증가)
+        int roundNumber = room.getCurrentRotationRound();
+        
+        List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(
             participants,
-            stage.getOrder(),
+            roundNumber,
             genderBased
         );
         

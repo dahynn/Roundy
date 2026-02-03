@@ -111,6 +111,35 @@ public class RoomState {
      */
     private Map<Long, Long> disconnectedParticipants = new ConcurrentHashMap<>();
     
+    /**
+     * 현재 로테이션 라운드 번호 (1부터 시작)
+     * 스테이지 내에서 라운드 반복 시 사용
+     */
+    private int currentRotationRound = 1;
+    
+    public void nextRotationRound() {
+        this.currentRotationRound++;
+    }
+    
+    public void resetRotationRound() {
+        this.currentRotationRound = 1;
+    }
+    
+    public int getCurrentRotationRound() {
+        return currentRotationRound;
+    }
+    
+    /**
+     * 최대 로테이션 라운드 수 계산
+     * 남녀 동수 기준, 모든 이성과 대화하기 위해 필요한 라운드 수
+     */
+    public int getMaxRotationRounds() {
+        // 최소 1라운드는 보장
+        if (maleCount == 0 || femaleCount == 0) return 1;
+        // 남녀 쌍의 개수만큼 라운드 필요 (예: 3:3이면 3라운드)
+        return Math.min(maleCount, femaleCount);
+    }
+    
     public RoomState(String roomId, RotationMode mode, String openViduSessionId) {
         this.roomId = roomId;
         this.mode = mode;
