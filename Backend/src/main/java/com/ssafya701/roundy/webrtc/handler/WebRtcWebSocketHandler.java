@@ -118,7 +118,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
 
         eventLogger.logConnectionClosed(session.getId(), userId, status.toString());
         
-        // 방 조회 및 ROTATION 단계 확인
+        // 방 조회 및 ROTATION 단계
         if (roomId != null) {
             roomRegistry.getRoom(roomId).ifPresent(room -> {
                 // ROTATION 단계에서는 유예 기간 적용

@@ -7,8 +7,8 @@ import UserVideo from '../../components/meeting/UserVideo';
 const testUsers = [
     { userId: 101, username: "강병호", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
     { userId: 102, username: "강갑호", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 201, username: "강을호", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 202, username: "강정호", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
+    { userId: 201, username: "김서현", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
+    { userId: 202, username: "임유경", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
 ];
 
 const RotationTestPage: React.FC = () => {
@@ -17,7 +17,9 @@ const RotationTestPage: React.FC = () => {
     // 1. URL 쿼리 파라미터로 유저 선택
     const [userProfile] = useState(() => {
         const params = new URLSearchParams(window.location.search);
-        const userIdx = parseInt(params.get('user') || '0', 10);
+        // user 또는 userId 파라미터를 인덱스로 사용
+        const paramVal = params.get('user') || params.get('userId') || '0';
+        const userIdx = parseInt(paramVal, 10);
         return testUsers[userIdx] || testUsers[0];
     });
 
@@ -113,7 +115,7 @@ const RotationTestPage: React.FC = () => {
                         {publisher && (
                             <div style={{ border: '2px solid gold', position: 'relative' }}>
                                 <UserVideo streamManager={publisher} isLocal={true} />
-                                <span style={{position:'absolute', top:0, left:0, background:'gold', padding:'2px', fontSize:'12px'}}>나 (대기실)</span>
+                                <span style={{ position: 'absolute', top: 0, left: 0, background: 'gold', padding: '2px', fontSize: '12px' }}>나 (대기실)</span>
                             </div>
                         )}
 
@@ -160,7 +162,7 @@ const RotationTestPage: React.FC = () => {
                             <UserVideo key={sub.stream.streamId} streamManager={sub} isLocal={false} />
                         ))}
                         {subscribers.length === 0 && (
-                            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', background: '#444', borderRadius: '8px', color: 'white' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#444', borderRadius: '8px', color: 'white' }}>
                                 <p>파트너 연결 대기 중...</p>
                             </div>
                         )}
@@ -228,7 +230,7 @@ const RotationTestPage: React.FC = () => {
                 }}>
                     <h1 style={{ marginBottom: '10px' }}>💘 Roundy Meeting</h1>
                     <p style={{ color: '#666', marginBottom: '30px' }}>
-                        안녕하세요, <strong>{userProfile.username}</strong>님!<br/>
+                        안녕하세요, <strong>{userProfile.username}</strong>님!<br />
                         ({userProfile.gender === 'MALE' ? '남성' : '여성'} / 매칭 모드)
                     </p>
 

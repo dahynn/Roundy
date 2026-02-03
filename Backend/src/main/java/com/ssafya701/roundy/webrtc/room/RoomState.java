@@ -123,13 +123,19 @@ public class RoomState {
      * 참가자 추가
      */
     public void addParticipant(Long userId, String nickname, Gender gender, WebSocketSession session) {
+        // 이미 존재하는 참가자인지 확인
+        boolean isNew = !participants.containsKey(userId);
+        
+        // 참가자 정보 추가/갱신
         participants.put(userId, new ParticipantState(userId, nickname, gender, session, null));
         
-        // 성별별 인원수 증가
-        if (gender == Gender.MALE) {
-            maleCount++;
-        } else if (gender == Gender.FEMALE) {
-            femaleCount++;
+        // 새로운 참가자인 경우에만 카운트 증가
+        if (isNew) {
+            if (gender == Gender.MALE) {
+                maleCount++;
+            } else if (gender == Gender.FEMALE) {
+                femaleCount++;
+            }
         }
     }
     
