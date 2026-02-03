@@ -183,7 +183,14 @@ public class StageExecutor {
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, Stage.IMAGE_GAME);
         
-        List<GameQuestion> questions = questionRepository.getAllQuestions();
+        List<GameQuestion> allQuestions = questionRepository.getAllQuestions();
+        // 무작위로 섞은 뒤 3개만 추출
+        java.util.Collections.shuffle(allQuestions);
+        List<GameQuestion> questions = allQuestions.stream().limit(3).collect(java.util.stream.Collectors.toList());
+        
+        room.setCurrentGameQuestion(0);
+        
+        log.info("게임 시작: roomId={}, 3턴 진행 (전체 {}문제 중)", room.getRoomId(), allQuestions.size());
         room.setCurrentGameQuestion(0);
         
         log.info("게임 시작: roomId={}, 문제 수={}개", room.getRoomId(), questions.size());
@@ -211,22 +218,22 @@ public class StageExecutor {
         log.info("게임 문제 출제: roomId={}, question={}/{} - {}", 
                 room.getRoomId(), question.getQuestionNumber(), questions.size(), question.getQuestion());
         
-        // 10초 후 자동 결과 집계 및 다음 문제 출제
+        // 5초 후 결과 집계 (투표 시간 5초)
         gameScheduler.schedule(() -> {
             try {
                 // 결과 집계 및 브로드캐스트
                 processGameResults(room, question);
                 
-                // 1초 대기 후 다음 문제 출제 (결과 확인 시간)
+                // 5초 대기 후 다음 문제 출제 (결과 확인 시간 5초)
                 gameScheduler.schedule(() -> {
                     scheduleNextQuestion(room, questions, index + 1);
-                }, 1, TimeUnit.SECONDS);
+                }, 5, TimeUnit.SECONDS);
                 
             } catch (Exception e) {
                 log.error("게임 결과 처리 실패: roomId={}, question={}", 
                         room.getRoomId(), question.getQuestionNumber(), e);
             }            
-        }, 10, TimeUnit.SECONDS);
+        }, 5, TimeUnit.SECONDS);
     }
     
     /**
@@ -235,22 +242,28 @@ public class StageExecutor {
     private void processGameResults(RoomState room, GameQuestion question) {
         Map<Long, Integer> voteCounts = room.calculateGameResults(question.getQuestionNumber());
         
-        // 1등 찾기 (득표수 기준)
-        Long winnerId = voteCounts.entrySet().stream()
-            .max(Map.Entry.comparingByValue())
-            .map(Map.Entry::getKey)
-            .orElse(null);
+        // 최다 득표수 계산
+        int maxVotes = voteCounts.values().stream()
+            .mapToInt(Integer::intValue)
+            .max()
+            .orElse(0);
+            
+        // 공동 1등 찾기
+        List<Long> winnerIds = new java.util.ArrayList<>();
+        if (maxVotes > 0) {
+            for (Map.Entry<Long, Integer> entry : voteCounts.entrySet()) {
+                if (entry.getValue() == maxVotes) {
+                    winnerIds.add(entry.getKey());
+                }
+            }
+        }
         
         // 결과 브로드캐스트
-        eventPublisher.publishGameResult(room, question, winnerId, voteCounts);
+        eventPublisher.publishGameResult(room, question, winnerIds, voteCounts);
         
-        if (winnerId != null) {
-            String winnerNickname = room.getParticipant(winnerId)
-                .map(ParticipantState::getNickname)
-                .orElse("Unknown");
-            log.info("게임 결과: roomId={}, question={}, winner={} ({}), 득표수={}", 
-                    room.getRoomId(), question.getQuestionNumber(), 
-                    winnerId, winnerNickname, voteCounts.get(winnerId));
+        if (!winnerIds.isEmpty()) {
+            log.info("게임 결과: roomId={}, question={}, winners={}, 득표수={}", 
+                    room.getRoomId(), question.getQuestionNumber(), winnerIds, maxVotes);
         } else {
             log.info("게임 결과: roomId={}, question={}, 투표 없음", 
                     room.getRoomId(), question.getQuestionNumber());

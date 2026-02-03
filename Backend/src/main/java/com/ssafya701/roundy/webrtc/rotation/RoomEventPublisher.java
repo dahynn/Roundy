@@ -328,9 +328,9 @@ public class RoomEventPublisher {
         
         GameQuestionMessage message = new GameQuestionMessage(
             question.getQuestionNumber(),
-            5,  // 총 문제 수
+            3,  // 총 문제 수 (3턴으로 변경됨)
             question.getQuestion(),
-            10, // 투표 시간 (초)
+            5, // 투표 시간 (초) - 5초로 단축됨
             candidates
         );
         
@@ -343,15 +343,17 @@ public class RoomEventPublisher {
      * GAME_RESULT 브로드캐스트 (게임 결과 발표)
      */
     public void publishGameResult(RoomState room, com.ssafya701.roundy.webrtc.game.GameQuestion question, 
-            Long winnerId, Map<Long, Integer> voteCounts) {
-        // 우승자 정보
-        GameResultMessage.WinnerDto winner = null;
-        if (winnerId != null) {
-            String winnerNickname = room.getParticipant(winnerId)
-                .map(ParticipantState::getNickname)
-                .orElse("Unknown");
-            int winnerVoteCount = voteCounts.getOrDefault(winnerId, 0);
-            winner = new GameResultMessage.WinnerDto(winnerId, winnerNickname, winnerVoteCount);
+            List<Long> winnerIds, Map<Long, Integer> voteCounts) {
+        // 우승자 정보 (다수일 수 있음)
+        List<GameResultMessage.WinnerDto> winners = new java.util.ArrayList<>();
+        if (winnerIds != null && !winnerIds.isEmpty()) {
+            for (Long winnerId : winnerIds) {
+                String winnerNickname = room.getParticipant(winnerId)
+                    .map(ParticipantState::getNickname)
+                    .orElse("Unknown");
+                int winnerVoteCount = voteCounts.getOrDefault(winnerId, 0);
+                winners.add(new GameResultMessage.WinnerDto(winnerId, winnerNickname, winnerVoteCount));
+            }
         }
         
         // 전체 투표 결과
@@ -367,14 +369,14 @@ public class RoomEventPublisher {
         GameResultMessage message = new GameResultMessage(
             question.getQuestionNumber(),
             question.getQuestion(),
-            winner,
+            winners,
             question.getBadgeName(),
             voteResults
         );
         
         broadcastToRoom(room, message);
-        log.info("GAME_RESULT 발행: roomId={}, question={}, winner={}", 
-                room.getRoomId(), question.getQuestionNumber(), winnerId);
+        log.info("GAME_RESULT 발행: roomId={}, question={}, winners={}", 
+                room.getRoomId(), question.getQuestionNumber(), winnerIds);
     }
     
     /**

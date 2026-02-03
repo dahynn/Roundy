@@ -27,7 +27,10 @@ public class GameResultMessage implements WsMessage {
     /**
      * 우승자 정보
      */
-    private WinnerDto winner;
+    /**
+     * 우승자 정보 (동점자 포함)
+     */
+    private List<WinnerDto> winners;
     
     /**
      * 부여된 뱃지
