@@ -7,8 +7,8 @@ interface Props {
 
 export default function LoginModal({ onClose }: Props) {
   const handleKakaoLogin = () => {
-    // window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/login`;
-    window.location.href = `http://localhost:8080/api/auth/login`;
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/login`;
+    // window.location.href = `http://localhost:8080/api/auth/login`;
   };
 
   return (
