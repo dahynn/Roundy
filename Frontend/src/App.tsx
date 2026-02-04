@@ -11,6 +11,8 @@ import FAQPage from '@/pages/my/FAQPage';
 import VerificationPage from '@/pages/verification/VerificationPage';
 import WaitingLobby from '@/pages/meeting/WaitingLobby';
 import RotationTestPage from '@/pages/meeting/RotationTest'
+import RotationTestVanilla from '@/pages/meeting/RotationTestVanilla'
+import CamTestPage from '@/pages/meeting/CamTestPage'
 import RotationMeeting from '@/pages/meeting/RotationMeeting'
 import Onboarding from '@/pages/auth/Onboarding';
 import AuthCallback from '@/pages/auth/AuthCallback';
@@ -52,6 +54,9 @@ function App() {
 
             {/* 2. 기존 /meeting 경로를 새 컴포넌트로 업데이트 */}
             <Route path="/meeting" element={<RotationMeeting />} />
+            <Route path="/rotation-test" element={<RotationTestPage />} />
+            <Route path="/rotation-vanilla" element={<RotationTestVanilla />} />
+            <Route path="/camtest" element={<CamTestPage />} />
 
             {/* ─── 3. Navbar가 있는 페이지들 (Layout 사용) ─── */}
             <Route element={<Layout />}>
