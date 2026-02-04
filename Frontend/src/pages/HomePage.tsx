@@ -5,6 +5,8 @@ import SessionCard from '@/components/home/SessionCard';
 
 export default function HomePage() {
   const navigate = useNavigate();
+
+  // TODO: 로컬스토리지에서 사용자 정보 가져오기
   const userGender = 'MALE';
   const [sessionData] = useState({
     maleCount: 1,
@@ -15,12 +17,10 @@ export default function HomePage() {
   const handleJoinClick = () => navigate('/verify');
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col p-8 relative">
       <Header />
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-pink-100/30 rounded-full blur-[120px] pointer-events-none opacity-60" />
-
-        {/* 우측 화면 정중앙에 꽉 차게 배치 */}
+      
+      <div className="flex-1 flex flex-col items-center justify-center relative">
         <div className="z-10 w-full max-w-[1400px] flex justify-center items-center transition-all">
           <SessionCard
             userGender={userGender}

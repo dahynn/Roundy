@@ -30,18 +30,21 @@ public class SwaggerConfig {
                 .name(jwt)
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("bearer")
-                .bearerFormat("JWT")
-        );
+                .bearerFormat("JWT"));
 
         Server localServer = new Server();
         localServer.setDescription("local");
         localServer.setUrl("http://localhost:8080");
 
+        Server prodServer = new Server();
+        prodServer.setDescription("production");
+        prodServer.setUrl("https://i14a701.p.ssafy.io");
+
         return new OpenAPI()
                 .info(apiInfo())
                 .addSecurityItem(securityRequirement)
                 .components(components)
-                .servers(List.of(localServer));
+                .servers(List.of(localServer, prodServer));
     }
 
     private Info apiInfo() {

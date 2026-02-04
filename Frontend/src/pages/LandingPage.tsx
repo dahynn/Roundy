@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart, ChevronRight, Zap, Sparkles, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoginModal from '@/components/auth/LoginModal';
@@ -20,13 +21,14 @@ const useCountUp = (end: number, duration: number = 2000) => {
 };
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const matchingCount = useCountUp(2400);
   const minuteCount = useCountUp(15);
   const satisfactionCount = useCountUp(98);
 
   return (
-    <div className="min-h-screen bg-[#FDF2F8] font-['Pretendard'] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#FDF2F8] font-['Pretendard'] flex flex-col relative overflow-x-hidden">
       {/* 배경 그라데이션 유닛 (동일) */}
       <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-pink-200/30 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[-5%] w-[500px] h-[500px] bg-purple-200/20 rounded-full blur-[120px] pointer-events-none"></div>
@@ -76,7 +78,16 @@ export default function LandingPage() {
           </div>
 
           <Button
-            onClick={() => setIsLoginModalOpen(true)}
+            onClick={() => {
+              const token = localStorage.getItem('accessToken');
+              if (token) {
+                // 이미 토큰이 있다면 상태 체크 로직을 타기 위해 AuthCallback과 유사한 경로로 보냄
+                // 여기서는 바로 /onboarding으로 보내면 Onboarding 내부의 useEffect가 처리함
+                navigate('/onboarding');
+              } else {
+                setIsLoginModalOpen(true);
+              }
+            }}
             className="bg-gradient-to-r from-[#FF4D94] to-[#7C3AED] hover:opacity-90 text-white px-30 py-9 min-w-[380px] rounded-full text-2xl font-bold shadow-2xl transition-all hover:scale-[1.05] active:scale-95 flex items-center gap-6"
           >
             미팅 시작하기 <ChevronRight size={26} />

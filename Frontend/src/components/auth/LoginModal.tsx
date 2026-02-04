@@ -1,5 +1,4 @@
-import { useNavigate } from 'react-router-dom';
-import { X, Heart } from 'lucide-react';
+import { X } from 'lucide-react';
 import kakaoLoginBtn from '@/assets/kakao_login_medium_wide.png';
 
 interface Props {
@@ -7,15 +6,9 @@ interface Props {
 }
 
 export default function LoginModal({ onClose }: Props) {
-  const navigate = useNavigate();
-
-  // 카카오 로그인 시뮬레이션 핸들러
   const handleKakaoLogin = () => {
-    console.log('카카오 로그인 시뮬레이션 성공');
-
-    // 모달을 닫고 '온보딩' 페이지로 이동하도록 수정했습니다.
-    onClose();
-    navigate('/onboarding');
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/login`;
+    // window.location.href = `http://localhost:8080/api/auth/login`;
   };
 
   return (
@@ -34,11 +27,15 @@ export default function LoginModal({ onClose }: Props) {
         </button>
 
         {/* 1. 로고 */}
-        <div className="w-24 h-24 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-[30px] flex items-center justify-center mb-10 shadow-xl shadow-pink-100/50">
-          <Heart size={48} fill="white" className="text-white" />
+        <div className="mb-10 p-2">
+          <img
+            src="/roundy_logo.svg"
+            alt="Roundy Logo"
+            className="w-24 h-24 object-contain drop-shadow-xl animate-float"
+          />
         </div>
 
-        {/* 2. 헤더 메시지 & 상세 메시지 */}
+        {/* 2. 헤더 메시지 */}
         <div className="text-center mb-14">
           <h2 className="text-3xl font-black text-[#1A1F36] mb-4 tracking-tight">
             라운디에 오신 것을 환영합니다!

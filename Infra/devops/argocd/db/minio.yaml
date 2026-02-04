@@ -33,6 +33,7 @@ metadata:
   namespace: roundy-app
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: minio
@@ -56,6 +57,11 @@ spec:
         envFrom:
         - secretRef:
             name: minio-secret
+        env:
+        - name: MINIO_BROWSER_REDIRECT_URL
+          value: "https://i14a701.p.ssafy.io/minio-console"
+        - name: MINIO_SERVER_URL
+          value: "https://i14a701.p.ssafy.io/minio-api"
         ports:
         - containerPort: 8887
         - containerPort: 8886

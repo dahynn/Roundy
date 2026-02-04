@@ -62,9 +62,21 @@ public class UserController {
     @GetMapping("/signup/details")
     public ResponseEntity<?> getRegistrationDetails(
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
         com.ssafya701.roundy.auth.entity.User user = principal.getUser();
+        UserResponse response = UserResponse.from(user);
 
-        return ResponseEntity.ok(CommonResponse.ofSuccess(UserResponse.from(user)));
+        // 실제 파일이 있을 때만 Presigned URL 생성, 없으면 null 유지
+        if (user.getProfileImageUrl() != null) {
+            response.setProfileImageUrl(userService.getImageUrl(user.getId(), "profile"));
+        }
+        if (user.getVerificationImageUrl() != null) {
+            response.setVerificationImageUrl(userService.getImageUrl(user.getId(), "verification"));
+        }
+
+        return ResponseEntity.ok(CommonResponse.ofSuccess(response));
     }
 
     // 회원가입 : 추가 정보 입력 (토큰 재발급 안 함)
@@ -74,6 +86,9 @@ public class UserController {
             @RequestPart("data") UserSignUpRequest request,
             @RequestPart("file") MultipartFile file,
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("프로필 사진은 필수입니다.");
         }
@@ -89,6 +104,9 @@ public class UserController {
     public ResponseEntity<?> uploadVerificationPhoto(
             @Parameter(description = "검증용 이미지 파일", required = true) @RequestPart(value = "file") MultipartFile file,
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
         if (file.isEmpty()) {
             throw new IllegalArgumentException("검증용 사진은 필수입니다.");
         }
@@ -104,6 +122,9 @@ public class UserController {
     public ResponseEntity<?> completeOnboarding(
             @Parameter(description = "선택한 Preference ID 목록", required = true) @RequestBody com.ssafya701.roundy.auth.dto.request.OnboardingRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
         TokenPair tokenPair = userService.completeOnboarding(principal.getUser().getId(), request.getPreferenceIds());
 
         Map<String, String> result = new HashMap<>();
@@ -138,6 +159,9 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
         userService.logout(principal.getUser().getId());
         return ResponseEntity.ok(CommonResponse.ofSuccess());
     }
@@ -147,6 +171,9 @@ public class UserController {
     @DeleteMapping("/withdraw")
     public ResponseEntity<?> withdraw(
             @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
         userService.withdrawUser(principal.getUser().getId());
         return ResponseEntity.ok(CommonResponse.ofSuccess());
     }

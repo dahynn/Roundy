@@ -17,12 +17,13 @@ public class KakaoUserInfoResponse {
     @NoArgsConstructor
     public static class KakaoAccount {
         private String email;
-        private String name;
+        private Profile profile;
 
-        private String gender;
-        private String birthday;
-        private String birthyear;
+    }
 
-
+    @Data
+    @NoArgsConstructor
+    public static class Profile {
+        private String nickname;
     }
 }

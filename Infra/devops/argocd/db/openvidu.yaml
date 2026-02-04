@@ -7,6 +7,7 @@ metadata:
     app: openvidu
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: openvidu
@@ -15,6 +16,7 @@ spec:
       labels:
         app: openvidu
     spec:
+      hostNetwork: true
       containers:
       - name: openvidu-container
         image: openvidu/openvidu-dev:latest
@@ -23,6 +25,19 @@ spec:
         envFrom:
         - secretRef:
             name: openvidu-secret
+        env:
+        - name: OPENVIDU_PORT
+          value: "8443"
+        - name: SERVER_PORT
+          value: "8443"
+        - name: HTTPS_PORT
+          value: "8443"
+        - name: MIN_PORT
+          value: "16384"
+        - name: MAX_PORT
+          value: "32768"
+        - name: DOMAIN_OR_PUBLIC_IP
+          value: "openvidu.ssafy.io"
 ---
 apiVersion: v1
 kind: Service
@@ -34,6 +49,6 @@ spec:
     app: openvidu
   ports:
     - protocol: TCP
-      port: 4443
-      targetPort: 4443
+      port: 8443
+      targetPort: 8443
   type: ClusterIP

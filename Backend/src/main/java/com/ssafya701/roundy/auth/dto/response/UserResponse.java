@@ -4,14 +4,17 @@ import com.ssafya701.roundy.auth.entity.User;
 import com.ssafya701.roundy.auth.enums.GenderType;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
+@Setter
 @Builder
 public class UserResponse {
     private Long id;
     private String name;
+    private String email;
     private LocalDate birthDate;
     private GenderType gender;
     private String nickname;
@@ -24,6 +27,7 @@ public class UserResponse {
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
+                .email(user.getEmail())
                 .birthDate(user.getBirthDate())
                 .gender(user.getGender())
                 .nickname(user.getNickName())
