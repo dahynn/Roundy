@@ -10,6 +10,10 @@ import { Step3_Talk } from './Step3_Talk';
 import { Step4_Talk } from './Step4_Talk';
 import { Step5_FinalVote } from './Step5_FinalVote';
 import { Step5_FinalResult } from './Step5_FinalResult';
+import { Step6_MatchSuccess } from './Step6_MatchSuccess';
+import { Step6_NoMatch } from './Step6_NoMatch';
+import { Step7_FaceReveal } from './Step7_FaceReveal';
+import { Step7_MessageRoom } from './Step7_MessageRoom';
 
 export default function RotationMeetingContainer() {
   const [isMicOn, setIsMicOn] = useState(true);
@@ -29,7 +33,7 @@ export default function RotationMeetingContainer() {
 
   // UI 단계 관리
   const [uiStage, setUiStage] = useState<
-    'STEP0_INTRO' | 'STEP1_INTRO' | 'STEP2_VOTE' | 'STEP2_RESULT' | 'STEP3_TALK' | 'STEP4_LONG_TALK' | 'STEP5_FINAL_VOTE' | 'STEP5_FINAL_RESULT'
+    'STEP0_INTRO' | 'STEP1_INTRO' | 'STEP2_VOTE' | 'STEP2_RESULT' | 'STEP3_TALK' | 'STEP4_LONG_TALK' | 'STEP5_FINAL_VOTE' | 'STEP5_FINAL_RESULT' | 'STEP6_MATCH_SUCCESS' | 'STEP6_NO_MATCH' | 'STEP7_FACE_REVEAL' | 'STEP7_MESSAGE_ROOM'
   >('STEP0_INTRO');
 
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
@@ -37,6 +41,7 @@ export default function RotationMeetingContainer() {
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [activeSpeakerIdx, setActiveSpeakerIdx] = useState<number>(0);
   const [currentPartnerIndex, setCurrentPartnerIndex] = useState<number>(0);
+  const [isFaceRevealDeclined, setIsFaceRevealDeclined] = useState(false);
 
   // Intro Messages
   const step0Msgs = [
@@ -318,6 +323,44 @@ export default function RotationMeetingContainer() {
             {uiStage === 'STEP5_FINAL_RESULT' && (
               <Step5_FinalResult />
             )}
+
+            {uiStage === 'STEP6_MATCH_SUCCESS' && (
+              <Step6_MatchSuccess
+                currentUser={{ id: 101, name: '남자 1호', gender: 'MALE' }}
+                matchedUser={{ id: 104, name: '여자 1호', gender: 'FEMALE' }}
+                onFaceRevealResponse={(agreed) => {
+                  if (agreed) {
+                    // 모두 동의 시 얼굴 공개 단계로
+                    setIsFaceRevealDeclined(false);
+                    setUiStage('STEP7_FACE_REVEAL');
+                  } else {
+                    // 거절 시 바로 쪽지함 단계로
+                    setIsFaceRevealDeclined(true);
+                    setUiStage('STEP7_MESSAGE_ROOM');
+                  }
+                }}
+              />
+            )}
+
+            {uiStage === 'STEP6_NO_MATCH' && (
+              <Step6_NoMatch onGoHome={() => alert('홈으로 이동')} />
+            )}
+
+            {uiStage === 'STEP7_FACE_REVEAL' && (
+              <Step7_FaceReveal
+                onComplete={() => {
+                  setIsFaceRevealDeclined(false);
+                  setUiStage('STEP7_MESSAGE_ROOM');
+                }}
+              />
+            )}
+
+            {uiStage === 'STEP7_MESSAGE_ROOM' && (
+              <Step7_MessageRoom
+                isFaceRevealDeclined={isFaceRevealDeclined}
+                onGoToMessage={() => alert('쪽지함 페이지로 이동합니다.')}
+              />
+            )}
           </div>
         )}
       </main>
@@ -355,6 +398,14 @@ export default function RotationMeetingContainer() {
                   } else if (newStage === 'STEP5_FINAL_VOTE') {
                     setMockState(p => ({ ...p, remainingTime: 60 }));
                     setSelectedCard(null);
+                  } else if (newStage === 'STEP6_MATCH_SUCCESS') {
+                    setMockState(p => ({ ...p, remainingTime: 0 }));
+                  } else if (newStage === 'STEP6_NO_MATCH') {
+                    setMockState(p => ({ ...p, remainingTime: 0 }));
+                  } else if (newStage === 'STEP7_FACE_REVEAL') {
+                    setMockState(p => ({ ...p, remainingTime: 70 })); // 10s countdown + 60s chat
+                  } else if (newStage === 'STEP7_MESSAGE_ROOM') {
+                    setMockState(p => ({ ...p, remainingTime: 0 }));
                   }
                 }}
                 className="bg-[#1A1A1A] text-white border border-white/20 rounded-lg px-3 py-1.5 text-sm font-bold cursor-pointer hover:bg-[#2A2A2A] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF4D94]"
@@ -367,6 +418,10 @@ export default function RotationMeetingContainer() {
                 <option value="STEP4_LONG_TALK">Step 4: Talk (Long, 5m)</option>
                 <option value="STEP5_FINAL_VOTE">Step 5: Final Vote</option>
                 <option value="STEP5_FINAL_RESULT">Step 5: Final Result</option>
+                <option value="STEP6_MATCH_SUCCESS">Step 6: Match Success</option>
+                <option value="STEP6_NO_MATCH">Step 6: No Match</option>
+                <option value="STEP7_FACE_REVEAL">Step 7: Face Reveal</option>
+                <option value="STEP7_MESSAGE_ROOM">Step 7: Message Room</option>
               </select>
             </div>
           </div>

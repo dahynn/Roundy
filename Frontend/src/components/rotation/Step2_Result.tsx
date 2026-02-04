@@ -83,12 +83,12 @@ export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants = MOCK_
     }, []);
 
     return (
-        <div className="w-full min-h-screen bg-black flex flex-col items-center justify-center p-10 overflow-hidden">
+        <div className="w-full h-full bg-transparent flex flex-col items-center justify-center p-10 overflow-hidden">
 
             {/* 타이틀 (Step 5 스타일 유지) */}
             <div className="mb-12 text-center animate-in fade-in slide-in-from-top-4 duration-1000">
                 <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300 mb-4 drop-shadow-2xl">
-                    Love Line Result
+                    Heart Signal Result
                 </h2>
                 <p className="text-white/40 text-lg">
                     설레는 첫 번째 선택의 결과는?
