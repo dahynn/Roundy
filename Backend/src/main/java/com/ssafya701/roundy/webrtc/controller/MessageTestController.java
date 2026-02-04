@@ -160,13 +160,8 @@ public class MessageTestController {
     }
 
     // MatchService 주입 필요 (필드 추가)
-    private final com.ssafya701.roundy.match.service.MatchService matchService;
+//    private final com.ssafya701.roundy.match.service.MatchService matchService;
 
-    // 생성자 수정
-    public MessageTestController(WsMessageSerializer serializer, com.ssafya701.roundy.match.service.MatchService matchService) {
-        this.serializer = serializer;
-        this.matchService = matchService;
-    }
 
     // 기존 메서드들 유지... (생성자만 수정)
 
