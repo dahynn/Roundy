@@ -19,6 +19,7 @@ import java.util.concurrent.*;
 public class StageScheduler {
     
     private final StageExecutor stageExecutor;
+    private final com.ssafya701.roundy.match.repository.SessionRepository sessionRepository;
     
     // 방별 스케줄러 관리
     private final Map<String, ScheduledFuture<?>> roomTimers = new ConcurrentHashMap<>();
@@ -45,6 +46,16 @@ public class StageScheduler {
         scheduleNextStage(room, Stage.SELF_INTRO);
         
         log.info("🎬 8단계 로테이션 자동 시작: roomId={}", roomId);
+
+        // [DB 연동] Session 상태 RUNNING으로 변경
+        Long dbSessionId = room.getDbSessionId();
+        if (dbSessionId != null) {
+            sessionRepository.findById(dbSessionId).ifPresent(session -> {
+                session.updateStatus(com.ssafya701.roundy.match.enums.SessionStatus.RUNNING);
+                sessionRepository.save(session);
+                log.info("Session DB 상태 업데이트(RUNNING): id={}", dbSessionId);
+            });
+        }
     }
     
     /**

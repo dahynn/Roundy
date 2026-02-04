@@ -302,8 +302,15 @@ public class StageExecutor {
                 Long maleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId1 : userId2;
                 Long femaleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId2 : userId1;
                 
-                matchService.createMatch(room.getRoomId(), maleId, femaleId);
-                log.info("✅ 매칭 DB 저장 완료: male={}, female={}", maleId, femaleId);
+                // DB Session ID 사용 (없으면 Room ID 해시값 사용 - 비상용)
+                Long sessionId = room.getDbSessionId();
+                if (sessionId == null) {
+                    log.error("❌ 매칭 저장 실패: DB Session ID가 없습니다. (roomId={})", room.getRoomId());
+                    continue;
+                }
+                
+                matchService.createMatch(sessionId, maleId, femaleId);
+                log.info("✅ 매칭 DB 저장 완료: session={}, male={}, female={}", sessionId, maleId, femaleId);
                 
             } catch (Exception e) {
                 log.error("매칭 정보 DB 저장 실패: match={}", match, e);

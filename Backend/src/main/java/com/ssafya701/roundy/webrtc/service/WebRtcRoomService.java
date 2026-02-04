@@ -5,6 +5,7 @@ import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
+import com.ssafya701.roundy.match.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class WebRtcRoomService {
     private final RoomRegistry roomRegistry;
     private final OpenViduService openViduService;
     private final RotationScheduler rotationScheduler;
+    private final SessionRepository sessionRepository;
 
     /**
      * 방 생성 또는 조회
@@ -129,6 +131,15 @@ public class WebRtcRoomService {
         
         log.info("로테이션 시작 요청: roomId={}, totalRounds={}, 참가자 수={}", 
                 roomId, totalRounds, room.getParticipantCount());
+        
+        // [DB 연동] Session 상태 업데이트 (WAITING -> RUNNING)
+        if (room.getDbSessionId() != null) {
+            sessionRepository.findById(room.getDbSessionId()).ifPresent(session -> {
+                session.updateStatus(com.ssafya701.roundy.match.enums.SessionStatus.ONGOING);
+                sessionRepository.save(session);
+                log.info("Session DB 상태 업데이트(ONGOING): id={}", session.getId());
+            });
+        }
         
         rotationScheduler.startRotation(room, totalRounds);
     }

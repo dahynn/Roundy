@@ -51,7 +51,9 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final StageScheduler stageScheduler;
     private final WebRtcEventLogger eventLogger;
     private final DisconnectScheduler disconnectScheduler;
+    private final DisconnectScheduler disconnectScheduler;
     private final RoomEventPublisher eventPublisher;
+    private final com.ssafya701.roundy.match.repository.RoomParticipantRepository roomParticipantRepository;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -160,7 +162,10 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String roomId = message.getRoomId();
         
         // Session attributes에 roomId 저장 (disconnect detection을 위해)
-        session.getAttributes().put("roomId", roomId);
+        // Session attributes에 roomId 저장 (disconnect detection을 위해)
+        // 주의: message.getRoomId()가 null일 수 있으므로(최초 진입 시), 여기서는 put 하지 않음.
+        // 아래에서 방 배정 후 확실한 roomId를 put 할 예정.
+        // if (roomId != null) session.getAttributes().put("roomId", roomId);
 
         try {
             // Gender enum 변환
@@ -286,10 +291,11 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             }
 
 
-            // TODO: [DB 연동] 방 참가 이벤트 기록
-            // roomParticipantRepository.save(new RoomParticipant(
-            //     roomId, userId, LocalDateTime.now(), null
-            // ));
+            // [DB 연동] 방 참가 이벤트 기록
+            roomParticipantRepository.save(com.ssafya701.roundy.match.entity.RoomParticipant.builder()
+                    .roomId(roomId)
+                    .userId(userId)
+                    .build());
             
             // TODO: [운영 환경] 모니터링 메트릭 추가
             // meterRegistry.counter("webrtc.room.join", "roomId", roomId).increment();
@@ -314,8 +320,12 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String roomId = message.getRoomId();
 
         try {
-            // TODO: [DB 연동] 방 퇴장 이벤트 기록
-            // roomParticipantRepository.updateLeftAt(roomId, userId, LocalDateTime.now());
+            // [DB 연동] 방 퇴장 이벤트 기록
+            roomParticipantRepository.findTopByRoomIdAndUserIdOrderByJoinedAtDesc(roomId, userId)
+                    .ifPresent(participant -> {
+                        participant.updateLeftAt(java.time.LocalDateTime.now());
+                        roomParticipantRepository.save(participant);
+                    });
             
             // 1. 참가자 제거
             roomRegistry.removeParticipant(roomId, userId);
