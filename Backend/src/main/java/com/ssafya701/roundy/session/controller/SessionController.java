@@ -33,14 +33,19 @@ public class SessionController {
         @PostMapping("/enter")
         public ResponseEntity<CommonResponse<SessionEnterResponse>> enterSession(
                         @RequestHeader("Authorization") String jwt,
-                        @RequestBody SessionEnterRequest request) {
+                        @RequestBody(required = false) SessionEnterRequest request) {
+
+                // Request Body가 없이 올 경우 빈 객체로 처리
+                if (request == null) {
+                    request = new SessionEnterRequest();
+                }
 
                 // 1. JWT 검증 및 userId 추출
                 String token = jwt.replace("Bearer ", "");
                 jwtTokenProvider.validateToken(token);
                 Long userId = jwtTokenProvider.getUserId(token);
 
-                log.info("Session enter request: userId={}, requestId={}", userId, request.getRequestId());
+                log.info("Session enter request: userId={}", userId);
 
                 // 2. Redis에서 검증 상태 확인 + 삭제 (원자적 처리, Race Condition 방지)
                 // [테스트용 수정] 무조건 통과하도록 주석 처리
@@ -54,7 +59,8 @@ public class SessionController {
                                                                         null)));
                 }
                 */
-                log.info("📢 [TEST MODE] Verification Skipped for requestId={}", request.getRequestId());
+                // log.info("📢 [TEST MODE] Verification Skipped for requestId={}", request.getRequestId());
+                log.info("📢 [TEST MODE] Verification Skipped");
 
                 // 3. User 정보 조회 (성별 확인)
                 User user = userRepository.findById(userId)

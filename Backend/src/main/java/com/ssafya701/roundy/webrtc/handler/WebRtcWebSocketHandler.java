@@ -179,14 +179,11 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            // 클라이언트 요청 roomId 무시하고 서버 할당 값 강제 사용
-            String requestedRoomId = message.getRoomId();
-            if (requestedRoomId != null && !requestedRoomId.equals(assignedRoomId)) {
-                 log.info("ℹ️ Client requested roomId={}, but forcing assigned roomId={}", requestedRoomId, assignedRoomId);
-            }
-
-            // 사용할 Room ID 확정 (무조건 Redis 매칭 결과 따름)
-            roomId = assignedRoomId; // [수정] 할당
+            // 클라이언트가 보낸 roomId는 무시하고, 서버 세션(Redis 매칭)에 저장된 roomId 사용
+            // (보안 및 데이터 무결성 보장)
+            roomId = assignedRoomId;
+            
+            // Gender enum 변환
             
             // Gender enum 변환
             Gender gender;
