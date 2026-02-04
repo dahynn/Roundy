@@ -4,6 +4,7 @@ import defaultProfile from '@/assets/default-profile.png';
 interface MessageCardProps {
     id: number;
     opponentName: string;
+    profileImgUrl: string;
     lastMessageContent: string;
     hasNew: boolean;
     time: string;
@@ -12,6 +13,7 @@ interface MessageCardProps {
 
 export default function MessageCard({
     opponentName,
+    profileImgUrl,
     lastMessageContent,
     hasNew,
     time,
@@ -26,13 +28,13 @@ export default function MessageCard({
             <div className="relative mr-6 shrink-0">
                 <div
                     className={`w-[68px] h-[68px] rounded-full p-[2px] ${hasNew
-                            ? 'bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED]'
-                            : 'bg-gray-100 dark:bg-gray-700'
+                        ? 'bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED]'
+                        : 'bg-gray-100 dark:bg-gray-700'
                         }`}
                 >
                     <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 p-[2px]">
                         <img
-                            src={defaultProfile}
+                            src={profileImgUrl || defaultProfile}
                             alt="Profile"
                             className="w-full h-full object-cover rounded-full"
                         />
@@ -65,8 +67,8 @@ export default function MessageCard({
                 {/* 3. 말풍선 내용 */}
                 <p
                     className={`text-base truncate tracking-tight transition-colors ${hasNew
-                            ? 'text-[#1A1F36] dark:text-gray-200 font-bold'
-                            : 'text-[#697386] dark:text-gray-400 font-medium'
+                        ? 'text-[#1A1F36] dark:text-gray-200 font-bold'
+                        : 'text-[#697386] dark:text-gray-400 font-medium'
                         }`}
                 >
                     {lastMessageContent}

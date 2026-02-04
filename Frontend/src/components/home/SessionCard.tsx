@@ -1,6 +1,37 @@
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import premiumThemeImg from '@/assets/premium-theme.png';
+import { Skeleton } from '@/components/ui/skeleton';
+
+export function SessionCardSkeleton() {
+  return (
+    <div className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-[40px] shadow-xl overflow-hidden flex flex-col md:flex-row min-h-[520px]">
+      <div className="flex-1 relative overflow-hidden">
+        <Skeleton className="w-full h-full" />
+      </div>
+      <div className="flex-1 p-12 flex flex-col justify-center bg-white dark:bg-gray-800/50 space-y-6">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-4 w-32 rounded" />
+        </div>
+        <Skeleton className="h-10 w-full rounded-lg" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-[80%] rounded" />
+          <Skeleton className="h-4 w-[60%] rounded" />
+        </div>
+        <div className="space-y-3 pt-4">
+          <div className="flex justify-between">
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-4 w-12 rounded" />
+          </div>
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+        <Skeleton className="h-16 w-full rounded-2xl" />
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   userGender: string;

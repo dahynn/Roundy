@@ -8,6 +8,7 @@ interface PhotoVerificationProps {
   initialPreview: string;
   onNext: (file: File, preview: string) => void;
   onBack: () => void;
+  hideHeader?: boolean;
 }
 
 export default function PhotoVerification({
@@ -15,6 +16,7 @@ export default function PhotoVerification({
   initialPreview,
   onNext,
   onBack,
+  hideHeader,
 }: PhotoVerificationProps) {
   const [verifyFile, setVerifyFile] = useState<File | null>(initialFile);
   const [previewUrl, setPreviewUrl] = useState<string>(initialPreview);
@@ -43,24 +45,37 @@ export default function PhotoVerification({
 
   return (
     <div className="w-full flex flex-col items-center font-['Pretendard']">
-      <div className="w-full max-w-xl flex items-center justify-between mb-8 z-10 px-4">
-        <button
-          type="button" // 폼 제출 간섭 방지
-          onClick={onBack}
-          className="p-2 hover:bg-white/50 rounded-full transition-all"
-        >
-          <ChevronLeft size={24} />
-        </button>
-        <div className="w-10" />
-      </div>
-
-      <div className="relative w-full max-w-xl bg-white/90 backdrop-blur-3xl rounded-[60px] p-12 md:p-16 shadow-2xl border border-white z-10 flex flex-col items-center">
-        <div className="self-start flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 bg-[#FF4D94] rounded-full flex items-center justify-center text-white font-black text-lg shadow-md shadow-pink-100">
-            2
+      {!hideHeader && (
+        <>
+          <div className="w-full max-w-xl flex items-center justify-between mb-8 z-10 px-4">
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-2 hover:bg-white/50 rounded-full transition-all"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <div className="w-10" />
           </div>
-          <h3 className="text-2xl font-black text-[#1A1F36]">인증 사진 촬영</h3>
-        </div>
+
+          <div className="self-start flex items-center gap-3 mb-10 px-2 w-full max-w-xl">
+            <div className="w-10 h-10 bg-[#FF4D94] rounded-full flex items-center justify-center text-white font-black text-lg shadow-md shadow-pink-100 shrink-0">
+              2
+            </div>
+            <h3 className="text-2xl font-black text-[#1A1F36]">인증 사진 촬영</h3>
+          </div>
+        </>
+      )}
+
+      <div className={`${hideHeader ? 'w-full' : 'relative w-full max-w-xl bg-white/90 backdrop-blur-3xl rounded-[60px] p-12 md:p-16 shadow-2xl border border-white z-10'} flex flex-col items-center`}>
+        {!hideHeader && (
+          <div className="self-start flex items-center gap-3 mb-10 px-2">
+            <div className="w-10 h-10 bg-[#FF4D94] rounded-full flex items-center justify-center text-white font-black text-lg shadow-md shadow-pink-100">
+              2
+            </div>
+            <h3 className="text-2xl font-black text-[#1A1F36]">인증 사진 촬영</h3>
+          </div>
+        )}
 
         <div className="w-full aspect-[4/4.5] rounded-[40px] border-2 border-dashed relative overflow-hidden mb-8 transition-all flex flex-col items-center justify-center border-[#FF4D94] bg-black shadow-inner">
           {showWebcam ? (
@@ -124,11 +139,10 @@ export default function PhotoVerification({
               onNext(verifyFile, previewUrl);
             }
           }}
-          className={`w-full py-9 rounded-[30px] text-xl font-bold shadow-xl transition-all ${
-            verifyFile && !showWebcam
+          className={`w-full py-9 rounded-[30px] text-xl font-bold shadow-xl transition-all ${verifyFile && !showWebcam
               ? 'bg-gradient-to-r from-[#FF4D94] via-[#FF7EB3] to-[#7C3AED] text-white shadow-pink-200'
               : 'bg-gray-100 text-gray-300'
-          }`}
+            }`}
         >
           다음 단계로
         </Button>

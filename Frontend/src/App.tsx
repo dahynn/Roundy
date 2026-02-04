@@ -6,6 +6,7 @@ import MessageListPage from '@/pages/message/MessageListPage';
 import ChatRoomPage from '@/pages/message/ChatRoomPage';
 import MyPage from '@/pages/my/MyPage';
 import PreferenceEditPage from '@/pages/my/PreferenceEditPage';
+import ProfileEditPage from '@/pages/my/ProfileEditPage';
 import NoticePage from '@/pages/my/NoticePage';
 import FAQPage from '@/pages/my/FAQPage';
 import VerificationPage from '@/pages/verification/VerificationPage';
@@ -33,32 +34,34 @@ function App() {
               radial-gradient(circle at 0% 0%, rgba(255, 77, 148, 0.1), transparent 50%), 
               radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.1), transparent 50%)
             `
-            : `
+              : `
               radial-gradient(circle at 0% 0%, rgba(255, 77, 148, 0.15), transparent 50%), 
               radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.15), transparent 50%)
             `
-        }}
-      >
-        <Routes>
-          {/* ─── 1. Navbar가 없는 페이지들 ─── */}
-          {/* 이제 배경색은 자동으로 적용됩니다! */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/verify" element={<VerificationPage />} />
-          <Route path="/loading" element={<WaitingLobby />} />
-          <Route path="/meeting" element={<RotationTestPage />} />
+          }}
+        >
+          <Routes>
+            {/* ─── 1. Navbar가 없는 페이지들 ─── */}
+            {/* 이제 배경색은 자동으로 적용됩니다! */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/verify" element={<VerificationPage />} />
+            <Route path="/loading" element={<WaitingLobby />} />
 
-          {/* 2. 기존 /meeting 경로를 새 컴포넌트로 업데이트 */}
-          <Route path="/meeting" element={<RotationMeeting />} />
+            {/* <Route path="/meeting" element={<RotationTestPage />} /> */}
 
-          {/* ─── 3. Navbar가 있는 페이지들 (Layout 사용) ─── */}
+            {/* 2. 기존 /meeting 경로를 새 컴포넌트로 업데이트 */}
+            <Route path="/meeting" element={<RotationMeeting />} />
+
+            {/* ─── 3. Navbar가 있는 페이지들 (Layout 사용) ─── */}
             <Route element={<Layout />}>
               <Route path="/home" element={<HomePage />} />
               <Route path="/messages" element={<MessageListPage />} />
               <Route path="/messages/:matchId" element={<ChatRoomPage />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="/mypage/preferences" element={<PreferenceEditPage />} />
+              <Route path="/mypage/profile" element={<ProfileEditPage />} />
               <Route path="/notices" element={<NoticePage />} />
               <Route path="/faq" element={<FAQPage />} />
             </Route>

@@ -318,6 +318,68 @@ public class RoomEventPublisher {
     }
     
     /**
+     * GAME_QUESTION 브로드캐스트 (게임 문제 출제)
+     */
+    public void publishGameQuestion(RoomState room, com.ssafya701.roundy.webrtc.game.GameQuestion question) {
+        // 투표 가능한 후보자 리스트 생성 (모든 참가자)
+        List<GameQuestionMessage.CandidateDto> candidates = room.getParticipantList().stream()
+            .map(p -> new GameQuestionMessage.CandidateDto(p.getUserId(), p.getNickname()))
+            .toList();
+        
+        GameQuestionMessage message = new GameQuestionMessage(
+            question.getQuestionNumber(),
+            3,  // 총 문제 수 (3턴으로 변경됨)
+            question.getQuestion(),
+            5, // 투표 시간 (초) - 5초로 단축됨
+            candidates
+        );
+        
+        broadcastToRoom(room, message);
+        log.info("GAME_QUESTION 발행: roomId={}, question={}/{}", 
+                room.getRoomId(), question.getQuestionNumber(), 5);
+    }
+    
+    /**
+     * GAME_RESULT 브로드캐스트 (게임 결과 발표)
+     */
+    public void publishGameResult(RoomState room, com.ssafya701.roundy.webrtc.game.GameQuestion question, 
+            List<Long> winnerIds, Map<Long, Integer> voteCounts) {
+        // 우승자 정보 (다수일 수 있음)
+        List<GameResultMessage.WinnerDto> winners = new java.util.ArrayList<>();
+        if (winnerIds != null && !winnerIds.isEmpty()) {
+            for (Long winnerId : winnerIds) {
+                String winnerNickname = room.getParticipant(winnerId)
+                    .map(ParticipantState::getNickname)
+                    .orElse("Unknown");
+                int winnerVoteCount = voteCounts.getOrDefault(winnerId, 0);
+                winners.add(new GameResultMessage.WinnerDto(winnerId, winnerNickname, winnerVoteCount));
+            }
+        }
+        
+        // 전체 투표 결과
+        List<GameResultMessage.VoteResultDto> voteResults = room.getParticipantList().stream()
+            .map(p -> new GameResultMessage.VoteResultDto(
+                p.getUserId(),
+                p.getNickname(),
+                voteCounts.getOrDefault(p.getUserId(), 0)
+            ))
+            .sorted((a, b) -> b.getVoteCount() - a.getVoteCount())
+            .toList();
+        
+        GameResultMessage message = new GameResultMessage(
+            question.getQuestionNumber(),
+            question.getQuestion(),
+            winners,
+            question.getBadgeName(),
+            voteResults
+        );
+        
+        broadcastToRoom(room, message);
+        log.info("GAME_RESULT 발행: roomId={}, question={}, winners={}", 
+                room.getRoomId(), question.getQuestionNumber(), winnerIds);
+    }
+    
+    /**
      * PARTNER_LEFT 전송 (1:1 대화 중 파트너 이탈)
      */
     public void publishPartnerLeft(ParticipantState participant, Long partnerId, String partnerNickname) {
@@ -330,5 +392,61 @@ public class RoomEventPublisher {
         sendToParticipant(participant, message);
         log.info("PARTNER_LEFT 발행: userId={}, partnerId={}", 
                 participant.getUserId(), partnerId);
+    }
+    
+    /**
+     * PARTNER_RE CONNECTED 전송 (1:1 대화 중 파트너 재연결)
+     */
+    public void publishPartnerReconnected(ParticipantState participant, Long partnerId, String partnerNickname) {
+        PartnerReconnectedMessage message = new PartnerReconnectedMessage(
+            partnerId,
+            partnerNickname,
+            "대화 상대가 다시 연결되었습니다."
+        );
+        
+        sendToParticipant(participant, message);
+        log.info("PARTNER_RECONNECTED 발행: userId={}, partnerId={}", 
+                participant.getUserId(), partnerId);
+    }
+    
+    /**
+     * 특정 사용자에게만 STAGE_CHANGE 메시지 전송
+     */
+    public void publishStageChangeToUser(RoomState room, Long userId, Stage stage, int durationSeconds) {
+        StageChangeMessage message = new StageChangeMessage(
+                room.getRoomId(),
+                stage,
+                durationSeconds);
+        
+        ParticipantState participant = room.getParticipant(userId).orElse(null);
+        if (participant != null) {
+            sendToParticipant(participant, message);
+            log.debug("STAGE_CHANGE 개별 전송: userId={}, stage={}", userId, stage);
+        }
+    }
+    
+    /**
+     * 특정 사용자에게만 메시지 전송 (외부 노출용)
+     */
+    public void sendToUser(RoomState room, Long userId, WsMessage message) throws IOException {
+        ParticipantState participant = room.getParticipant(userId).orElse(null);
+        if (participant != null) {
+            sendToParticipant(participant, message);
+        }
+    }
+    
+    /**
+     * ROOM_STATE 브로드캐스트
+     */
+    public void broadcastRoomState(RoomState room) throws IOException {
+        List<RoomStateMessage.ParticipantDto> participantDtos = room.getParticipantList().stream()
+                .map(p -> new RoomStateMessage.ParticipantDto(p.getUserId(), p.getNickname(), p.getGender().name()))
+                .collect(java.util.stream.Collectors.toList());
+        RoomStateMessage roomState = new RoomStateMessage(
+                room.getRoomId(),
+                participantDtos,
+                room.getParticipantCount()
+        );
+        broadcastToRoom(room, roomState);
     }
 }

@@ -30,5 +30,6 @@ public class RoomStateMessage implements WsMessage {
     public static class ParticipantDto {
         private Long userId;
         private String nickname;
+        private String gender;
     }
 }

@@ -251,6 +251,6 @@ class WebRtcRoomServiceTest {
     private void mockOpenViduSession(String roomId) {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody("{\"id\":\"room-" + roomId + "\",\"object\":\"session\",\"createdAt\":1234567890}"));
+                .setBody("{\"id\":\"" + roomId + "\",\"object\":\"session\",\"createdAt\":1234567890}"));
     }
 }
