@@ -23,6 +23,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
     @Override
     public boolean beforeHandshake(
@@ -113,7 +114,28 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             // 모드는 기본값 PAIR_ONLY (소개팅 모드)
             attributes.put("mode", "PAIR_ONLY");
 
-            log.info("WebSocket 핸드셰이크 성공: userId={}, nickName={}, gender={}", userId, nickname, attributes.get("gender"));
+            // [추가] Redis에서 유저의 할당된 방(roomId) 조회
+            // Session API 매칭 시 'user:{userId}:currentRoom' 키가 생성됨
+            String userRoomKey = "user:" + userId + ":currentRoom";
+            String roomId = redisTemplate.opsForValue().get(userRoomKey);
+
+            if (roomId == null) {
+                log.warn("❌ WebSocket 연결 실패: 배정된 방 없음 - userId={}", userId);
+                return false;
+            }
+            
+            // 방 멤버 권한 재확인 (방어적 코드)
+            String memberKey = "room:" + roomId + ":member:" + userId;
+            if (Boolean.FALSE.equals(redisTemplate.hasKey(memberKey))) {
+                 log.warn("❌ WebSocket 연결 실패: 방 입장 권한 없음 (System Error) - userId={}, roomId={}", 
+                         userId, roomId);
+                return false;
+            }
+
+            attributes.put("roomId", roomId);
+
+            log.info("WebSocket 핸드셰이크 성공: userId={}, roomId={}, nickName={}, gender={}", 
+                    userId, roomId, nickname, attributes.get("gender"));
             return true;
 
         } catch (Exception e) {
