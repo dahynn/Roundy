@@ -103,7 +103,20 @@ public class PreferenceService {
                 .count();
 
         if (count != expectedCount) {
-            throw new CustomException(ErrorEnum.INVALID_PREFERENCE_COUNT);
+            String errorMessage = String.format("%s 항목은 %d개를 선택해야 합니다. (현재: %d개)",
+                    convertToKorean(PreferenceType.valueOf(type)), expectedCount, count);
+            throw new CustomException(ErrorEnum.INVALID_PREFERENCE_COUNT, errorMessage);
         }
+    }
+
+    private String convertToKorean(PreferenceType type) {
+        return switch (type) {
+            case RELATIONSHIP_GOAL -> "연애 목표";
+            case DATING_STYLE -> "데이트 스타일";
+            case DATE_PREFERENCE -> "선호 데이트";
+            case PERSONALITY -> "성격";
+            case APPEARANCE -> "외모";
+            case TALENT -> "재능/특기";
+        };
     }
 }

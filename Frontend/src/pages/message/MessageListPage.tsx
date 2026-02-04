@@ -1,101 +1,86 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
-import defaultProfile from '../../assets/default-profile.png';
+import MessageList from '@/components/message/MessageList';
+import { getChatRooms } from '@/api/match';
 
 export default function MessageListPage() {
-  const navigate = useNavigate();
   const [chatRooms, setChatRooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const mockRooms = [
-      {
-        id: 1,
-        opponentName: '하요오오옹',
-        lastMessageContent: '대화방이 열렸습니다',
-        hasNew: true,
-      },
-      {
-        id: 2,
-        opponentName: '하이잉',
-        lastMessageContent: '대화방이 열렸습니다',
-        hasNew: false,
-      },
-    ];
-    setChatRooms(mockRooms);
+    const fetchChatRooms = async () => {
+      try {
+        setLoading(true);
+        const data = await getChatRooms() as any;
+        console.log('📡 [MessageListPage] 쪽지함 목록:', data);
+
+        if (data) {
+          const mappedRooms = data.map((room: any) => ({
+            id: room.id,
+            opponentName: `사용자 ${room.opponentId}`,
+            lastMessageContent: room.lastMessageContent || '대화방이 열렸습니다',
+            hasNew: room.unreadCount > 0,
+            time: room.lastMessageAt ? formatRelativeTimeCode(room.lastMessageAt) : '방금 전',
+            unreadCount: room.unreadCount,
+            chatStatus: room.chatStatus
+          }));
+          setChatRooms(mappedRooms);
+        }
+      } catch (error) {
+        console.error('❌ [MessageListPage] 쪽지함 로딩 실패:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChatRooms();
   }, []);
 
+  // 간단한 시간 포맷팅 유틸 (서버의 ISO string 대응)
+  const formatRelativeTimeCode = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return '방금 전';
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    return `${diffDays}일 전`;
+  };
+
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-[#FAFBFF]">
+    <div className="h-full flex flex-col overflow-hidden font-['Pretendard']">
       <Header />
 
       <main className="flex-1 overflow-hidden p-6 md:p-10 flex flex-col items-center">
-        <div className="w-full max-w-[1200px] h-full flex flex-col">
-          {/* 타이틀 영역 간격 축소 */}
-          <div className="mb-8 ml-2">
-            <h1 className="text-3xl font-black text-[#1A1F36] mb-2 tracking-tight">쪽지함</h1>
-            <p className="text-[#697386] font-medium text-base">
+        <div className="w-full max-w-3xl h-full flex flex-col">
+
+          {/* 타이틀 영역 */}
+          <div className="mb-8 px-2">
+            <h1 className="text-3xl font-black text-[#1A1F36] dark:text-white mb-2 tracking-tight flex items-center gap-2 transition-colors">
+              Message
+              <span className="w-2 h-2 bg-[#FF4D94] rounded-full animate-pulse" />
+            </h1>
+            <p className="text-[#697386] dark:text-gray-400 font-medium text-base transition-colors">
               새로운 소통의 시작, 받은 쪽지 리스트입니다.
             </p>
           </div>
 
-          {/* 리스트 컨테이너 패딩 조정 */}
-          <div className="flex-1 bg-white/60 backdrop-blur-xl rounded-[40px] p-6 shadow-2xl shadow-gray-200/40 border border-white overflow-y-auto custom-scrollbar">
-            <div className="flex flex-col gap-4">
-              {chatRooms.map((room) => (
-                <div
-                  key={room.id}
-                  onClick={() => navigate(`/messages/${room.id}`)}
-                  className="flex items-center p-5 rounded-[28px] bg-white border border-gray-50 shadow-sm hover:shadow-md hover:border-pink-100 transition-all cursor-pointer group"
-                >
-                  {/* 1. 프로필 이미지 크기 축소 (w-24 -> w-16) */}
-                  <div className="w-16 h-16 rounded-full bg-[#E9ECEF] overflow-hidden mr-6 border-2 border-white shadow-sm shrink-0 flex items-center justify-center">
-                    <img
-                      src={defaultProfile}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+          {/* 리스트 컨테이너 (아이폰 글라스 효과 적용) */}
+          <div className="flex-1 bg-white/40 dark:bg-black/40 backdrop-blur-2xl backdrop-saturate-150 rounded-[40px] p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white/50 dark:border-white/5 overflow-y-auto overflow-x-hidden no-scrollbar relative transition-colors duration-300">
 
-                  <div className="flex-1 min-w-0">
-                    {/* 2. 이름 및 뱃지 간격/사이즈 조정 */}
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-black text-[#1A1F36] text-lg tracking-tight">
-                        {room.opponentName}
-                      </span>
-                      {room.hasNew && (
-                        <span className="bg-[#FF4D94] text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase">
-                          NEW
-                        </span>
-                      )}
-                    </div>
+            {/* 장식용 배경 글로우 */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-pink-100/40 dark:from-pink-900/10 to-transparent rounded-full -mr-10 -mt-10 pointer-events-none" />
 
-                    {/* 3. 말풍선 텍스트 슬림화 (text-2xl -> text-base, py-5 -> py-2.5) */}
-                    <div className="bg-[#F1F3F5] px-5 py-2.5 rounded-[18px] inline-block group-hover:bg-pink-50 transition-colors">
-                      <p className="text-[#1A1F36] font-bold text-base truncate tracking-tight">
-                        {room.lastMessageContent}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 4. 우측 화살표 아이콘 추가 (가이드 제공) */}
-                  <div className="ml-4 text-gray-300 group-hover:text-[#FF4D94] transition-colors">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-[#FF4D94] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <MessageList chatRooms={chatRooms} />
+            )}
           </div>
         </div>
       </main>

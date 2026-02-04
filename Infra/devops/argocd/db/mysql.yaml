@@ -28,6 +28,8 @@ metadata:
   name: mysql
   namespace: roundy-app
 spec:
+  replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: mysql
@@ -39,6 +41,9 @@ spec:
       containers:
       - name: mysql
         image: mysql:8.0
+        args:
+          - --innodb_buffer_pool_size=256M
+          - --innodb_log_file_size=64M
         ports:
         - containerPort: 3306
         env:
@@ -52,6 +57,13 @@ spec:
             secretKeyRef:
               name: mysql-secret
               key: password
+        resources:
+          limits:
+            memory: "800Mi"
+            cpu: "500m"
+          requests:
+            memory: "400Mi"
+            cpu: "100m"
         volumeMounts:
         - name: mysql-persistent-storage
           mountPath: /var/lib/mysql
