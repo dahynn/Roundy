@@ -14,14 +14,14 @@ interface Partner {
 
 import { getUserPreferences, type PreferenceType } from '../../api/preference';
 
-export interface Step4_TalkProps {
+export interface Step3_TalkProps {
     partners: Partner[];
     currentPartnerIndex: number;
     remainingTime: number;
     onPartnerChange?: (index: number) => void;
 }
 
-export const Step4_Talk: React.FC<Step4_TalkProps> = ({
+export const Step3_Talk: React.FC<Step3_TalkProps> = ({
     partners,
     currentPartnerIndex,
     remainingTime,
@@ -30,10 +30,10 @@ export const Step4_Talk: React.FC<Step4_TalkProps> = ({
     const currentPartner = partners[currentPartnerIndex];
     const totalPartners = partners.length;
 
-    // LONG 모드 전용 설정
-    const title = "저의 연애 스타일은 💖";
-    const maxTime = 300; // 5분
-    const targetPrefs = ['RELATIONSHIP_GOAL', 'DATING_STYLE', 'DATE_PREFERENCE']; // 상위 3개 (타입 1, 2, 3)
+    // SHORT 모드 전용 설정
+    const title = "저는 이런 사람이에요 ✨";
+    const maxTime = 120; // 2분
+    const targetPrefs = ['PERSONALITY', 'APPEARANCE', 'TALENT']; // 하위 3개 (타입 4, 5, 6)
 
     // 취향 정보 State
     const [partnerPrefs, setPartnerPrefs] = useState<string[]>([]);
@@ -45,7 +45,7 @@ export const Step4_Talk: React.FC<Step4_TalkProps> = ({
             /*
             getUserPreferences(currentPartner.id).then(res => {
                 const allPrefs: string[] = [];
-                // LONG 모드에 맞는 취향 타입만 필터링해서 가져옴
+                // SHORT 모드에 맞는 취향 타입만 필터링해서 가져옴
                 targetPrefs.forEach(type => {
                     if (res.preferences[type as PreferenceType]) {
                         allPrefs.push(...res.preferences[type as PreferenceType]!);
@@ -58,15 +58,15 @@ export const Step4_Talk: React.FC<Step4_TalkProps> = ({
             }).catch(err => {
                 console.error('Failed to fetch preferences:', err);
                 // Mock 데이터 fallback
-                // 상위 3개 타입 (RELATIONSHIP_GOAL, DATING_STYLE, DATE_PREFERENCE)
-                const mockSource = ['장기연애', '연락자주', '집돌이', '액티비티', '카페투어'];
+                // 하위 3개 타입 (PERSONALITY, APPEARANCE, TALENT)
+                const mockSource = ['차분한', '유머러스한', '활동적인', '맛집탐방', '영화감상'];
                 setPartnerPrefs(mockSource);
             });
             */
 
             // Mock 데이터 (테스트용)
-            // 상위 3개 타입 (RELATIONSHIP_GOAL, DATING_STYLE, DATE_PREFERENCE)
-            const mockSource = ['장기연애', '연락자주', '집돌이', '액티비티', '카페투어'];
+            // 하위 3개 타입 (PERSONALITY, APPEARANCE, TALENT)
+            const mockSource = ['차분한', '유머러스한', '활동적인', '맛집탐방', '영화감상'];
             setPartnerPrefs(mockSource);
         }
     }, [currentPartner]);
@@ -168,6 +168,7 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({ name, isMe, prefs, he
                 />
             </div>
 
+            {/* 상단 라벨 */}
             {/* 상단 라벨 */}
             <div className="absolute top-6 left-6 z-10 w-full pr-6">
                 <div className="flex items-center justify-between w-full">
