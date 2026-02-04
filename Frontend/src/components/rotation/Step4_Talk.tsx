@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User, MessageCircle, RefreshCw } from 'lucide-react';
+import UserVideo from '../meeting/UserVideo';
+import { StreamManager } from 'openvidu-browser';
 
 interface TalkProps {
   partner: {
@@ -12,6 +14,8 @@ interface TalkProps {
     // Add other user properties as needed
   };
   showCards?: boolean; // New prop to toggle card display (e.g., true for Long Talk)
+  partnerStream?: StreamManager | undefined;
+  myStream?: StreamManager | undefined;
 }
 
 const TALK_CARDS = [
@@ -23,7 +27,7 @@ const TALK_CARDS = [
   "살면서 꼭 한번 도전해보고 싶은 것은?",
 ];
 
-export const Step4_Talk = ({ partner, currentUser, showCards = false }: TalkProps) => {
+export const Step4_Talk = ({ partner, currentUser, showCards = false, partnerStream, myStream }: TalkProps) => {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -50,30 +54,53 @@ export const Step4_Talk = ({ partner, currentUser, showCards = false }: TalkProp
 
         {/* Left: YOU (Blurred/Restricted View - "하관만 공개") */}
         <div className="relative rounded-[32px] overflow-hidden bg-gray-900 border border-white/10 shadow-2xl group">
-          {/* Mock Video Feed Placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center">
+          {/* Video Feed */}
+          <div className="absolute inset-0">
+            {myStream ? (
+              <UserVideo streamManager={myStream} isLocal={true} />
+            ) : (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <User size={80} className="text-white/20" />
+              </div>
+            )}
+          </div>
+
+          {/* Blur/Mask Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center pointer-events-none">
             <div className="text-center opacity-40">
-              <User size={80} className="mb-4 mx-auto" />
-              <p className="text-xl font-bold text-white">하관만 공개</p>
+              {/* Icon optional if video is visible */}
+              {/* <User size={80} className="mb-4 mx-auto" /> */}
+              {/* <p className="text-xl font-bold text-white">하관만 공개</p> */}
             </div>
           </div>
           {/* Name Tag */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md z-10">
             {currentUser?.username} (나)
           </div>
         </div>
 
         {/* Right: PARTNER (Blurred/Restricted View - "하관만 공개") */}
         <div className="relative rounded-[32px] overflow-hidden bg-gray-900 border border-white/10 shadow-2xl">
-          {/* Mock Video Feed Placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center">
+          {/* Video Feed */}
+          <div className="absolute inset-0">
+            {partnerStream ? (
+              <UserVideo streamManager={partnerStream} isLocal={false} />
+            ) : (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <User size={80} className="text-white/20" />
+              </div>
+            )}
+          </div>
+
+          {/* Blur/Mask Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center pointer-events-none">
             <div className="text-center opacity-40">
-              <User size={80} className="mb-4 mx-auto" />
-              <p className="text-xl font-bold text-white">하관만 공개</p>
+              {/* <User size={80} className="mb-4 mx-auto" /> */}
+              {/* <p className="text-xl font-bold text-white">하관만 공개</p> */}
             </div>
           </div>
           {/* Name Tag */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md z-10">
             {partner?.name}
           </div>
         </div>
