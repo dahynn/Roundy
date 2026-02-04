@@ -20,6 +20,7 @@ export type WsMessageType =
     // Server -> Client
     | 'JOIN_OK'
     | 'ROOM_STATE'
+    | 'STAGE_CHANGE' // Restored for RotationTest compatibility
     | 'ROUND_START' // Changed from STAGE_CHANGE
     | 'ROUND_END'
     | 'PAIR_ASSIGNED'
@@ -66,6 +67,13 @@ export interface RoomStatePayload {
     participantCount: number;
 }
 
+// STAGE_CHANGE: 스테이지 변경
+export interface StageChangePayload {
+    roomId: string;
+    stage: RotationStage;
+    durationSeconds: number;
+}
+
 // ROUND_START: 라운드 시작
 export interface RoundStartPayload {
     roomId: string;
@@ -87,7 +95,7 @@ export interface PairAssignedPayload {
     partnerNickname: string | null;
     // Spec doesn't explicitly mention private tokens anymore, but keeping optional for compatibility if needed.
     privateSessionId?: string;
-    privateToken?: string; 
+    privateToken?: string;
 }
 
 // MATCH_RESULT: 최종 매칭 결과

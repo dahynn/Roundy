@@ -32,6 +32,16 @@ public class MatchController {
 
     }
 
+    // 내 쪽지함 히스토리 조회 (전체)
+    @GetMapping("/history")
+    public CommonResponse<List<MatchDto.Response>> getMatchHistory(
+            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal
+    ) {
+        Long userId = principal.getUser().getId();
+        List<MatchDto.Response> responses = matchService.getMatchHistory(userId);
+        return CommonResponse.ofSuccess(responses);
+    }
+
     // 쪽지방 나가기
     @PostMapping("/{matchId}/leave")
     public CommonResponse<MatchDto.LeaveResponse> leaveMatch(

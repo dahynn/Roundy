@@ -48,12 +48,22 @@ for i, userId in ipairs(maleMembers) do
     local memberInfoKey = 'room:' .. roomId .. ':member:' .. userId
     redis.call('HSET', memberInfoKey, 'gender', 'MALE')
     redis.call('EXPIRE', memberInfoKey, 7200)
+    
+    -- [추가] userId -> roomId 매핑 저장
+    local userRoomKey = 'user:' .. userId .. ':currentRoom'
+    redis.call('SET', userRoomKey, roomId)
+    redis.call('EXPIRE', userRoomKey, 7200)
 end
 
 for i, userId in ipairs(femaleMembers) do
     local memberInfoKey = 'room:' .. roomId .. ':member:' .. userId
     redis.call('HSET', memberInfoKey, 'gender', 'FEMALE')
     redis.call('EXPIRE', memberInfoKey, 7200)
+
+    -- [추가] userId -> roomId 매핑 저장
+    local userRoomKey = 'user:' .. userId .. ':currentRoom'
+    redis.call('SET', userRoomKey, roomId)
+    redis.call('EXPIRE', userRoomKey, 7200)
 end
 
 -- 3-5. 방 생성 시간 저장

@@ -10,12 +10,14 @@ import com.ssafya701.roundy.match.dto.MatchDto;
 import com.ssafya701.roundy.match.entity.Match;
 import com.ssafya701.roundy.match.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,20 +28,17 @@ public class MatchService {
 
     /**
      * 새로운 매칭 생성 및 저장
-     * @param roomId 세션 ID (방 ID)
+     * @param sessionId 세션 ID (방 ID)
      * @param maleId 남성 사용자 ID
      * @param femaleId 여성 사용자 ID
      * @return 생성된 매칭 정보
      */
     @Transactional
-    public Match createMatch(String roomId, Long maleId, Long femaleId) {
-        // roomId에서 숫자만 추출하거나 해싱하여 Long 타입 session_id 생성 (임시)
-        // 실제로는 roomId(String)를 저장하도록 Entity 수정이 필요할 수 있으나,
-        // 현재 Entity가 Long sessionId를 요구하므로 해시코드 사용
-        Long sessionId = (long) roomId.hashCode();
+    public Match createMatch(Long sessionId, Long maleId, Long femaleId) {
+        log.info("매칭 생성: sessionId={}, maleId={}, femaleId={}", sessionId, maleId, femaleId);
         
         Match match = Match.builder()
-                .sessionId(sessionId) // TODO: 추후 String roomId로 변경 권장
+                .sessionId(sessionId) // DB Session ID 연결
                 .maleId(maleId)
                 .femaleId(femaleId)
                 .build();
@@ -54,6 +53,15 @@ public class MatchService {
      */
     public List<MatchDto.Response> getMyMatches(Long userId) {
         return matchRepository.findMyMatches(userId).stream()
+                .map(match -> MatchDto.Response.from(match, userId))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자의 전체 매칭 이력 조회 (종료된 대화 포함)
+     * */
+    public List<MatchDto.Response> getMatchHistory(Long userId) {
+        return matchRepository.findMatchHistory(userId).stream()
                 .map(match -> MatchDto.Response.from(match, userId))
                 .collect(Collectors.toList());
     }

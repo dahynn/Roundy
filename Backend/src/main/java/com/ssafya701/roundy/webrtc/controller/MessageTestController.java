@@ -9,6 +9,12 @@ import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.*;
 import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
+import com.ssafya701.roundy.match.service.MatchService;
+import com.ssafya701.roundy.match.repository.SessionRepository;
+import com.ssafya701.roundy.match.entity.Session;
+import com.ssafya701.roundy.match.enums.SessionStatus;
+import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
+import com.ssafya701.roundy.auth.enums.UserRole;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -27,9 +33,15 @@ import java.util.Map;
 public class MessageTestController {
 
     private final WsMessageSerializer serializer;
+    private final MatchService matchService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final SessionRepository sessionRepository;
 
-    public MessageTestController(WsMessageSerializer serializer) {
+    public MessageTestController(WsMessageSerializer serializer, MatchService matchService, JwtTokenProvider jwtTokenProvider, SessionRepository sessionRepository) {
         this.serializer = serializer;
+        this.matchService = matchService;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.sessionRepository = sessionRepository;
     }
 
     /**
@@ -157,6 +169,58 @@ public class MessageTestController {
         }
     }
 
+    // MatchService 주입 필요 (필드 추가)
+//    private final com.ssafya701.roundy.match.service.MatchService matchService;
+
+
+    // 기존 메서드들 유지... (생성자만 수정)
+
+    /**
+     * 매칭 결과 저장 테스트 (DB 영속화 확인용)
+     * POST /api/test/ws-message/save-match
+     * Query Params: roomId, maleId, femaleId
+     */
+    @PostMapping("/save-match")
+    public CommonResponse<?> verifyMatchSave(
+            @RequestParam String roomId,
+            @RequestParam Long maleId,
+            @RequestParam Long femaleId) {
+        try {
+            // 실제 Session 조회
+            Session session = sessionRepository.findByRoomId(roomId)
+                    .orElseGet(() -> {
+                        // 테스트용 세션 자동 생성
+                        Session newSession = Session.builder()
+                                .roomId(roomId)
+                                .status(SessionStatus.ONGOING)
+                                .maleMax(6)
+                                .femaleMax(6)
+                                .build();
+                        return sessionRepository.save(newSession);
+                    });
+            
+            com.ssafya701.roundy.match.entity.Match match = matchService.createMatch(session.getId(), maleId, femaleId);
+            return CommonResponse.ofSuccess("매칭 저장 완료: ID=" + match.getId() + ", SessionID=" + session.getId());
+        } catch (Exception e) {
+            return CommonResponse.ofFailure("매칭 저장 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 개발용 JWT 토큰 발급 (카카오 로그인 없이 테스트 가능)
+     * POST /api/test/ws-message/dev-login?userId=1001
+     */
+    @PostMapping("/dev-login")
+    public CommonResponse<?> devLogin(@RequestParam Long userId) {
+        try {
+            // UserRole.USER 권한으로 엑세스 토큰 생성
+            String token = jwtTokenProvider.createAccessToken(userId, UserRole.USER);
+            return CommonResponse.ofSuccess(token);
+        } catch (Exception e) {
+            return CommonResponse.ofFailure("토큰 생성 실패: " + e.getMessage());
+        }
+    }
+    
     // 샘플 메시지 생성 헬퍼 메서드
     private WsMessage createSampleMessage(String type) {
         return switch (type) {
