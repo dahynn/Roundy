@@ -1,134 +1,265 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { Settings, LogOut, FastForward, Mic, Video } from 'lucide-react';
-import { useRotation } from '@/hooks/meeting/useRotation';
+import React, { useState, useEffect } from 'react';
+import { Settings, Mic, Video, LogOut, FastForward } from 'lucide-react';
+// import { useRotation } from '@/hooks/meeting/useRotation'; // Backend excluded for UI mock
 
 // 분리된 스텝 컴포넌트들을 불러옵니다.
 import { Step1_Intro } from './Step1_Intro';
 import { Step2_Vote } from './Step2_Vote';
+// import { Step3_Result } from './Step3_Result'; // Already imported? Wait, checking file.
 import { Step3_Result } from './Step3_Result';
 import { Step4_Talk } from './Step4_Talk';
 import { Step5_ImageGame } from './Step5_ImageGame';
-
-type Point = { x: number; y: number };
+import { Step6_FinalResult } from './Step6_FinalResult';
+import { Step7_FaceReveal } from './Step7_FaceReveal';
+import { StepLoading_Preference } from './StepLoading_Preference';
 
 export default function RotationMeetingContainer() {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
 
-  // --- 시스템 단계 관리 ---
-  const [currentStage, setCurrentStage] = useState<
-    'PREPARE' | 'INTRO' | 'VOTE' | 'RESULT' | 'TALK_1_ON_1' | 'IMAGE_GAME' | 'IMAGE_GAME_RESULT'
+  // --- Mock Hook Simulation (백엔드 미구현 상태) ---
+  // const { state } = useRotation(roomId, currentUser);
+
+  // Mock State
+  const [mockState, setMockState] = useState({
+    connected: true,
+    mode: 'PAIR_ONLY',
+    currentStage: 'PREPARE', // Start with PREPARE
+    currentRound: 1,
+    totalRounds: 3,
+    remainingTime: 0,
+    finalMatchSuccess: true, // For Demo: Toggle Success/Fail
+    participants: Array.from({ length: 6 }).map((_, i) => ({
+      userId: i + 1,
+      nickname: i < 3 ? `남자 ${i + 1}호` : `여자 ${i - 2}호`,
+      gender: i < 3 ? 'MALE' : 'FEMALE'
+    })),
+    currentPartner: { id: 2, nickname: '남자 2호', sessionId: 'mock-session', token: 'mock-token' }
+  });
+
+  // --- UI 단계 관리 (이미지 흐름 기반 확장) ---
+  const [uiStage, setUiStage] = useState<
+    'PREPARE' | 'INTRO' |
+    'VOTE_1' | 'RESULT_1' |
+    'LOADING_TALK_SHORT' | 'TALK_1_ON_1_SHORT' |
+    'LOADING_GAME' | 'IMAGE_GAME' |
+    'LOADING_TALK_LONG' | 'TALK_1_ON_1_LONG' |
+    'LOADING_FINAL' | 'VOTE_FINAL' | 'RESULT_FINAL' | 'FACE_REVEAL' |
+    'WAITING'
   >('PREPARE');
-  const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
-  const [currentNotice, setCurrentNotice] = useState<string | null>('Hello');
+
+  const [currentNotice, setCurrentNotice] = useState<string | null>(null);
   const [displayText, setDisplayText] = useState('');
-  const [noticeIndex, setNoticeIndex] = useState(0);
 
-  // --- 타이머 상태 ---
-  const [introTimer, setIntroTimer] = useState(20);
-  const [voteTimer, setVoteTimer] = useState(10);
-  const [resultTimer, setResultTimer] = useState(10);
-  const [talkTimer, setTalkTimer] = useState(120);
-  const [imageGameTimer, setImageGameTimer] = useState(10);
-  const [imageResultTimer, setImageResultTimer] = useState(10);
-
-  const [round, setRound] = useState(1);
-  const [gameRound, setGameRound] = useState(1);
-  const [activeSpeakerIdx, setActiveSpeakerIdx] = useState<number | null>(null);
+  // UI용 파생 데이터
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
 
-  // --- 데이터 및 좌표 ---
-  const currentUser = { userId: 101, username: '개발자', gender: 'FEMALE' as 'MALE' | 'FEMALE' };
-  const [participants, setParticipants] = useState([
-    {
-      id: 1,
-      name: '남자 1호',
-      gender: 'MALE',
-      voteTo: 5,
-      keywords: ['☕ 카페 투어'],
-      badges: [] as string[],
-    },
-    {
-      id: 2,
-      name: '남자 2호',
-      gender: 'MALE',
-      voteTo: 4,
-      keywords: ['🧗 클라이밍'],
-      badges: [] as string[],
-    },
-    {
-      id: 3,
-      name: '남자 3호',
-      gender: 'MALE',
-      voteTo: 6,
-      keywords: ['✈️ 세계 여행'],
-      badges: [] as string[],
-    },
-    {
-      id: 4,
-      name: '여자 1호',
-      gender: 'FEMALE',
-      voteTo: 2,
-      keywords: ['🎨 전시회'],
-      badges: [] as string[],
-    },
-    {
-      id: 5,
-      name: '여자 2호',
-      gender: 'FEMALE',
-      voteTo: 1,
-      keywords: ['🎾 테니스'],
-      badges: ['인기쟁이'],
-    },
-    {
-      id: 6,
-      name: '여자 3호',
-      gender: 'FEMALE',
-      voteTo: 1,
-      keywords: ['🎥 영화 감상'],
-      badges: [] as string[],
-    },
-  ]);
-
-  const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const [lines, setLines] = useState<any[]>([]);
-
+  // Intro Messages Logic
   const msgs = [
     'Hello',
     '안녕하세요, 라운디입니다.',
     '로테이션 소개팅에 오신 걸 환영합니다.',
     '이제 자기소개를 시작합니다.',
   ];
+  const [msgIndex, setMsgIndex] = useState(0);
 
-  const { isReady, handleReady } = useRotation('room_1', {
-    ...currentUser,
-    mode: 'FREE_TALK',
-    username: '개발자',
-  });
-
-  // 1. 공지 시퀀스
+  // Mock Flow Simulation Effect (Full Linear Sequence)
   useEffect(() => {
-    if (noticeIndex < msgs.length) {
-      const t = setTimeout(
-        () => {
-          setCurrentNotice(msgs[noticeIndex]);
-          setNoticeIndex((prev) => prev + 1);
-        },
-        noticeIndex === 0 ? 500 : 3000,
-      );
-      return () => clearTimeout(t);
-    } else if (currentStage === 'PREPARE') {
-      const t = setTimeout(() => {
-        setCurrentNotice(null);
-        setCurrentStage('INTRO');
-        setActiveSpeakerIdx(0);
-      }, 2000);
-      return () => clearTimeout(t);
-    }
-  }, [noticeIndex, currentStage]);
+    let timer: ReturnType<typeof setTimeout>;
 
-  // 2. 타이핑 애니메이션
+    const runSequence = () => {
+      // 0. 준비 (메시지)
+      if (uiStage === 'PREPARE') {
+        if (msgIndex < msgs.length) {
+          setCurrentNotice(msgs[msgIndex]);
+          timer = setTimeout(() => setMsgIndex(prev => prev + 1), 2500);
+        } else {
+          setCurrentNotice(null);
+          setUiStage('INTRO');
+          setMockState(prev => ({ ...prev, remainingTime: 10 }));
+        }
+      }
+      // 1. 자기소개
+      else if (uiStage === 'INTRO') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('VOTE_1');
+              setMockState(p => ({ ...p, remainingTime: 15 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 2. 첫인상 투표
+      else if (uiStage === 'VOTE_1') {
+        setCurrentNotice('당신의 마음은 사로잡은 사람은?');
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('RESULT_1');
+              setCurrentNotice(null);
+              setMockState(p => ({ ...p, remainingTime: 8 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 3. 1차 결과
+      else if (uiStage === 'RESULT_1') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('LOADING_TALK_SHORT');
+              setCurrentNotice('가볍게 인사를 나누어 보세요!!');
+              setMockState(p => ({ ...p, remainingTime: 3 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 4-0. 로딩 (Short Talk)
+      else if (uiStage === 'LOADING_TALK_SHORT') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('TALK_1_ON_1_SHORT');
+              setCurrentNotice(null);
+              setMockState(p => ({ ...p, remainingTime: 60 })); // 1 min
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 4. 1:1 소개팅 (Short)
+      else if (uiStage === 'TALK_1_ON_1_SHORT') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('LOADING_GAME');
+              setCurrentNotice('이미지 게임을 시작합니다');
+              setMockState(p => ({ ...p, remainingTime: 3 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 5-0. 로딩 (Game)
+      else if (uiStage === 'LOADING_GAME') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('IMAGE_GAME');
+              setCurrentNotice(null);
+              setMockState(p => ({ ...p, remainingTime: 30 })); // 30s Game
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 5. 이미지 게임
+      else if (uiStage === 'IMAGE_GAME') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('LOADING_TALK_LONG');
+              setCurrentNotice(null); // Clear notice to show component
+              setMockState(p => ({ ...p, remainingTime: 5 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 6-0. 로딩 (Long Talk)
+      else if (uiStage === 'LOADING_TALK_LONG') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('TALK_1_ON_1_LONG');
+              setCurrentNotice(null);
+              setMockState(p => ({ ...p, remainingTime: 180 })); // 3 min
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 6. 1:1 소개팅 (Long)
+      else if (uiStage === 'TALK_1_ON_1_LONG') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('LOADING_FINAL');
+              setCurrentNotice('최종 선택의 시간입니다');
+              setMockState(p => ({ ...p, remainingTime: 3 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 7-0. 로딩 (Final Vote)
+      else if (uiStage === 'LOADING_FINAL') {
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('VOTE_FINAL');
+              setCurrentNotice(null);
+              setMockState(p => ({ ...p, remainingTime: 20 }));
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 7. 최종 투표
+      else if (uiStage === 'VOTE_FINAL') {
+        setCurrentNotice('운명의 상대를 선택해주세요');
+        timer = setInterval(() => {
+          setMockState(prev => {
+            if (prev.remainingTime <= 1) {
+              clearInterval(timer);
+              setUiStage('RESULT_FINAL');
+              setCurrentNotice(null);
+              setMockState(p => ({ ...p, remainingTime: 600 })); // Show Result for plenty of time
+              return { ...prev, remainingTime: 0 };
+            }
+            return { ...prev, remainingTime: prev.remainingTime - 1 };
+          });
+        }, 1000);
+      }
+      // 8. 최종 결과 (Stop)
+      else if (uiStage === 'RESULT_FINAL') {
+        // Stop here for Demo
+      }
+    };
+
+    runSequence();
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(timer);
+    }
+  }, [uiStage, msgIndex]);
+
+  // 3. 타이핑 애니메이션
   useEffect(() => {
     if (!currentNotice) {
       setDisplayText('');
@@ -145,296 +276,219 @@ export default function RotationMeetingContainer() {
     return () => clearInterval(typing);
   }, [currentNotice]);
 
-  // 3. 통합 타이머 로직 (TS2345 에러 해결 버전)
-  useEffect(() => {
-    let timerId: NodeJS.Timeout;
-    if (!currentNotice) {
-      if (currentStage === 'INTRO') {
-        timerId = setInterval(() => {
-          setIntroTimer((p) => {
-            if (p <= 1) {
-              handleNextSpeaker();
-              return 20;
-            }
-            return p - 1;
-          });
-        }, 1000);
-      } else if (currentStage === 'VOTE') {
-        timerId = setInterval(() => {
-          setVoteTimer((p) => {
-            if (p <= 1) {
-              goToResultStage();
-              return 0;
-            }
-            return p - 1;
-          });
-        }, 1000);
-      } else if (currentStage === 'RESULT') {
-        timerId = setInterval(() => {
-          setResultTimer((p) => {
-            if (p <= 1) {
-              if (resultSubStage === 'MALE_SIDE') {
-                setResultSubStage('FEMALE_SIDE');
-                return 10;
-              } else {
-                goToTalkStage();
-                return 0;
-              }
-            }
-            return p - 1;
-          });
-        }, 1000);
-      } else if (currentStage === 'TALK_1_ON_1') {
-        timerId = setInterval(() => {
-          setTalkTimer((p) => {
-            if (p <= 1) {
-              if (round < 3) {
-                setRound((r) => r + 1);
-                return 120;
-              } else {
-                goToImageGameStage();
-                return 0;
-              }
-            }
-            return p - 1;
-          });
-        }, 1000);
-      } else if (currentStage === 'IMAGE_GAME') {
-        timerId = setInterval(() => {
-          setImageGameTimer((p) => {
-            if (p <= 1) {
-              if (gameRound < 3) {
-                setGameRound((r) => r + 1);
-                return 10;
-              } else {
-                goToImageResultStage();
-                return 0;
-              }
-            }
-            return p - 1;
-          });
-        }, 1000);
-      } else if (currentStage === 'IMAGE_GAME_RESULT') {
-        timerId = setInterval(() => {
-          setImageResultTimer((p) => {
-            if (p <= 1) {
-              setCurrentNotice('최종 결정 단계로 이동합니다.');
-              return 0;
-            }
-            return p - 1;
-          });
-        }, 1000);
-      }
-    }
-    return () => clearInterval(timerId!);
-  }, [currentStage, currentNotice, round, gameRound, resultSubStage]);
+  const currentUser = { userId: 101, username: 'User (You)' };
 
-  // 4. 좌표 계산
-  const calculateCoordinates = () => {
-    if (!svgRef.current) return;
-    const svgRect = svgRef.current.getBoundingClientRect();
-    const newLines: any[] = [];
-    const isMale = resultSubStage === 'MALE_SIDE';
-    const targets = isMale ? participants.slice(0, 3) : participants.slice(3, 6);
-    targets.forEach((p, idx) => {
-      const sEl = anchorRefs.current[isMale ? idx : idx + 3];
-      const eEl = anchorRefs.current[p.voteTo - 1];
-      if (sEl && eEl) {
-        const s = sEl.getBoundingClientRect();
-        const e = eEl.getBoundingClientRect();
-        newLines.push({
-          id: p.id,
-          start: { x: s.left - svgRect.left + s.width / 2, y: s.top - svgRect.top + s.height / 2 },
-          end: { x: e.left - svgRect.left + e.width / 2, y: e.top - svgRect.top + e.height / 2 },
-          isReverse: !isMale,
-        });
-      }
-    });
-    setLines(newLines);
+  // Data Mapping for UI Components
+  const uiParticipants = mockState.participants.map(p => ({
+    id: p.userId,
+    name: p.nickname,
+    gender: p.gender,
+    voteTo: (p.userId % 6) + 1, // Mock vote target
+    keywords: ['여행', '운동'],
+    badges: []
+  }));
+
+  const uiPartner = {
+    id: mockState.currentPartner.id,
+    name: mockState.currentPartner.nickname,
+    gender: 'MALE',
+    voteTo: 0,
+    keywords: [],
+    badges: []
   };
 
-  useLayoutEffect(() => {
-    if (currentStage === 'RESULT') calculateCoordinates();
-  }, [currentStage, resultSubStage]);
-
-  // --- 보조 함수 ---
-  const handleNextSpeaker = () => {
-    if (activeSpeakerIdx !== null && activeSpeakerIdx < 5) {
-      setActiveSpeakerIdx(activeSpeakerIdx + 1);
-      setIntroTimer(20);
-    } else {
-      setCurrentStage('VOTE');
-    }
-  };
-  const goToResultStage = () => {
-    setCurrentNotice('결과를 공개합니다.');
-    setTimeout(() => {
-      setCurrentNotice(null);
-      setCurrentStage('RESULT');
-      setResultSubStage('MALE_SIDE');
-    }, 3000);
-  };
-  const goToTalkStage = () => {
-    setCurrentNotice('1:1 대화를 시작합니다.');
-    setTimeout(() => {
-      setCurrentNotice(null);
-      setCurrentStage('TALK_1_ON_1');
-    }, 3000);
-  };
-  const goToImageGameStage = () => {
-    setCurrentNotice('5단계: 이미지 게임을 시작합니다.');
-    setTimeout(() => {
-      setCurrentNotice(null);
-      setCurrentStage('IMAGE_GAME');
-    }, 3000);
-  };
-  const goToImageResultStage = () => {
-    setCurrentNotice('이미지 게임 결과를 공개합니다.');
-    setTimeout(() => {
-      setCurrentNotice(null);
-      setCurrentStage('IMAGE_GAME_RESULT');
-    }, 3000);
+  const handleGoHome = () => {
+    alert("홈으로 이동합니다!");
+    setUiStage('PREPARE');
+    setMsgIndex(0);
   };
 
-  const handleSkip = () => {
-    setCurrentNotice(null);
-    setSelectedCard(null);
-    if (currentStage === 'PREPARE') setCurrentStage('INTRO');
-    else if (currentStage === 'INTRO') setCurrentStage('VOTE');
-    else if (currentStage === 'VOTE') goToResultStage();
-    else if (currentStage === 'RESULT') {
-      if (resultSubStage === 'MALE_SIDE') setResultSubStage('FEMALE_SIDE');
-      else goToTalkStage();
-    } else if (currentStage === 'TALK_1_ON_1') {
-      if (round < 3) setRound((r) => r + 1);
-      else goToImageGameStage();
-    } else if (currentStage === 'IMAGE_GAME') {
-      if (gameRound < 3) setGameRound((r) => r + 1);
-      else goToImageResultStage();
-    }
+  const handleAgreeReveal = () => {
+    setUiStage('FACE_REVEAL');
   };
 
   return (
-    <div className="h-screen w-full bg-[#0F0F0F] text-white flex flex-col font-['Pretendard'] overflow-hidden">
-      <header className="flex items-center justify-between px-8 py-4 bg-black/40 backdrop-blur-md z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-[#FF4D94] rounded-md rotate-45" />
-          <span className="text-xs font-bold text-[#FF4D94] uppercase tracking-widest">
-            {currentStage === 'PREPARE' && '준비 단계'}
-            {currentStage === 'INTRO' && '1단계: 자기소개'}
-            {currentStage === 'VOTE' && '2단계: 첫인상 투표'}
-            {currentStage === 'RESULT' && '3단계: 투표 결과'}
-            {currentStage === 'TALK_1_ON_1' && `4단계: 1:1 대화 (${round}/3)`}
-            {currentStage === 'IMAGE_GAME' && `5단계: 이미지 게임 (${gameRound}/3)`}
-            {currentStage === 'IMAGE_GAME_RESULT' && '5단계: 결과 공개'}
+    <div className="h-screen w-full bg-[#0F0F0F] text-white flex flex-col font-['Pretendard'] overflow-hidden selection:bg-[#FF4D94] selection:text-white">
+      {/* Header */}
+      <header className="flex items-center justify-between px-8 py-6 z-30">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#FF4D94] rounded-xl rotate-12 flex items-center justify-center shadow-[0_0_15px_rgba(255,77,148,0.5)]">
+            <div className="w-3 h-3 bg-white rounded-full" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-[#FF4D94] uppercase tracking-[0.2em] leading-tight">Rotation</span>
+            <span className="text-xl font-black text-white leading-none">Meeting</span>
+          </div>
+        </div>
+
+        {/* Status Indicator Pill */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-2 rounded-full shadow-2xl">
+          <div className={`w-2 h-2 rounded-full ${mockState.connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+          <span className="text-sm font-bold text-white/80 uppercase mr-4">
+            {uiStage.replace(/_/g, ' ')}
+          </span>
+          <div className="w-px h-4 bg-white/10" />
+          <span className="text-2xl font-black text-[#FF4D94] tabular-nums w-[80px] text-center">
+            {Math.floor(mockState.remainingTime / 60).toString().padStart(2, '0')}:
+            {(mockState.remainingTime % 60).toString().padStart(2, '0')}
           </span>
         </div>
-        {!currentNotice && (
-          <div className="absolute left-1/2 -translate-x-1/2 bg-white/5 px-6 py-2 rounded-full border border-white/10">
-            <span className="text-2xl font-black text-[#FF4D94] tabular-nums">
-              00:
-              {(currentStage === 'TALK_1_ON_1'
-                ? talkTimer
-                : currentStage === 'IMAGE_GAME'
-                  ? imageGameTimer
-                  : introTimer
-              )
-                .toString()
-                .padStart(2, '0')}
-            </span>
-          </div>
-        )}
-        <div className="flex items-center gap-4">
-          <Settings size={20} />
-          <button className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold uppercase">
-            Exit
+
+        <div className="flex items-center gap-3">
+          <button className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all hover:scale-105 active:scale-95">
+            <Settings size={20} className="text-white/60" />
+          </button>
+          <button className="flex items-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-2xl transition-all group">
+            <LogOut size={18} className="text-red-500 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-xs font-bold text-red-500 uppercase">Exit</span>
           </button>
         </div>
       </header>
 
-      <main className="flex-1 p-8 relative flex flex-col items-center justify-center overflow-hidden">
+      {/* Main Content Area */}
+      <main className="flex-1 w-full relative flex flex-col items-center justify-center p-8 overflow-hidden">
+        {/* Background Ambient */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-[#FF4D94] rounded-full blur-[150px] opacity-[0.03] pointer-events-none" />
+
         {currentNotice ? (
-          <div className="absolute inset-0 flex items-center justify-center z-40 bg-[#0F0F0F]">
-            <h2 className="text-4xl md:text-6xl font-black text-white text-center leading-tight">
-              {displayText.split(/(라운디)/g).map((part, i) =>
-                part === '라운디' ? (
-                  <span key={i} className="text-[#FF4D94]">
-                    {part}
-                  </span>
-                ) : (
-                  part
-                ),
-              )}
+          <div className="absolute inset-0 flex items-center justify-center z-50 bg-[#0F0F0F]/80 backdrop-blur-sm animate-in fade-in duration-300">
+            <h2 className="text-4xl md:text-6xl font-black text-white text-center leading-tight drop-shadow-2xl">
+              {displayText}
+              <span className="animate-pulse text-[#FF4D94]">_</span>
             </h2>
           </div>
         ) : (
-          <>
-            {currentStage === 'INTRO' && (
-              <Step1_Intro participants={participants} activeSpeakerIdx={activeSpeakerIdx} />
+          <div className="w-full max-w-[1600px] h-full flex items-center justify-center relative z-10">
+            {uiStage === 'INTRO' && (
+              <Step1_Intro participants={uiParticipants} activeSpeakerIdx={null} />
             )}
-            {currentStage === 'VOTE' && (
+
+            {(uiStage === 'VOTE_1' || uiStage === 'VOTE_FINAL') && (
               <Step2_Vote
-                participants={participants}
-                currentUser={currentUser}
+                participants={uiParticipants}
+                currentUser={{ gender: 'MALE' }}
                 selectedCard={selectedCard}
                 onSelect={setSelectedCard}
               />
             )}
-            {currentStage === 'RESULT' && (
+
+            {(uiStage === 'RESULT_1') && (
               <Step3_Result
-                participants={participants}
-                resultSubStage={resultSubStage}
-                anchorRefs={anchorRefs}
-                svgRef={svgRef}
-                lines={lines}
+                participants={uiParticipants}
+                resultSubStage={'MALE_SIDE'}
+                anchorRefs={{ current: [] }}
+                svgRef={{ current: null }}
+                lines={[]}
               />
             )}
-            {currentStage === 'TALK_1_ON_1' && (
+
+            {(uiStage === 'TALK_1_ON_1_SHORT' || uiStage === 'TALK_1_ON_1_LONG') && (
               <Step4_Talk
-                partner={
-                  participants.filter((p) => p.gender !== currentUser.gender)[(round - 1) % 3]
-                }
-                round={round}
+                partner={uiPartner}
+                currentUser={currentUser}
+                showCards={uiStage === 'TALK_1_ON_1_LONG'}
               />
             )}
-            {(currentStage === 'IMAGE_GAME' || currentStage === 'IMAGE_GAME_RESULT') && (
+
+            {uiStage === 'IMAGE_GAME' && (
               <Step5_ImageGame
-                gameRound={gameRound}
-                participants={participants}
-                currentUser={currentUser}
+                gameRound={1}
+                participants={uiParticipants}
+                currentUser={{ gender: 'MALE' }}
                 selectedCard={selectedCard}
                 onSelect={setSelectedCard}
-                isResult={currentStage === 'IMAGE_GAME_RESULT'}
+                isResult={false}
               />
             )}
-          </>
+
+            {uiStage === 'LOADING_TALK_LONG' && (
+              <StepLoading_Preference
+                partnerName={uiPartner.name}
+                mySucces={true}
+                timeLeft={mockState.remainingTime}
+                partnerId={uiPartner.id}
+              />
+            )}
+
+            {uiStage === 'RESULT_FINAL' && (
+              <Step6_FinalResult
+                isSuccess={mockState.finalMatchSuccess}
+                myInfo={currentUser}
+                partnerInfo={uiPartner}
+                onGoHome={handleGoHome}
+                onAgreeReveal={handleAgreeReveal}
+              />
+            )}
+
+            {uiStage === 'FACE_REVEAL' && (
+              <Step7_FaceReveal
+                myInfo={currentUser}
+                partnerInfo={uiPartner}
+                onGoHome={handleGoHome}
+              />
+            )}
+
+            {(uiStage === 'WAITING') && (
+              <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
+                <div className="w-20 h-20 rounded-full border-4 border-white/10 border-t-[#FF4D94] animate-spin" />
+                <div className="text-center">
+                  <h2 className="text-3xl font-bold mb-2 text-white">모든 라운드 종료</h2>
+                  <p className="text-white/40">수고하셨습니다.</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
-      <footer className="p-8 flex justify-between items-end z-30">
-        <button
-          onClick={handleSkip}
-          className="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-xs font-black"
-        >
-          <FastForward size={16} className="text-[#FF4D94]" /> NEXT STAGE SKIP
-        </button>
-        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-[32px] p-4 flex items-center gap-8 shadow-2xl">
-          <div className="flex gap-3 pr-8 border-r border-white/10">
+      {/* Footer / Controls */}
+      <footer className="w-full px-8 pb-8 pt-4 flex justify-between items-end z-30">
+        <div className="flex gap-2">
+          <button
+            className="flex items-center gap-3 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[24px] backdrop-blur-md transition-all group"
+            onClick={() => setMockState(p => ({ ...p, remainingTime: 1 }))} // Debug skip
+          >
+            <div className="w-8 h-8 rounded-full bg-[#FF4D94]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <FastForward size={16} className="text-[#FF4D94]" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Debug</span>
+              <span className="text-sm font-black text-white">SKIP STAGE</span>
+            </div>
+          </button>
+
+          <button
+            className={`flex items-center gap-3 px-6 py-4 border rounded-[24px] backdrop-blur-md transition-all group ${mockState.finalMatchSuccess ? 'bg-pink-500/20 border-pink-500' : 'bg-gray-800/50 border-gray-600'}`}
+            onClick={() => setMockState(p => ({ ...p, finalMatchSuccess: !p.finalMatchSuccess }))}
+          >
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Debug</span>
+              <span className="text-sm font-black text-white">
+                {mockState.finalMatchSuccess ? 'RESULT: SUCCESS' : 'RESULT: FAIL'}
+              </span>
+            </div>
+          </button>
+        </div>
+
+        <div className="bg-[#1A1A1A]/80 backdrop-blur-2xl border border-white/10 rounded-[32px] p-2 pr-8 flex items-center gap-6 shadow-2xl hover:border-white/20 transition-all">
+          <div className="flex gap-2 p-2 rounded-[24px] bg-black/20">
             <button
               onClick={() => setIsMicOn(!isMicOn)}
-              className={`p-3 rounded-2xl ${isMicOn ? 'bg-white/5' : 'bg-red-500/20 text-red-500'}`}
+              className={`w-14 h-14 rounded-[20px] flex items-center justify-center transition-all ${isMicOn ? 'bg-white text-black shadow-lg scale-100' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
             >
-              <Mic size={22} />
+              <Mic size={24} strokeWidth={2.5} />
             </button>
             <button
               onClick={() => setIsCamOn(!isCamOn)}
-              className={`p-3 rounded-2xl ${isCamOn ? 'bg-white/5' : 'bg-red-500/20 text-red-500'}`}
+              className={`w-14 h-14 rounded-[20px] flex items-center justify-center transition-all ${isCamOn ? 'bg-white text-black shadow-lg scale-100' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
             >
-              <Video size={22} />
+              <Video size={24} strokeWidth={2.5} />
             </button>
           </div>
-          <div className="px-4 text-center font-black text-white uppercase tracking-widest text-sm">
-            {currentUser.username}
+
+          <div className="flex flex-col items-start min-w-[120px]">
+            <span className="text-[10px] font-bold text-[#FF4D94] uppercase tracking-widest mb-0.5">My Profille</span>
+            <span className="text-lg font-black text-white uppercase tracking-tight">{currentUser.username}</span>
           </div>
         </div>
       </footer>
