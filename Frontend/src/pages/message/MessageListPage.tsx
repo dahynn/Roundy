@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import MessageList from '@/components/message/MessageList';
 import { getChatRooms } from '@/api/match';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MessageListPage() {
   const [chatRooms, setChatRooms] = useState<any[]>([]);
@@ -17,7 +18,8 @@ export default function MessageListPage() {
         if (data) {
           const mappedRooms = data.map((room: any) => ({
             id: room.id,
-            opponentName: `사용자 ${room.opponentId}`,
+            opponentName: room.nickname || `사용자 ${room.opponentId}`,
+            profileImgUrl: room.profileImgUrl,
             lastMessageContent: room.lastMessageContent || '대화방이 열렸습니다',
             hasNew: room.unreadCount > 0,
             time: room.lastMessageAt ? formatRelativeTimeCode(room.lastMessageAt) : '방금 전',
@@ -75,8 +77,19 @@ export default function MessageListPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-pink-100/40 dark:from-pink-900/10 to-transparent rounded-full -mr-10 -mt-10 pointer-events-none" />
 
             {loading ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[#FF4D94] border-t-transparent rounded-full animate-spin" />
+              <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-2">
+                    <Skeleton className="w-14 h-14 rounded-full shrink-0" />
+                    <div className="flex-1 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <Skeleton className="h-5 w-24 rounded-lg" />
+                        <Skeleton className="h-4 w-12 rounded-md" />
+                      </div>
+                      <Skeleton className="h-4 w-full max-w-[200px] rounded-md" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <MessageList chatRooms={chatRooms} />

@@ -6,27 +6,23 @@ import java.time.LocalDateTime;
 
 public class MatchDto {
 
-    /**
-     * 매칭 정보 조회 응답
-     */
+    // 매칭 정보 조회 응답
     public record Response(
             Long id,
             Long opponentId,
+            String nickname,
+            String profileImgUrl,
             String lastMessageContent,
             LocalDateTime lastMessageAt,
             ChatStatus chatStatus,
-            int unreadCount
-    ) {
-        public static Response from(Match match, Long currentUserId) {
-
-            // 상대방 ID 계산
-            Long opponentId = match.getMaleId().equals(currentUserId)
-                    ? match.getFemaleId()
-                    : match.getMaleId();
+            int unreadCount) {
+        public static Response from(Match match, com.ssafya701.roundy.auth.entity.User opponent) {
 
             return new Response(
                     match.getId(),
-                    opponentId,
+                    opponent.getId(),
+                    opponent.getNickName(),
+                    opponent.getProfileImageUrl(),
                     match.getLastMessageContent(),
                     match.getLastMessageAt(),
                     match.getChatStatus(),
@@ -35,20 +31,16 @@ public class MatchDto {
         }
     }
 
-    /**
-     * 채팅방 나가기 응답
-     */
+    // 채팅방 나가기 응답
     public record LeaveResponse(
             Long matchId,
             ChatStatus chatStatus,
-            String message
-    ) {
+            String message) {
         public static LeaveResponse from(Match match) {
             return new LeaveResponse(
                     match.getId(),
                     match.getChatStatus(),
-                    "대화가 종료되었습니다."
-            );
+                    "대화가 종료되었습니다.");
         }
     }
 }

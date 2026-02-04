@@ -78,6 +78,21 @@ public class User extends BaseEntity {
         this.status = UserStatus.PENDING_VERIFICATION;
     }
 
+    // 기본 정보 수정
+    public void updateBasicInfo(String nickName, String mbti, GenderType gender) {
+        if (nickName != null)
+            this.nickName = nickName;
+        if (mbti != null)
+            this.mbti = mbti;
+        if (gender != null)
+            this.gender = gender;
+    }
+
+    // 프로필 이미지 수정
+    public void updateProfileImage(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
     // 취향 분석 -> 최종 승인
     public void authorizeUser() {
         this.role = UserRole.USER;
