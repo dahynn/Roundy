@@ -6,6 +6,7 @@ import MessageListPage from '@/pages/message/MessageListPage';
 import ChatRoomPage from '@/pages/message/ChatRoomPage';
 import MyPage from '@/pages/my/MyPage';
 import PreferenceEditPage from '@/pages/my/PreferenceEditPage';
+import ProfileEditPage from '@/pages/my/ProfileEditPage';
 import NoticePage from '@/pages/my/NoticePage';
 import FAQPage from '@/pages/my/FAQPage';
 import VerificationPage from '@/pages/verification/VerificationPage';
@@ -60,6 +61,7 @@ function App() {
               <Route path="/messages/:matchId" element={<ChatRoomPage />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="/mypage/preferences" element={<PreferenceEditPage />} />
+              <Route path="/mypage/profile" element={<ProfileEditPage />} />
               <Route path="/notices" element={<NoticePage />} />
               <Route path="/faq" element={<FAQPage />} />
             </Route>

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 interface ChatRoom {
     id: number;
     opponentName: string;
+    profileImgUrl: string;
     lastMessageContent: string;
     hasNew: boolean;
     time: string;
