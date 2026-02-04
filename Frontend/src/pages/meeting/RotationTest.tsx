@@ -167,6 +167,35 @@ const RotationTestPage: React.FC = () => {
     };
 
     // ---------------------------------------------------------
+    // [NEW] 자기소개 단계 자동 마이크 제어
+    // ---------------------------------------------------------
+    useEffect(() => {
+        if (!publisher) return;
+
+        if (wsState.currentStage === 'SELF_INTRO') {
+            const speakerId = wsState.currentSpeaker?.id;
+            const isMyTurn = speakerId === userProfile.userId;
+
+            if (isMyTurn) {
+                console.log('🎤 내 차례! 마이크 ON');
+                publisher.publishAudio(true);
+            } else {
+                console.log('🤫 경청 모드. 마이크 OFF');
+                publisher.publishAudio(false);
+            }
+        } else {
+            // 다른 단계에서는 기본적으로 마이크 켜기 (또는 사용자 설정 따름)
+            // 여기서는 편의상 다시 켜주는 것으로 설정
+            // publisher.publishAudio(true); 
+            // 주의: VOTE 단계 등에서도 계속 대화가 가능하다면 켜두는 게 맞음.
+            // 필요 시 조건 세분화. 일단은 SELF_INTRO 끝났을 때 복구 로직이 필요할 수 있음.
+            if (activeRoomId) { // 방에 입장한 상태라면
+                publisher.publishAudio(true);
+            }
+        }
+    }, [wsState.currentStage, wsState.currentSpeaker?.id, publisher, userProfile.userId, activeRoomId]);
+
+    // ---------------------------------------------------------
     // 화면 렌더링
     // ---------------------------------------------------------
     const renderMainContent = () => {
@@ -216,6 +245,54 @@ const RotationTestPage: React.FC = () => {
             </div>
         );
 
+        // 자기소개 UI 렌더링 함수
+        const renderSelfIntroScreen = () => {
+            const speaker = wsState.currentSpeaker;
+            const isMyTurn = speaker?.id === userProfile.userId;
+
+            console.log("====================");
+            console.log('speaker: ', speaker);
+            console.log('isMyTurn:', isMyTurn);
+            console.log("====================");
+
+            return (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                        textAlign: 'center', padding: '20px', marginBottom: '20px',
+                        background: isMyTurn ? '#fff3e0' : '#f3e5f5',
+                        borderRadius: '12px', border: isMyTurn ? '2px solid #ff9800' : '1px solid #ddd'
+                    }}>
+                        <h2 style={{ fontSize: '2em', margin: '0 0 10px 0' }}>
+                            {isMyTurn ? '🎤 당신 차례입니다!' : `🤫 ${speaker?.speakerNickname || '누군가'}님의 소개를 들어주세요`}
+                        </h2>
+                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#d9534f' }}>
+                            남은 시간: {wsState.remainingTime}초
+                        </div>
+                    </div>
+
+                    <div style={gridStyle}>
+                        {/* 내 비디오 (발언자일 때 강조) */}
+                        <div style={{
+                            border: isMyTurn ? '5px solid #ff9800' : '2px solid transparent',
+                            borderRadius: '8px', overflow: 'hidden', position: 'relative'
+                        }}>
+                            {publisher && <UserVideo streamManager={publisher} isLocal={true} />}
+                            {isMyTurn && <span style={{ position: 'absolute', top: 10, left: 10, background: '#ff9800', color: 'white', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}>ME</span>}
+                        </div>
+
+                        {/* 다른 참가자 비디오 (발언자일 때 강조) */}
+                        {subscribers.map(sub => {
+                            const isSpeaker = sub.stream.connection.data.includes(`"clientData":"${speaker?.speakerNickname}"`); // OpenVidu 데이터 포맷에 따라 조정 필요
+                            // 혹은 userId를 clientData에 넣었다면 그것으로 비교. 현재 닉네임 비교는 부정확할 수 있으나 UI용으로 시도.
+                            // 더 정확하게는 stream.connection.data를 파싱해야 함. 여기서는 심플하게 테두리 효과만 주는 로직을 구현하기 어려우므로(sub 객체에 userId 정보 매핑 필요) 
+                            // 우선 전체 리스트를 보여주되, 상단 헤더로 발언자를 인지시킴.
+                            return <UserVideo key={sub.stream.streamId} streamManager={sub} isLocal={false} />;
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
         switch (stage) {
             case 'WAITING':
                 return (
@@ -226,6 +303,7 @@ const RotationTestPage: React.FC = () => {
                         </div>
                     </div>
                 );
+            case 'SELF_INTRO': return renderSelfIntroScreen();
             case 'VOTE_FIRST': return renderSelectionScreen('🗳️ 첫인상 투표', '첫인상이 좋은 이성을 선택하세요.');
             case 'IMAGE_GAME': return renderSelectionScreen('🎨 이미지 게임', `[${gameRound + 1}/3] ${DUMMY_QUESTIONS[gameRound]}`);
             case 'VOTE_FINAL': return renderSelectionScreen('💘 최종 투표', '최종 커플이 되고 싶은 이성을 선택하세요.');
