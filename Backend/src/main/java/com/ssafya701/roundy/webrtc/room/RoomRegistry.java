@@ -22,6 +22,44 @@ public class RoomRegistry {
     private final com.ssafya701.roundy.webrtc.rotation.RoomEventPublisher eventPublisher;
     
     /**
+     * 입장 가능한 방을 찾거나, 없으면 새로운 방을 생성
+     */
+    public synchronized RoomState findAvailableOrCreateRoom(RotationMode mode, 
+                                                          com.ssafya701.roundy.webrtc.room.enums.Gender gender, 
+                                                          com.ssafya701.roundy.webrtc.openvidu.OpenViduService openViduService) throws Exception {
+        // 1. 입장 가능한 기존 방 탐색
+        Optional<RoomState> availableRoom = rooms.values().stream()
+                .filter(room -> room.getMode() == mode)
+                .filter(room -> room.getCurrentStage() == com.ssafya701.roundy.webrtc.room.enums.Stage.WAITING)
+                .filter(room -> room.getParticipantCount() < 4) // 전체 인원 체크
+                .filter(room -> {
+                    // PAIR_ONLY 모드 성별 제한 체크 (최대 2명)
+                    if (mode == RotationMode.PAIR_ONLY) {
+                        return gender == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE 
+                            ? room.getMaleCount() < 2 
+                            : room.getFemaleCount() < 2;
+                    }
+                    return true;
+                })
+                .findFirst();
+
+        if (availableRoom.isPresent()) {
+            return availableRoom.get();
+        }
+
+        // 2. 없으면 새 방 생성
+        // UUID 기반의 랜덤 방 ID 생성
+        String newRoomId = "room-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        
+        // OpenVidu 세션 생성 (필수: 서로 다른 세션이어야 미디어 격리됨)
+        String openViduSessionId = openViduService.ensureSession(newRoomId);
+        
+        log.info("🎯 자동 매칭: 새 방 생성 roomId={}, sessionId={}", newRoomId, openViduSessionId);
+        
+        return getOrCreateRoom(newRoomId, mode, openViduSessionId);
+    }
+
+    /**
      * 방 생성 또는 조회
      * 
      * TODO: [DB 연동] sessions 테이블 연동

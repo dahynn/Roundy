@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.webrtc.rotation;
 
 import com.ssafya701.roundy.webrtc.room.ParticipantState;
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -31,7 +32,95 @@ public class PairingStrategy {
     }
     
     /**
-     * Round-Robin 방식으로 페어 계산
+     * 페어 계산 (성별 기반 여부에 따라 다른 알고리즘 사용)
+     * 
+     * @param participants 참가자 리스트
+     * @param roundNumber 현재 라운드 번호 (1부터 시작)
+     * @param genderBased true: 남녀 매칭만, false: 성별 무관 매칭
+     * @return 페어 리스트
+     */
+    public List<Pair> calculatePairs(List<ParticipantState> participants, int roundNumber, boolean genderBased) {
+        if (genderBased) {
+            return calculateGenderBasedPairs(participants, roundNumber);
+        } else {
+            return calculateGenderNeutralPairs(participants, roundNumber);
+        }
+    }
+    
+    /**
+     * 성별 기반 Round-Robin 페어링 (남녀 동수 전제)
+     * 남자와 여자를 1:1로만 매칭
+     * 
+     * @param participants 참가자 리스트
+     * @param roundNumber 현재 라운드 번호 (1부터 시작)
+     * @return 남녀 페어 리스트
+     */
+    public List<Pair> calculateGenderBasedPairs(List<ParticipantState> participants, int roundNumber) {
+        // 1. 성별로 분리
+        List<ParticipantState> males = new ArrayList<>();
+        List<ParticipantState> females = new ArrayList<>();
+        
+        for (ParticipantState p : participants) {
+            if (p.getGender() == Gender.MALE) {
+                males.add(p);
+            } else if (p.getGender() == Gender.FEMALE) {
+                females.add(p);
+            }
+        }
+        
+        int maleCount = males.size();
+        int femaleCount = females.size();
+        
+        if (maleCount == 0 || femaleCount == 0) {
+            log.warn("성별 기반 페어링 불가: 남자={}명, 여자={}명", maleCount, femaleCount);
+            return Collections.emptyList();
+        }
+        
+        if (maleCount != femaleCount) {
+            log.warn("남녀 동수가 아님: 남자={}명, 여자={}명 - 비대칭 매칭 시도", maleCount, femaleCount);
+        }
+        
+        log.info("성별 기반 페어링 시작: 남자={}명, 여자={}명, 라운드={}", maleCount, femaleCount, roundNumber);
+        
+        // 2. 남녀 매칭 (짝수 인원 가정)
+        int count = Math.min(maleCount, femaleCount);
+        List<Pair> pairs = new ArrayList<>();
+        
+        for (int i = 0; i < count; i++) {
+            // 남자는 순서대로, 여자는 회전시켜 매칭
+            int maleIndex = i;
+            int femaleIndex = (i + roundNumber - 1) % count;
+            
+            pairs.add(new Pair(
+                males.get(maleIndex).getUserId(),
+                females.get(femaleIndex).getUserId()
+            ));
+            
+            log.debug("페어 생성: 남자={}, 여자={}", 
+                    males.get(maleIndex).getUserId(), 
+                    females.get(femaleIndex).getUserId());
+        }
+        
+        // 3. 남은 사람들 처리 (비대칭인 경우)
+        if (maleCount > count) {
+            for (int i = count; i < maleCount; i++) {
+                pairs.add(new Pair(males.get(i).getUserId(), null));
+                log.debug("단독 참가자 (남자): {}", males.get(i).getUserId());
+            }
+        }
+        if (femaleCount > count) {
+            for (int i = count; i < femaleCount; i++) {
+                pairs.add(new Pair(females.get(i).getUserId(), null));
+                log.debug("단독 참가자 (여자): {}", females.get(i).getUserId());
+            }
+        }
+        
+        log.info("성별 기반 페어링 완료: {}개 페어 생성", pairs.size());
+        return pairs;
+    }
+    
+    /**
+     * 성별 무관 Round-Robin 페어링
      * 
      * 알고리즘:
      * - 참가자 수가 짝수: 모두 페어링
@@ -45,7 +134,7 @@ public class PairingStrategy {
      * @param roundNumber 현재 라운드 번호 (1부터 시작)
      * @return 페어 리스트
      */
-    public List<Pair> calculatePairs(List<ParticipantState> participants, int roundNumber) {
+    private List<Pair> calculateGenderNeutralPairs(List<ParticipantState> participants, int roundNumber) {
         int size = participants.size();
         
         if (size < 2) {

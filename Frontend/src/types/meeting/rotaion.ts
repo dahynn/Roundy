@@ -12,7 +12,7 @@ export type RotationStage =
 
 // 문서에 정의된 메시지 타입 목록
 export type WsMessageType =
-// Client -> Server
+    // Client -> Server
     | 'JOIN_ROOM'
     | 'LEAVE_ROOM'
     | 'SUBMIT_VOTE'
@@ -20,12 +20,18 @@ export type WsMessageType =
     // Server -> Client
     | 'JOIN_OK'
     | 'ROOM_STATE'
+    | 'STAGE_CHANGE' // Restored for RotationTest compatibility
     | 'ROUND_START' // Changed from STAGE_CHANGE
     | 'ROUND_END'
     | 'PAIR_ASSIGNED'
     | 'VOTE_SUBMITTED'
     | 'MATCH_RESULT'
-    | 'ERROR';
+    | 'KICK'
+    | 'ERROR'
+    | 'FACE_REVEAL_START' // 최종 매칭 성공 시 1:1 연결 시작
+    | 'SPEAKER_CHANGE'   // 자기소개 발언자 변경
+    | 'GAME_QUESTION'    // 이미지 게임 문제 출제
+    | 'GAME_RESULT';     // 이미지 게임 결과 발표
 
 // --- 기본 메시지 구조 ---
 export interface WsMessage<T = any> {
@@ -52,12 +58,20 @@ export interface JoinOkPayload {
 export interface Participant {
     userId: number;
     nickname: string;
+    gender: 'MALE' | 'FEMALE';
 }
 
 export interface RoomStatePayload {
     roomId: string;
     participants: Participant[];
     participantCount: number;
+}
+
+// STAGE_CHANGE: 스테이지 변경
+export interface StageChangePayload {
+    roomId: string;
+    stage: RotationStage;
+    durationSeconds: number;
 }
 
 // ROUND_START: 라운드 시작
@@ -81,7 +95,7 @@ export interface PairAssignedPayload {
     partnerNickname: string | null;
     // Spec doesn't explicitly mention private tokens anymore, but keeping optional for compatibility if needed.
     privateSessionId?: string;
-    privateToken?: string; 
+    privateToken?: string;
 }
 
 // MATCH_RESULT: 최종 매칭 결과
@@ -89,6 +103,61 @@ export interface MatchResultPayload {
     isMatched: boolean;
     partnerId: number | null;
     partnerNickname: string | null;
+}
+
+// FACE_REVEAL_START: 최종 매칭 성공 시 1:1 화상 연결 정보
+export interface FaceRevealStartPayload {
+    roomId: string; // "room-088c6574"
+    type: 'FACE_REVEAL_START';
+    message?: string; // "매칭되었습니다! 프라이빗 룸으로 이동하여 얼굴을 공개하세요." (선택적)
+    partnerId: number; // 201
+    partnerNickname: string; // "윤서현"
+    privateSessionId: string; // "room-088c6574-private-102-201"
+    privateToken: string; // "ws://localhost:4443?sessionId=..."
+}
+
+// SPEAKER_CHANGE: 자기소개 발언자 변경 정보
+export interface SpeakerChangePayload {
+    type: 'SPEAKER_CHANGE';
+    speakerId: number;        // 발언권자 ID
+    speakerNickname: string;  // 발언권자 닉네임 (백엔드 필드명 일치)
+    remainingSeconds: number; // 발언 시간 (초)
+}
+
+// GAME_QUESTION: 이미지 게임 문제
+export interface GameQuestionPayload {
+    type: 'GAME_QUESTION';
+    questionNumber: number;
+    totalQuestions: number;
+    question: string;         // "가장 먼저 결혼할 것 같은 사람은?"
+    timeLimitSeconds: number; // 5초
+    candidates: {
+        userId: number;
+        nickname: string;
+    }[];
+}
+
+// GAME_RESULT: 이미지 게임 결과
+export interface GameResultPayload {
+    type: 'GAME_RESULT';
+    questionNumber: number;
+    question: string;
+    winners: {           // ✨ 동점자 가능하므로 배열
+        userId: number;
+        nickname: string;
+        voteCount: number;
+    }[];
+    voteResults: {       // 전체 득표 현황 (선택적 사용)
+        userId: number;
+        nickname: string;
+        voteCount: number;
+    }[];
+}
+
+// 클라이언트 -> 서버 전송용 (이미지 게임 답변)
+export interface GameAnswerPayload {
+    questionIndex: number;
+    targetUserId: number;
 }
 
 // --- State Interface ---
@@ -104,6 +173,29 @@ export interface RotationState {
     // 사용자 정보
     participants: Participant[];
 
+    // 현재 발언자 정보 (자기소개 단계)
+    currentSpeaker?: {
+        id: number;
+        speakerNickname: string;
+        remainingTime: number;
+    } | null;
+
+    // 이미지 게임 정보
+    currentGame?: {
+        state: 'QUESTION' | 'RESULT';
+        question?: string;
+        questionNumber?: number;
+        totalQuestions?: number;
+        data?: GameQuestionPayload | GameResultPayload;
+    } | null;
+
+    // 리다이렉트/이동 정보 (KICK 등)
+    redirectInfo?: {
+        message: string;
+        targetPath: string;
+        remainingSeconds: number;
+    } | null;
+
     // 매칭/로테이션 정보
     currentPartner: {
         id: number | null;
@@ -114,4 +206,17 @@ export interface RotationState {
 
     // 시스템 메시지/에러
     lastMessage: string | null;
+}
+
+// KICK: 강제 퇴장
+export interface KickPayload {
+    type: 'KICK';
+    reason: string;
+}
+
+// ERROR: 에러 메시지
+export interface ErrorPayload {
+    type: 'ERROR';
+    code: string;
+    message: string;
 }

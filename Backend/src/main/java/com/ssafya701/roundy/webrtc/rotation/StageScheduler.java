@@ -55,7 +55,44 @@ public class StageScheduler {
      */
     private void scheduleNextStage(RoomState room, Stage currentStage) {
         String roomId = room.getRoomId();
-        Stage nextStage = currentStage.getNextStage();
+        
+        // 동적 로테이션 루프 처리
+        // ROTATION_SHORT 또는 ROTATION_LONG 단계인 경우, 모든 라운드를 돌았는지 확인
+        Stage nextStage = null;
+        boolean isRepeating = false;
+        
+        if (currentStage == Stage.SELF_INTRO) {
+            // 남은 발언자가 있으면 스테이지 반복
+            if (room.getRemainingspeakers() > 0) {
+                nextStage = currentStage;
+                isRepeating = true;
+                log.info("📢 자기소개 반복: roomId={}, 남은발언자={}", roomId, room.getRemainingspeakers());
+            }
+        }
+
+        if (currentStage.isRotationStage()) {
+            int currentRound = room.getCurrentRotationRound();
+            int maxRounds = room.getMaxRotationRounds();
+            
+            if (currentRound < maxRounds) {
+                // 아직 라운드가 남았으면 현재 스테이지 반복
+                nextStage = currentStage;
+                isRepeating = true;
+                
+                // 다음 라운드로 증가
+                room.nextRotationRound();
+                log.info("🔄 로테이션 반복: roomId={}, round={}/{}", roomId, currentRound + 1, maxRounds);
+            }
+        }
+        
+        // 반복이 아니면 다음 스테이지로 진행
+        if (!isRepeating) {
+            nextStage = currentStage.getNextStage();
+            // 스테이지가 바뀌면 라운드 초기화
+            if (nextStage != null) {
+                room.resetRotationRound();
+            }
+        }
         
         if (nextStage == null) {
             // FACE_REVEAL이 마지막 스테이지 → 자동 정리 예약
@@ -68,18 +105,20 @@ public class StageScheduler {
         log.info("⏰ 다음 스테이지 예약: roomId={}, {} → {} ({}초 후)", 
                 roomId, currentStage, nextStage, delaySeconds);
         
+        Stage finalNextStage = nextStage;
+        
         // 타이머 설정
         ScheduledFuture<?> timer = executorService.schedule(() -> {
             try {
-                // 다음 스테이지로 전환
-                room.setCurrentStage(nextStage);
-                executeStage(room, nextStage);
+                // 다음 스테이지로 전환 (반복인 경우 set만 하고 로직 실행)
+                room.setCurrentStage(finalNextStage);
+                executeStage(room, finalNextStage);
                 
                 // 재귀적으로 그 다음 스테이지 예약
-                scheduleNextStage(room, nextStage);
+                scheduleNextStage(room, finalNextStage);
                 
             } catch (Exception e) {
-                log.error("스테이지 전환 실패: roomId={}, stage={}", roomId, nextStage, e);
+                log.error("스테이지 전환 실패: roomId={}, stage={}", roomId, finalNextStage, e);
             }
         }, delaySeconds, TimeUnit.SECONDS);
         
