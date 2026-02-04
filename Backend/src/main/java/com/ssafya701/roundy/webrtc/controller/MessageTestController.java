@@ -27,9 +27,11 @@ import java.util.Map;
 public class MessageTestController {
 
     private final WsMessageSerializer serializer;
+    private final com.ssafya701.roundy.match.service.MatchService matchService;
 
-    public MessageTestController(WsMessageSerializer serializer) {
+    public MessageTestController(WsMessageSerializer serializer, com.ssafya701.roundy.match.service.MatchService matchService) {
         this.serializer = serializer;
+        this.matchService = matchService;
     }
 
     /**
@@ -157,6 +159,30 @@ public class MessageTestController {
         }
     }
 
+    // MatchService 주입 필요 (필드 추가)
+//    private final com.ssafya701.roundy.match.service.MatchService matchService;
+
+
+    // 기존 메서드들 유지... (생성자만 수정)
+
+    /**
+     * 매칭 결과 저장 테스트 (DB 영속화 확인용)
+     * POST /api/test/ws-message/save-match
+     * Query Params: roomId, maleId, femaleId
+     */
+    @PostMapping("/save-match")
+    public CommonResponse<?> verifyMatchSave(
+            @RequestParam String roomId,
+            @RequestParam Long maleId,
+            @RequestParam Long femaleId) {
+        try {
+            com.ssafya701.roundy.match.entity.Match match = matchService.createMatch(roomId, maleId, femaleId);
+            return CommonResponse.ofSuccess("매칭 저장 완료: ID=" + match.getId());
+        } catch (Exception e) {
+            return CommonResponse.ofFailure("매칭 저장 실패: " + e.getMessage());
+        }
+    }
+    
     // 샘플 메시지 생성 헬퍼 메서드
     private WsMessage createSampleMessage(String type) {
         return switch (type) {
@@ -172,9 +198,9 @@ public class MessageTestController {
             case "ROOM_STATE" -> new RoomStateMessage(
                     "room-123",
                     Arrays.asList(
-                            new RoomStateMessage.ParticipantDto(1L, "Alice"),
-                            new RoomStateMessage.ParticipantDto(2L, "Bob"),
-                            new RoomStateMessage.ParticipantDto(3L, "Charlie")
+                            new RoomStateMessage.ParticipantDto(1L, "Alice", "FEMALE"),
+                            new RoomStateMessage.ParticipantDto(2L, "Bob", "MALE"),
+                            new RoomStateMessage.ParticipantDto(3L, "Charlie", "MALE")
                     ),
                     3
             );

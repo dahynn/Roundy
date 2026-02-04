@@ -204,7 +204,7 @@ public class RotationTestController {
         List<ParticipantState> participants = createMockParticipants(participantCount);
         
         // 페어링 계산
-        List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(participants, round);
+        List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(participants, round, false);
         
         // 결과 변환
         List<PairResult> pairResults = new ArrayList<>();
@@ -256,7 +256,7 @@ public class RotationTestController {
         Set<String> allCombinations = new HashSet<>();
         
         for (int round = 1; round <= totalRounds; round++) {
-            List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(participants, round);
+            List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(participants, round, false);
             List<PairResult> pairResults = new ArrayList<>();
             
             for (PairingStrategy.Pair pair : pairs) {

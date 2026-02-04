@@ -1,4 +1,4 @@
-package com.ssafya701.roundy.webrtc.message.inbound;
+package com.ssafya701.roundy.webrtc.message.outbound;
 
 import com.ssafya701.roundy.webrtc.message.WsMessage;
 import com.ssafya701.roundy.webrtc.message.WsMessageType;
@@ -7,21 +7,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 게임 답변 제출 메시지 (클라이언트 → 서버)
- * 이미지 게임(IMAGE_GAME) 단계에서 사용
+ * 강제 퇴장 메시지 (서버 → 클라이언트)
  */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubmitGameAnswerMessage implements WsMessage {
+public class KickMessage implements WsMessage {
     
     /**
-     * 게임 문제에 대한 답변
+     * 퇴장 사유
      */
-    private String answer;
+    private String reason;
     
     @Override
     public WsMessageType getType() {
-        return WsMessageType.SUBMIT_GAME_ANSWER;
+        return WsMessageType.KICK;
     }
 }

@@ -7,6 +7,7 @@ metadata:
     kubernetes.io/ingress.class: "traefik"
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip@kubernetescrd
 spec:
   tls:
     - hosts:
@@ -38,7 +39,7 @@ spec:
             port:
               number: 8887
       - path: /minio-console
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: minio-svc

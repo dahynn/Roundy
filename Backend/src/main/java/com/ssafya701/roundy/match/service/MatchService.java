@@ -25,6 +25,29 @@ public class MatchService {
     private final ChatMessageRepository chatMessageRepository;
 
     /**
+     * 새로운 매칭 생성 및 저장
+     * @param roomId 세션 ID (방 ID)
+     * @param maleId 남성 사용자 ID
+     * @param femaleId 여성 사용자 ID
+     * @return 생성된 매칭 정보
+     */
+    @Transactional
+    public Match createMatch(String roomId, Long maleId, Long femaleId) {
+        // roomId에서 숫자만 추출하거나 해싱하여 Long 타입 session_id 생성 (임시)
+        // 실제로는 roomId(String)를 저장하도록 Entity 수정이 필요할 수 있으나,
+        // 현재 Entity가 Long sessionId를 요구하므로 해시코드 사용
+        Long sessionId = (long) roomId.hashCode();
+        
+        Match match = Match.builder()
+                .sessionId(sessionId) // TODO: 추후 String roomId로 변경 권장
+                .maleId(maleId)
+                .femaleId(femaleId)
+                .build();
+                
+        return matchRepository.save(match);
+    }
+
+    /**
      * 사용자의 활성화된 쪽지방 목록을 조회
      * @param userId 현재 로그인한 사용자 ID
      * @return 최신 메시지 순으로 정렬된 매칭 응답 DTO 리스트
