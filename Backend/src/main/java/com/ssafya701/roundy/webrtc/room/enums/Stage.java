@@ -14,9 +14,9 @@ public enum Stage {
     WAITING(0, 0),
     
     /**
-     * 자기소개 - 한 명씩 발언권을 가지고 소개 (15초, 테스트용)
+     * 자기소개 - 한 명씩 발언권을 가지고 소개 (5초, 테스트용)
      */
-    SELF_INTRO(15, 1),
+    SELF_INTRO(5, 1),
     
     /**
      * 첫인상 투표 - 첫 느낌으로 마음에 드는 사람 선택 (10초, 테스트용)
@@ -29,9 +29,9 @@ public enum Stage {
     ROTATION_SHORT(20, 3),
     
     /**
-     * 이미지 게임 - 아이스브레이킹 게임 (10초, 테스트용)
+     * 이미지 게임 - 아이스브레이킹 게임 (35초, 테스트용)
      */
-    IMAGE_GAME(10, 4),
+    IMAGE_GAME(35, 4),
     
     /**
      * 긴 1:1 대화 - 랜덤 페어링 대화 (30초, 테스트용)
@@ -73,6 +73,11 @@ public enum Stage {
      * @return 다음 스테이지, 마지막 단계인 경우 null
      */
     public Stage getNextStage() {
+        // [수정] 이미지 게임 건너뛰기: ROTATION_SHORT -> ROTATION_LONG
+        if (this == ROTATION_SHORT) {
+            return ROTATION_LONG;
+        }
+
         for (Stage stage : values()) {
             if (stage.order == this.order + 1) {
                 return stage;

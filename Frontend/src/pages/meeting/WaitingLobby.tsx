@@ -1,38 +1,87 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Moon, Bell, LogOut } from 'lucide-react';
-import * as matchApi from '@/api/match';
+import { enterMatchQueue } from '@/api/match'; // API Import
 
 export default function WaitingLobby() {
   const navigate = useNavigate();
 
   // --- [개발용 테스트 상태] ---
   const [currentParticipants, setCurrentParticipants] = useState(3);
+  // --- [테스트용] 쿼리 파라미터 토큰 처리 ---
+  const [searchParams] = useSearchParams();
   const totalRequired = 6;
   const progress = Math.floor((currentParticipants / totalRequired) * 100);
 
-  // 매칭 대기열 폴링 (3초 간격)
   useEffect(() => {
-    const pollMatching = async () => {
-      try {
-        // API 호출: 대기열 입장/확인
-        // 응답이 200 OK이면 매칭 성공으로 간주하고 이동
-        await matchApi.enterMatchingQueue();
+    const queryToken = searchParams.get('token');
+    if (queryToken) {
+      console.log("🔑 테스트용 토큰 감지 및 설정:", queryToken);
+      localStorage.setItem('accessToken', queryToken);
+      // 필요 시 refreshToken 등은 비우거나 처리
+    }
+  }, [searchParams]);
 
-        // 성공 시 (에러가 안 났다면)
-        navigate('/meeting');
+  // --- 매칭 로직 ---
+  useEffect(() => {
+    let isMounted = true;
+    let timer: number | null = null;
+    let retryCount = 0;
+
+    const pollMatch = async () => {
+      if (!isMounted) return;
+      try {
+        console.log(`📡 매칭 대기열 요청 중... (시도: ${retryCount + 1})`);
+        const response: any = await enterMatchQueue();
+        // 응답 구조: { roomId: "uuid...", gender: "MALE" } (success는 _client에서 처리됨)
+
+        if (response && response.roomId) {
+          console.log("🎉 매칭 성공! Room ID:", response.roomId);
+
+          // 토큰 가져오기 (localStorage)
+          const token = localStorage.getItem('accessToken');
+          console.log("🔑 토큰:", token);
+
+          // 미팅 페이지로 이동
+          if (token) {
+            navigate(`/meeting?room=${response.roomId}&token=${token}`);
+          } else {
+            alert("인증 토큰이 만료되었습니다. 다시 로그인해주세요.");
+            navigate('/home');
+          }
+        } else {
+          // 매칭 안됨 -> 재시도 (3초 후)
+          // console.log("⏳ 매칭 대기 중...");
+          timer = window.setTimeout(pollMatch, 3000);
+          retryCount++;
+
+          // UI 업데이트 (대기 인원 Mocking을 좀 더 현실적으로?)
+          // setCurrentParticipants(prev => (prev + 1) % 5 + 2); // 예시
+        }
+
       } catch (error) {
-        // 아직 매칭 안됨 or 에러 -> 계속 대기
-        console.log("Waiting for match...", error);
+        console.error("매칭 요청 실패:", error);
+        // 에러 발생 시에도 재시도 할지 결정 (일시적 서버 오류일 수 있음)
+        // 너무 자주 실패하면 중단
+        if (retryCount < 50) { // 예: 50번까지만 재시도
+          timer = window.setTimeout(pollMatch, 5000); // 에러 시 5초 대기
+          retryCount++;
+        } else {
+          alert("매칭 서버 연결에 실패했습니다.");
+          navigate('/home');
+        }
       }
     };
 
-    // 최초 1회 실행
-    pollMatching();
+    // 최초 실행
+    pollMatch();
 
-    const timer = setInterval(pollMatching, 3000);
-    return () => clearInterval(timer);
+    return () => {
+      isMounted = false;
+      if (timer) clearTimeout(timer);
+    };
   }, [navigate]);
+
 
   return (
     <div className="min-h-screen bg-[#FDF2F8] flex flex-col font-['Pretendard'] overflow-hidden">

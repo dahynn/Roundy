@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getMyInfo } from '@/api/user';
 
 interface UserInfo {
@@ -25,22 +25,25 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // Start with true to fetch initial data
 
     const refreshUser = useCallback(async () => {
         try {
             setIsLoading(true);
             const response: any = await getMyInfo();
-            // 백엔드 응답 구조에 따라 response.data 또는 response 확인 필요
-            // 보통 CommonResponse 구조라면 response.data.data 일 수 있음.
-            // MyPage.tsx의 기존 로직을 참고하여 일단 저장
             setUserInfo(response.data || response);
         } catch (error) {
             console.error('Failed to fetch user info:', error);
+            setUserInfo(null);
         } finally {
             setIsLoading(false);
         }
     }, []);
+
+    // Initial fetch
+    useEffect(() => {
+        refreshUser();
+    }, [refreshUser]);
 
     const updateUserLocally = useCallback((data: Partial<UserInfo>) => {
         setUserInfo((prev) => (prev ? { ...prev, ...data } : null));

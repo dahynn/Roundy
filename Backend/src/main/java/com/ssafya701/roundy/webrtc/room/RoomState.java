@@ -36,6 +36,19 @@ public class RoomState {
     private final String openViduSessionId;
     private RoundInfo currentRound;
     
+    /**
+     * DB의 Session 엔티티 PK (Phase 7: 영속화용)
+     */
+    private Long dbSessionId;
+
+    public void setDbSessionId(Long dbSessionId) {
+        this.dbSessionId = dbSessionId;
+    }
+    
+    public Long getDbSessionId() {
+        return dbSessionId;
+    }
+    
     // ========== 8단계 로테이션 필드 ==========
     
     /**
@@ -111,6 +124,35 @@ public class RoomState {
      */
     private Map<Long, Long> disconnectedParticipants = new ConcurrentHashMap<>();
     
+    /**
+     * 현재 로테이션 라운드 번호 (1부터 시작)
+     * 스테이지 내에서 라운드 반복 시 사용
+     */
+    private int currentRotationRound = 1;
+    
+    public void nextRotationRound() {
+        this.currentRotationRound++;
+    }
+    
+    public void resetRotationRound() {
+        this.currentRotationRound = 1;
+    }
+    
+    public int getCurrentRotationRound() {
+        return currentRotationRound;
+    }
+    
+    /**
+     * 최대 로테이션 라운드 수 계산
+     * 남녀 동수 기준, 모든 이성과 대화하기 위해 필요한 라운드 수
+     */
+    public int getMaxRotationRounds() {
+        // 최소 1라운드는 보장
+        if (maleCount == 0 || femaleCount == 0) return 1;
+        // 남녀 쌍의 개수만큼 라운드 필요 (예: 3:3이면 3라운드)
+        return Math.min(maleCount, femaleCount);
+    }
+    
     public RoomState(String roomId, RotationMode mode, String openViduSessionId) {
         this.roomId = roomId;
         this.mode = mode;
@@ -123,13 +165,19 @@ public class RoomState {
      * 참가자 추가
      */
     public void addParticipant(Long userId, String nickname, Gender gender, WebSocketSession session) {
+        // 이미 존재하는 참가자인지 확인
+        boolean isNew = !participants.containsKey(userId);
+        
+        // 참가자 정보 추가/갱신
         participants.put(userId, new ParticipantState(userId, nickname, gender, session, null));
         
-        // 성별별 인원수 증가
-        if (gender == Gender.MALE) {
-            maleCount++;
-        } else if (gender == Gender.FEMALE) {
-            femaleCount++;
+        // 새로운 참가자인 경우에만 카운트 증가
+        if (isNew) {
+            if (gender == Gender.MALE) {
+                maleCount++;
+            } else if (gender == Gender.FEMALE) {
+                femaleCount++;
+            }
         }
     }
     

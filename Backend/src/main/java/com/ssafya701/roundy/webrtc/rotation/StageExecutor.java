@@ -29,6 +29,7 @@ public class StageExecutor {
     
     private final RoomEventPublisher eventPublisher;
     private final MatchService matchService;
+    private final com.ssafya701.roundy.session.service.SessionService sessionService; // [추가] Redis 정리를 위해 주입
     private final GameQuestionRepository questionRepository;
     private final PairingStrategy pairingStrategy = new PairingStrategy();
     private final ScheduledExecutorService gameScheduler = Executors.newScheduledThreadPool(10);
@@ -37,19 +38,24 @@ public class StageExecutor {
      * 자기소개 단계 실행
      */
     public void executeSelfIntro(RoomState room) {
-        // 발언자 큐 초기화 (랜덤 순서)
-        room.initializeSpeakerQueue();
-        
-        // STAGE_CHANGE 브로드캐스트
-        eventPublisher.publishStageChange(room, Stage.SELF_INTRO);
-        
-        // 첫 번째 발언자 지정
-        Long speakerId = room.assignNextSpeaker();
-        if (speakerId != null) {
-            eventPublisher.publishSpeakerChange(room, speakerId, 60);
+        // 발언자 큐가 비어있다면 초기화 (처음 시작할 때)
+        if (room.getRemainingspeakers() == 0) {
+            room.initializeSpeakerQueue();
+            log.info("자기소개 큐 초기화: roomId={}, 인원={}", room.getRoomId(), room.getParticipantCount());
         }
         
-        log.info("자기소개 시작: roomId={}, 첫 발언자={}", room.getRoomId(), speakerId);
+        // STAGE_CHANGE 브로드캐스트 (매 턴마다 시간을 리셋하기 위해 전송)
+        eventPublisher.publishStageChange(room, Stage.SELF_INTRO);
+        
+        // 다음 발언자 지정
+        Long speakerId = room.assignNextSpeaker();
+        if (speakerId != null) {
+            // Stage에 정의된 시간(5초) 사용
+            eventPublisher.publishSpeakerChange(room, speakerId, Stage.SELF_INTRO.getDurationSeconds());
+        }
+        
+        log.info("자기소개 진행: roomId={}, 발언자={}, 남은사람={}", 
+                room.getRoomId(), speakerId, room.getRemainingspeakers());
     }
     
     /**
@@ -137,9 +143,13 @@ public class StageExecutor {
         // PAIR_ONLY 모드는 성별 기반 매칭, FREE_TALK 모드는 성별 무관 매칭
         boolean genderBased = room.isPairMode();
         
-        java.util.List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(
+        // StageScheduler에서 관리하는 동적 라운드 번호 사용
+        // (1, 2, ... 인원수만큼 증가)
+        int roundNumber = room.getCurrentRotationRound();
+        
+        List<PairingStrategy.Pair> pairs = pairingStrategy.calculatePairs(
             participants,
-            stage.getOrder(),
+            roundNumber,
             genderBased
         );
         
@@ -154,6 +164,12 @@ public class StageExecutor {
         
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, stage);
+
+        // [추가] 첫인상 투표 결과 공개 (짧은 대화(1:1)의 첫 라운드 시작 시점 = 투표 직후)
+        if (!isLong && roundNumber == 1) {
+            log.info("📢 첫인상 투표 결과 공개: roomId={}", room.getRoomId());
+            eventPublisher.publishFirstVoteResults(room);
+        }
         
         // PAIR_ASSIGNED 발행
         eventPublisher.publishPairAssignments(room, stage.getOrder(), pairMap);
@@ -174,7 +190,14 @@ public class StageExecutor {
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, Stage.IMAGE_GAME);
         
-        List<GameQuestion> questions = questionRepository.getAllQuestions();
+        List<GameQuestion> allQuestions = questionRepository.getAllQuestions();
+        // 무작위로 섞은 뒤 3개만 추출
+        java.util.Collections.shuffle(allQuestions);
+        List<GameQuestion> questions = allQuestions.stream().limit(3).collect(java.util.stream.Collectors.toList());
+        
+        room.setCurrentGameQuestion(0);
+        
+        log.info("게임 시작: roomId={}, 3턴 진행 (전체 {}문제 중)", room.getRoomId(), allQuestions.size());
         room.setCurrentGameQuestion(0);
         
         log.info("게임 시작: roomId={}, 문제 수={}개", room.getRoomId(), questions.size());
@@ -202,22 +225,22 @@ public class StageExecutor {
         log.info("게임 문제 출제: roomId={}, question={}/{} - {}", 
                 room.getRoomId(), question.getQuestionNumber(), questions.size(), question.getQuestion());
         
-        // 10초 후 자동 결과 집계 및 다음 문제 출제
+        // 5초 후 결과 집계 (투표 시간 5초)
         gameScheduler.schedule(() -> {
             try {
                 // 결과 집계 및 브로드캐스트
                 processGameResults(room, question);
                 
-                // 1초 대기 후 다음 문제 출제 (결과 확인 시간)
+                // 5초 대기 후 다음 문제 출제 (결과 확인 시간 5초)
                 gameScheduler.schedule(() -> {
                     scheduleNextQuestion(room, questions, index + 1);
-                }, 1, TimeUnit.SECONDS);
+                }, 5, TimeUnit.SECONDS);
                 
             } catch (Exception e) {
                 log.error("게임 결과 처리 실패: roomId={}, question={}", 
                         room.getRoomId(), question.getQuestionNumber(), e);
             }            
-        }, 10, TimeUnit.SECONDS);
+        }, 5, TimeUnit.SECONDS);
     }
     
     /**
@@ -226,22 +249,28 @@ public class StageExecutor {
     private void processGameResults(RoomState room, GameQuestion question) {
         Map<Long, Integer> voteCounts = room.calculateGameResults(question.getQuestionNumber());
         
-        // 1등 찾기 (득표수 기준)
-        Long winnerId = voteCounts.entrySet().stream()
-            .max(Map.Entry.comparingByValue())
-            .map(Map.Entry::getKey)
-            .orElse(null);
+        // 최다 득표수 계산
+        int maxVotes = voteCounts.values().stream()
+            .mapToInt(Integer::intValue)
+            .max()
+            .orElse(0);
+            
+        // 공동 1등 찾기
+        List<Long> winnerIds = new java.util.ArrayList<>();
+        if (maxVotes > 0) {
+            for (Map.Entry<Long, Integer> entry : voteCounts.entrySet()) {
+                if (entry.getValue() == maxVotes) {
+                    winnerIds.add(entry.getKey());
+                }
+            }
+        }
         
         // 결과 브로드캐스트
-        eventPublisher.publishGameResult(room, question, winnerId, voteCounts);
+        eventPublisher.publishGameResult(room, question, winnerIds, voteCounts);
         
-        if (winnerId != null) {
-            String winnerNickname = room.getParticipant(winnerId)
-                .map(ParticipantState::getNickname)
-                .orElse("Unknown");
-            log.info("게임 결과: roomId={}, question={}, winner={} ({}), 득표수={}", 
-                    room.getRoomId(), question.getQuestionNumber(), 
-                    winnerId, winnerNickname, voteCounts.get(winnerId));
+        if (!winnerIds.isEmpty()) {
+            log.info("게임 결과: roomId={}, question={}, winners={}, 득표수={}", 
+                    room.getRoomId(), question.getQuestionNumber(), winnerIds, maxVotes);
         } else {
             log.info("게임 결과: roomId={}, question={}, 투표 없음", 
                     room.getRoomId(), question.getQuestionNumber());
@@ -258,15 +287,49 @@ public class StageExecutor {
         // 매칭 결과 계산 (쌍방 선택 확인)
         java.util.List<RoomState.MatchPair> matches = room.calculateMatches();
         
-        // 각 참가자에게 개별 전송
+        // 각 참가자에게 개별 전송 및 DB 저장
         for (ParticipantState participant : room.getParticipantList()) {
             RoomState.MatchPair result = room.getMatchResultForUser(participant.getUserId());
             eventPublisher.publishMatchResult(participant, result);
         }
         
+        // 매칭 성공 시 DB 저장 (중복 저장 방지 위해 matches 리스트 순회)
+        for (RoomState.MatchPair match : matches) {
+            try {
+                // 남녀 구분하여 저장 (MatchPair는 순서 보장 안됨, 성별 확인 필요하지만 일단 ID 크기 순 등으로 저장하거나 MatchService에 위임)
+                // MatchService.createMatch(roomId, maleId, femaleId)
+                // 현재 MatchPair에는 성별 정보가 없으므로 RoomState에서 조회 필요
+                
+                Long userId1 = match.getUserId1();
+                Long userId2 = match.getUserId2();
+                
+                com.ssafya701.roundy.webrtc.room.enums.Gender gender1 = room.getParticipant(userId1)
+                    .map(ParticipantState::getGender).orElse(com.ssafya701.roundy.webrtc.room.enums.Gender.MALE);
+                
+                Long maleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId1 : userId2;
+                Long femaleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId2 : userId1;
+                
+                // DB Session ID 사용 (없으면 Room ID 해시값 사용 - 비상용)
+                Long sessionId = room.getDbSessionId();
+                if (sessionId == null) {
+                    log.error("❌ 매칭 저장 실패: DB Session ID가 없습니다. (roomId={})", room.getRoomId());
+                    continue;
+                }
+                
+                matchService.createMatch(sessionId, maleId, femaleId);
+                log.info("✅ 매칭 DB 저장 완료: session={}, male={}, female={}", sessionId, maleId, femaleId);
+                
+            } catch (Exception e) {
+                log.error("매칭 정보 DB 저장 실패: match={}", match, e);
+            }
+        }
+        
         log.info("💕 매칭 결과: roomId={}, 성공 커플 {}쌍", room.getRoomId(), matches.size());
         
-        // ✅ 10초 후 방 자동 초기화
+        
+        // ❌ 기존에는 여기서 방을 초기화했으나, FACE_REVEAL 단계와 겹쳐서 참가자 삭제되는 버그 발생.
+        // 해당 로직은 executeFaceReveal 메서드로 이동됨.
+        /*
         java.util.concurrent.ScheduledExecutorService scheduler = 
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         scheduler.schedule(() -> {
@@ -279,6 +342,7 @@ public class StageExecutor {
             }
             scheduler.shutdown();
         }, 10, java.util.concurrent.TimeUnit.SECONDS);
+        */
     }
     
     /**
@@ -321,5 +385,30 @@ public class StageExecutor {
         eventPublisher.publishFaceRevealStart(room, matches);
         log.info("얼굴 공개: roomId={}, 매칭 커플 {}쌍, 강퇴 {}명", 
             room.getRoomId(), matches.size(), singleUsers.size());
+            
+        // ✅ [버그 수정] 유저 요청: "FACE_REVEAL 시작 후 몇 초 뒤에 방 정리(데이터 초기화)"
+        // 원래는 MATCHING_RESULT 끝나고 바로 했으나, 그러면 참가자 데이터가 지워져서 에러 발생함.
+        // 여기서 10초 정도 여유를 두고 정리하도록 변경.
+        java.util.concurrent.ScheduledExecutorService cleanupScheduler = 
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        cleanupScheduler.schedule(() -> {
+            log.info("🔄 방 자동 데이터 정리 (얼굴 공개 시작 후): roomId={}", room.getRoomId());
+            
+            // [추가] Redis 데이터 정리 (좀비 방 방지)
+            if (sessionService != null) {
+                sessionService.cleanupRoom(room.getRoomId());
+            }
+
+            // 주의: room.reset()은 참가자 목록을 다 지우므로, 
+            // 혹시라도 이후에 서버에서 데이터를 조회해야 한다면 문제가 될 수 있음.
+            // 하지만 현재는 OpenVidu 세션이 이미 생성되었으므로 P2P 통신에는 문제 없음.
+            room.reset();
+            try {
+                eventPublisher.broadcastRoomState(room);
+            } catch (java.io.IOException e) {
+                log.warn("방 정리 후 상태 전송 실패 (정상): {}", e.getMessage());
+            }
+            cleanupScheduler.shutdown();
+        }, 10, java.util.concurrent.TimeUnit.SECONDS);
     }
 }

@@ -10,12 +10,14 @@ import com.ssafya701.roundy.match.dto.MatchDto;
 import com.ssafya701.roundy.match.entity.Match;
 import com.ssafya701.roundy.match.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -25,12 +27,41 @@ public class MatchService {
     private final ChatMessageRepository chatMessageRepository;
 
     /**
+     * 새로운 매칭 생성 및 저장
+     * @param sessionId 세션 ID (방 ID)
+     * @param maleId 남성 사용자 ID
+     * @param femaleId 여성 사용자 ID
+     * @return 생성된 매칭 정보
+     */
+    @Transactional
+    public Match createMatch(Long sessionId, Long maleId, Long femaleId) {
+        log.info("매칭 생성: sessionId={}, maleId={}, femaleId={}", sessionId, maleId, femaleId);
+        
+        Match match = Match.builder()
+                .sessionId(sessionId) // DB Session ID 연결
+                .maleId(maleId)
+                .femaleId(femaleId)
+                .build();
+                
+        return matchRepository.save(match);
+    }
+
+    /**
      * 사용자의 활성화된 쪽지방 목록을 조회
      * @param userId 현재 로그인한 사용자 ID
      * @return 최신 메시지 순으로 정렬된 매칭 응답 DTO 리스트
      */
     public List<MatchDto.Response> getMyMatches(Long userId) {
         return matchRepository.findMyMatches(userId).stream()
+                .map(match -> MatchDto.Response.from(match, userId))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자의 전체 매칭 이력 조회 (종료된 대화 포함)
+     * */
+    public List<MatchDto.Response> getMatchHistory(Long userId) {
+        return matchRepository.findMatchHistory(userId).stream()
                 .map(match -> MatchDto.Response.from(match, userId))
                 .collect(Collectors.toList());
     }
