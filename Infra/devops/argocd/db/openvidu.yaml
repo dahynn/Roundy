@@ -21,7 +21,7 @@ spec:
       - name: openvidu-container
         image: openvidu/openvidu-dev:latest
         ports:
-        - containerPort: 4443
+        - containerPort: 8443
         envFrom:
         - secretRef:
             name: openvidu-secret
@@ -37,7 +37,9 @@ spec:
         - name: MAX_PORT
           value: "32768"
         - name: DOMAIN_OR_PUBLIC_IP
-          value: "openvidu.ssafy.io"
+          value: "i14a701.p.ssafy.io"
+        - name: OPENVIDU_PUBLICURL
+          value: "https://i14a701.p.ssafy.io/openvidu/"
 ---
 apiVersion: v1
 kind: Service

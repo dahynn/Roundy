@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/ingress.class: "traefik"
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip@kubernetescrd, roundy-app-openvidu-strip@kubernetescrd
 spec:
   tls:
     - hosts:
@@ -45,3 +45,10 @@ spec:
             name: minio-svc
             port:
               number: 8886
+      - path: /openvidu
+        pathType: Prefix
+        backend:
+          service:
+            name: openvidu-service
+            port:
+              number: 8443
