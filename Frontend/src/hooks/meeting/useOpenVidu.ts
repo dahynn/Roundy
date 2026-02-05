@@ -64,7 +64,7 @@ export const useOpenVidu = () => {
                 publishAudio: true,
                 publishVideo: true,
                 resolution: '640x480',
-                frameRate: 30,
+                frameRate: 60,
                 insertMode: 'APPEND',
                 mirror: false, // Mirror false for masking
             });

@@ -86,4 +86,4 @@ const UserVideo: React.FC<Props> = ({ streamManager, isLocal = false }) => {
 
 };
 
-export default UserVideo;
+export default React.memo(UserVideo);
