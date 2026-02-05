@@ -186,9 +186,10 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         }
     }, []);
 
-    // WebSocket 연결 (생략 가능하지만 전체 흐름 유지 위해 포함)
+    // WebSocket 연결
     useEffect(() => {
-        if (!roomId) return;
+        // roomId가 없어도 토큰 기반으로 세션 식별 가능하다고 가정 (또는 로비 입장)
+        // if (!roomId) return; 
 
         const params = new URLSearchParams({
             userId: userProfile.userId.toString(),
@@ -205,7 +206,8 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
 
         socket.onopen = () => {
             console.log('[WS] Connected');
-            sendMessage('JOIN_ROOM', { roomId });
+            // roomId가 있으면 보내고, 없으면 빈 객체나 null 전송 (서버 스펙에 따름)
+            sendMessage('JOIN_ROOM', roomId ? { roomId } : {});
         };
 
         socket.onmessage = handleMessage;

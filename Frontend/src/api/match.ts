@@ -26,3 +26,10 @@ export const getChatMessages = (matchId: number | string, size: number = 50, las
     }
     return client.get(url);
 };
+
+/**
+ * 매칭 대기열 입장 (Polling용)
+ */
+export const enterMatchingQueue = () => {
+    return client.post('/session/enter');
+};

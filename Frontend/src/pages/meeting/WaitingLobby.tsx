@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Moon, Bell, LogOut } from 'lucide-react';
+import * as matchApi from '@/api/match';
 
 export default function WaitingLobby() {
   const navigate = useNavigate();
@@ -10,15 +11,28 @@ export default function WaitingLobby() {
   const totalRequired = 6;
   const progress = Math.floor((currentParticipants / totalRequired) * 100);
 
-  // 10초 단위 폴링 시뮬레이션
+  // 매칭 대기열 폴링 (3초 간격)
   useEffect(() => {
-    const timer = setInterval(() => {
-      // 3~5명 사이에서 유동적으로 변하게 설정
-      const nextCount = Math.floor(Math.random() * 3) + 3;
-      setCurrentParticipants(nextCount);
-    }, 10000);
+    const pollMatching = async () => {
+      try {
+        // API 호출: 대기열 입장/확인
+        // 응답이 200 OK이면 매칭 성공으로 간주하고 이동
+        await matchApi.enterMatchingQueue();
+
+        // 성공 시 (에러가 안 났다면)
+        navigate('/meeting');
+      } catch (error) {
+        // 아직 매칭 안됨 or 에러 -> 계속 대기
+        console.log("Waiting for match...", error);
+      }
+    };
+
+    // 최초 1회 실행
+    pollMatching();
+
+    const timer = setInterval(pollMatching, 3000);
     return () => clearInterval(timer);
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[#FDF2F8] flex flex-col font-['Pretendard'] overflow-hidden">

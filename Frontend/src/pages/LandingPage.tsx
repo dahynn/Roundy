@@ -120,6 +120,7 @@ export default function LandingPage() {
       </footer>
 
       {isLoginModalOpen && <LoginModal onClose={() => setIsLoginModalOpen(false)} />}
+      <DevLoginButtons />
     </div>
   );
 }
@@ -146,6 +147,63 @@ function StatCard({
         {value}
       </span>
       <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// [DEV] 테스트용 토큰 목록 (여기에 실제 서버 발급 토큰을 넣어주세요)
+// ----------------------------------------------------------------------
+const TEST_TOKENS = [
+  // 남자 1, 2, 3
+  "YOUR_MALE_TOKEN_1",
+  "YOUR_MALE_TOKEN_2",
+  "YOUR_MALE_TOKEN_3",
+  // 여자 1, 2, 3
+  "YOUR_FEMALE_TOKEN_1",
+  "YOUR_FEMALE_TOKEN_2",
+  "YOUR_FEMALE_TOKEN_3"
+];
+
+function DevLoginButtons() {
+  const navigate = useNavigate();
+
+  const handleDevLogin = (index: number) => {
+    const token = TEST_TOKENS[index];
+    if (!token || token.startsWith("YOUR_")) {
+      alert(`[오류] TEST_TOKENS[${index}]에 유효한 토큰을 입력해주세요.`);
+      return;
+    }
+    localStorage.setItem('accessToken', token);
+    navigate('/loading');
+    // location.reload(); // 필요 시 리로드
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 p-3 bg-black/80 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl scale-90 opacity-80 hover:scale-100 hover:opacity-100 transition-all">
+      <span className="text-[10px] font-bold text-white/50 text-center uppercase tracking-wider mb-1">
+        Dev Quick Login
+      </span>
+      <div className="grid grid-cols-2 gap-2">
+        {['M1', 'M2', 'M3'].map((label, idx) => (
+          <button
+            key={label}
+            onClick={() => handleDevLogin(idx)}
+            className="w-10 h-8 bg-blue-500/20 hover:bg-blue-500 text-blue-300 hover:text-white border border-blue-500/50 rounded-lg text-xs font-bold transition-all"
+          >
+            {label}
+          </button>
+        ))}
+        {['F1', 'F2', 'F3'].map((label, idx) => (
+          <button
+            key={label}
+            onClick={() => handleDevLogin(idx + 3)}
+            className="w-10 h-8 bg-pink-500/20 hover:bg-pink-500 text-pink-300 hover:text-white border border-pink-500/50 rounded-lg text-xs font-bold transition-all"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

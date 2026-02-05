@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, MessageCircle, RefreshCw } from 'lucide-react';
+import { Publisher, StreamManager } from 'openvidu-browser';
+import UserVideo from '../meeting/UserVideo'; // Import UserVideo component
 
 interface TalkProps {
   partner: {
@@ -12,6 +12,8 @@ interface TalkProps {
     // Add other user properties as needed
   };
   showCards?: boolean; // New prop to toggle card display (e.g., true for Long Talk)
+  publisher?: Publisher;
+  subscribers?: StreamManager[];
 }
 
 const TALK_CARDS = [
@@ -23,13 +25,20 @@ const TALK_CARDS = [
   "살면서 꼭 한번 도전해보고 싶은 것은?",
 ];
 
-export const Step4_Talk = ({ partner, currentUser, showCards = false }: TalkProps) => {
+export const Step4_Talk = ({ partner, currentUser, showCards = false, publisher, subscribers }: TalkProps) => {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Randomize cards initially could be better, but sequential for now is fine
-  // To ensure different cards for different users, we could use user/partner IDs to seed/offset.
-  // For this mock, we'll just stick to a list.
+  // Find partner's stream
+  // Assuming subscriber's clientData contains nickname or username matching partner.name
+  const partnerStream = subscribers?.find(sub => {
+    try {
+      const data = JSON.parse(sub.stream.connection.data).clientData;
+      return data === partner.name;
+    } catch (e) {
+      return false;
+    }
+  });
 
   const handleNextCard = () => {
     setIsFlipped(false);
@@ -50,30 +59,48 @@ export const Step4_Talk = ({ partner, currentUser, showCards = false }: TalkProp
 
         {/* Left: YOU (Blurred/Restricted View - "하관만 공개") */}
         <div className="relative rounded-[32px] overflow-hidden bg-gray-900 border border-white/10 shadow-2xl group">
-          {/* Mock Video Feed Placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center">
-            <div className="text-center opacity-40">
-              <User size={80} className="mb-4 mx-auto" />
-              <p className="text-xl font-bold text-white">하관만 공개</p>
+          {publisher ? (
+            <UserVideo streamManager={publisher} isLocal={true} />
+          ) : (
+            /* Fallback/Loading */
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center">
+              <div className="text-center opacity-40">
+                <User size={80} className="mb-4 mx-auto" />
+                <p className="text-xl font-bold text-white">카메라 연결 중...</p>
+              </div>
             </div>
+          )}
+          {/* 하관만 공개 효과 (블러 오버레이 등)는 CSS로 추가 가능 */}
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-black/50 backdrop-blur-md z-10 flex items-center justify-center">
+            <p className="text-white/70 font-bold text-xl">눈/코 블러 처리 (예시)</p>
           </div>
+
           {/* Name Tag */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md z-20">
             {currentUser?.username} (나)
           </div>
         </div>
 
         {/* Right: PARTNER (Blurred/Restricted View - "하관만 공개") */}
         <div className="relative rounded-[32px] overflow-hidden bg-gray-900 border border-white/10 shadow-2xl">
-          {/* Mock Video Feed Placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center">
-            <div className="text-center opacity-40">
-              <User size={80} className="mb-4 mx-auto" />
-              <p className="text-xl font-bold text-white">하관만 공개</p>
+          {partnerStream ? (
+            <UserVideo streamManager={partnerStream} />
+          ) : (
+            /* Fallback/Loading */
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-center">
+              <div className="text-center opacity-40">
+                <User size={80} className="mb-4 mx-auto" />
+                <p className="text-xl font-bold text-white">상대방 연결 대기 중...</p>
+              </div>
             </div>
+          )}
+          {/* 하관만 공개 효과 */}
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-black/50 backdrop-blur-md z-10 flex items-center justify-center">
+            <p className="text-white/70 font-bold text-xl">눈/코 블러 처리 (예시)</p>
           </div>
+
           {/* Name Tag */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold text-lg drop-shadow-md z-20">
             {partner?.name}
           </div>
         </div>
