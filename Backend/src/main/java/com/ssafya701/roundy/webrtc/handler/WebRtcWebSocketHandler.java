@@ -491,14 +491,14 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             return;
         }
         
-        // 투표 대상이 방에 존재하는지 확인
-        if (!room.getParticipant(targetUserId).isPresent()) {
+        // 투표 대상이 방에 존재하는지 확인 (null이 아닐 때만)
+        if (targetUserId != null && !room.getParticipant(targetUserId).isPresent()) {
             sendError(session, "INVALID_TARGET", "투표 대상이 방에 존재하지 않습니다");
             return;
         }
         
-        // 자기 자신에게 투표하는지 확인
-        if (userId.equals(targetUserId)) {
+        // 자기 자신에게 투표하는지 확인 (null이 아닐 때만)
+        if (targetUserId != null && userId.equals(targetUserId)) {
             sendError(session, "SELF_VOTE", "자신에게는 투표할 수 없습니다");
             return;
         }

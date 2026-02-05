@@ -37,6 +37,7 @@ public enum WsMessageType {
     PARTNER_RECONNECTED,  // 1:1 대화 중 파트너 재연결
     VOTE_SUBMITTED,       // 투표 제출 확인 (성공 피드백)
     FIRST_VOTE_RESULT,    // 첫인상 투표 결과 공개 (누가 누구를 찍었는지)
+    BREAK,                // 쉬는 시간 (중간 대기)
     
     // 공통
     KICK,                 // 서버가 클라이언트를 강제로 내보낼 때

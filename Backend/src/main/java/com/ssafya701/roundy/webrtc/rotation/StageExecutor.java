@@ -57,6 +57,25 @@ public class StageExecutor {
         log.info("자기소개 진행: roomId={}, 발언자={}, 남은사람={}", 
                 room.getRoomId(), speakerId, room.getRemainingspeakers());
     }
+
+    /**
+     * 쉬는 시간 실행 (5초)
+     * 이 시간 동안 결과(투표 직후)가 있으면 보여줌
+     */
+    public void executeBreak(RoomState room) {
+        // STAGE_CHANGE 브로드캐스트 (BREAK) -> 수정: BREAK 메시지 전송
+        eventPublisher.publishBreak(room);
+
+        // 만약 이전 스테이지가 첫인상 투표였다면 -> 결과 공개!
+        // (VOTE_FIRST -> BREAK -> ROTATION_SHORT 흐름일 때만, 로테이션 라운드 1일 때)
+        // 주의: ROTATION_SHORT R1 -> R2 사이의 Break에서도 pending=ROTATION_SHORT이므로 중복 전송됨 방지
+        if (room.getPendingNextStage() == Stage.ROTATION_SHORT && room.getCurrentRotationRound() == 1) {
+             log.info("📢 첫인상 투표 결과 공개 (Break Time): roomId={}", room.getRoomId());
+             eventPublisher.publishFirstVoteResults(room);
+        }
+
+        log.info("☕ 휴식 시간(Break): roomId={}, duration={}", room.getRoomId(), Stage.BREAK.getDurationSeconds());
+    }
     
     /**
      * 투표 단계 실행
@@ -165,11 +184,10 @@ public class StageExecutor {
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, stage);
 
-        // [추가] 첫인상 투표 결과 공개 (짧은 대화(1:1)의 첫 라운드 시작 시점 = 투표 직후)
-        if (!isLong && roundNumber == 1) {
-            log.info("📢 첫인상 투표 결과 공개: roomId={}", room.getRoomId());
-            eventPublisher.publishFirstVoteResults(room);
-        }
+        // [삭제] 첫인상 투표 결과 공개는 이제 executeBreak(이전 단계)에서 처리됨
+        // if (!isLong && roundNumber == 1) { ... }
+        
+        // PAIR_ASSIGNED 발행
         
         // PAIR_ASSIGNED 발행
         eventPublisher.publishPairAssignments(room, stage.getOrder(), pairMap);
