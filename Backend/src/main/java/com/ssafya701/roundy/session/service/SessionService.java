@@ -29,6 +29,8 @@ import java.util.Objects;
 public class SessionService {
 
     private final RedisTemplate<String, String> redisTemplate;
+    // [추가] 직렬화 문제 해결을 위한 StringRedisTemplate
+    private final org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
 
     private static final String SESSION_QUEUE_MALE = "session:male";
@@ -119,7 +121,7 @@ public class SessionService {
     // 방 멤버 정보 조회
     public RoomMemberInfo getRoomMemberInfo(Long userId, String roomId) {
         String memberInfoKey = "room:" + roomId + ":member:" + userId;
-        Map<Object, Object> memberInfo = redisTemplate.opsForHash().entries(memberInfoKey);
+        Map<Object, Object> memberInfo = stringRedisTemplate.opsForHash().entries(memberInfoKey);
 
         if (memberInfo.isEmpty()) {
             log.warn("Member info not found: userId={}, roomId={}", userId, roomId);
@@ -217,5 +219,56 @@ public class SessionService {
 
     private String getQueueKey(GenderType gender) {
         return gender == GenderType.MALE ? SESSION_QUEUE_MALE : SESSION_QUEUE_FEMALE;
+    }
+
+    // [추가] 유저의 매칭된 방 정보(currentRoom) 확인
+    public String getUserCurrentRoom(Long userId) {
+        String userRoomKey = "user:" + userId + ":currentRoom";
+        return stringRedisTemplate.opsForValue().get(userRoomKey);
+    }
+    
+    // [추가] 유저의 currentRoom 키 삭제 (예외 상황용)
+    public void removeUserCurrentRoomKey(Long userId) {
+        String userRoomKey = "user:" + userId + ":currentRoom";
+        redisTemplate.delete(userRoomKey);
+    }
+
+    /**
+     * 방 관련 Redis 데이터 정리 (좀비 방 방지)
+     * @param roomId 방 ID
+     */
+    public void cleanupRoom(String roomId) {
+        log.info("🧹 Redis 방 데이터 정리 시작: roomId={}", roomId);
+        
+        try {
+            // 1. 방 멤버 조회
+            String roomMembersKey = "room:" + roomId + ":members";
+            java.util.Set<String> memberIds = redisTemplate.opsForSet().members(roomMembersKey);
+            
+            if (memberIds != null && !memberIds.isEmpty()) {
+                for (String userIdStr : memberIds) {
+                    // 2. 각 멤버의 currentRoom 매핑 삭제
+                    String userRoomKey = "user:" + userIdStr + ":currentRoom";
+                    redisTemplate.delete(userRoomKey);
+                    
+                    // 3. 각 멤버의 방 내 정보 삭제
+                    String memberInfoKey = "room:" + roomId + ":member:" + userIdStr;
+                    redisTemplate.delete(memberInfoKey);
+                }
+                log.info("  - 멤버 {}명 매핑 삭제 완료", memberIds.size());
+            }
+            
+            // 4. 멤버 목록 Set 삭제
+            redisTemplate.delete(roomMembersKey);
+            
+            // 5. 방 생성 시간 정보 삭제
+            String roomCreatedKey = "room:" + roomId + ":created";
+            redisTemplate.delete(roomCreatedKey);
+            
+            log.info("✅ Redis 방 데이터 정리 완료: roomId={}", roomId);
+            
+        } catch (Exception e) {
+            log.error("Redis 방 데이터 정리 중 오류: roomId={}", roomId, e);
+        }
     }
 }

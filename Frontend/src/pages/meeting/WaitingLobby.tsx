@@ -1,24 +1,114 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Moon, Bell, LogOut } from 'lucide-react';
+import { enterMatchQueue } from '@/api/match'; // API Import
+
+/**
+ * ------------------------------------------------------------------
+ * [TEST CONFIG] 6인 테스트용 하드코딩 토큰 (User 1 ~ 6)
+ * ------------------------------------------------------------------
+ */
+const TEST_TOKENS = [
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MjUsImV4cCI6MTc3MDQyODcyNX0.Vb38pTtoqaBT54PQfeWk_qKJVLiwjqvsX3vCK30veZI",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MzgsImV4cCI6MTc3MDQyODczOH0.LrEW-B7wlz0cWuskTCqTVFgpSRR1OmbKCu4lg6M30A4",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NTAsImV4cCI6MTc3MDQyODc1MH0.65KkNu2oTMCH6Df345_Xyq-dVZmRvluBU1I7me677ig",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NjIsImV4cCI6MTc3MDQyODc2Mn0.PnVyVyou5c3RnxD-Z3unRZm1nFSgnRKQfBZr3u8Vc4",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NzQsImV4cCI6MTc3MDQyODc3NH0.xkBiR5IPpC2mpPmYSfgMm9dR2VIVEQ75jR7OijUiyFI",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5ODUsImV4cCI6MTc3MDQyODc4NX0.ZA0C5P5MeCld1YwKhwcBybsdcHPXbxUWeq5NWhbngOI"
+];
 
 export default function WaitingLobby() {
   const navigate = useNavigate();
 
   // --- [개발용 테스트 상태] ---
   const [currentParticipants, setCurrentParticipants] = useState(3);
+  // --- [테스트용] 쿼리 파라미터 토큰 처리 ---
+  const [searchParams] = useSearchParams();
   const totalRequired = 6;
   const progress = Math.floor((currentParticipants / totalRequired) * 100);
 
-  // 10초 단위 폴링 시뮬레이션
   useEffect(() => {
-    const timer = setInterval(() => {
-      // 3~5명 사이에서 유동적으로 변하게 설정
-      const nextCount = Math.floor(Math.random() * 3) + 3;
-      setCurrentParticipants(nextCount);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
+    const queryUser = searchParams.get('user');
+    const queryToken = searchParams.get('token');
+
+    let tokenToSet = '';
+
+    // 1. ?user=0~5 형식 확인
+    if (queryUser) {
+      const idx = parseInt(queryUser, 10);
+      if (TEST_TOKENS[idx]) {
+        tokenToSet = TEST_TOKENS[idx];
+        console.log(`🧪 테스트 모드: User ${idx + 1} 토큰 로드`);
+      }
+    }
+    // 2. ?token=... 형식 확인
+    else if (queryToken) {
+      tokenToSet = queryToken;
+    }
+
+    if (tokenToSet) {
+      console.log("🔑 인증 토큰 설정 완료");
+      localStorage.setItem('accessToken', tokenToSet);
+      // 필요 시 refreshToken 등은 비우거나 처리
+    }
+  }, [searchParams]);
+
+  // --- 매칭 로직 ---
+  const [isMatching, setIsMatching] = useState(false);
+
+  const startMatching = () => {
+    setIsMatching(true);
+  };
+
+  useEffect(() => {
+    if (!isMatching) return;
+
+    let isMounted = true;
+    let timer: number | null = null;
+    let retryCount = 0;
+
+    const pollMatch = async () => {
+      if (!isMounted) return;
+      try {
+        console.log(`📡 매칭 대기열 요청 중... (시도: ${retryCount + 1})`);
+        // 서버 업데이트: requestId: null 전송, roomId가 있으면 즉시 반환됨
+        const response: any = await enterMatchQueue();
+
+        if (response && response.roomId) {
+          console.log("🎉 매칭 성공! Room ID:", response.roomId);
+          const token = localStorage.getItem('accessToken');
+          if (token) {
+            // 즉시 이동하고 폴링 중단
+            navigate(`/meeting?room=${response.roomId}&token=${token}`);
+            return;
+          } else {
+            alert("인증 토큰이 만료되었습니다.");
+            navigate('/home');
+          }
+        }
+
+        // roomId가 없으면 계속 폴링 (3초 간격)
+        // console.log("⏳ 매칭 대기 중...");
+        timer = window.setTimeout(pollMatch, 3000);
+        retryCount++;
+
+      } catch (error) {
+        console.error("매칭 요청 실패:", error);
+        // 에러가 나도 일단 계속 시도 (서버 일시적 오류 가능성)
+        // 50회 이상 실패 시 중단 방지 (무한 시도)
+        timer = window.setTimeout(pollMatch, 3000);
+        retryCount++;
+      }
+    };
+
+    pollMatch();
+
+    return () => {
+      isMounted = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [isMatching, navigate]);
+
 
   return (
     <div className="min-h-screen bg-[#FDF2F8] flex flex-col font-['Pretendard'] overflow-hidden">
@@ -109,6 +199,16 @@ export default function WaitingLobby() {
           >
             <LogOut size={14} />
             <span>대기열 나가기</span>
+          </button>
+
+          {/* [TEST] 매칭 시작 버튼 */}
+          <button
+            onClick={startMatching}
+            disabled={isMatching}
+            className={`mt-4 px-6 py-3 rounded-full font-bold text-white transition-all ${isMatching ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FF4D94] hover:bg-[#ff3385] shadow-lg hover:shadow-xl hover:-translate-y-1'
+              }`}
+          >
+            {isMatching ? '📡 매칭 요청 중...' : '🚀 매칭 시작 (TEST)'}
           </button>
         </div>
       </main>

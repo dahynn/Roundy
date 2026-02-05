@@ -12,7 +12,7 @@ import FAQPage from '@/pages/my/FAQPage';
 import VerificationPage from '@/pages/verification/VerificationPage';
 import WaitingLobby from '@/pages/meeting/WaitingLobby';
 import RotationTestPage from '@/pages/meeting/RotationTest'
-import RotationMeeting from '@/pages/meeting/RotationMeeting'
+import MeetingPage from '@/pages/meeting/Meeting'
 import Onboarding from '@/pages/auth/Onboarding';
 import AuthCallback from '@/pages/auth/AuthCallback';
 import { useTheme } from '@/components/theme-provider';
@@ -49,10 +49,9 @@ function App() {
             <Route path="/verify" element={<VerificationPage />} />
             <Route path="/loading" element={<WaitingLobby />} />
 
-            {/* <Route path="/meeting" element={<RotationTestPage />} /> */}
 
             {/* 2. 기존 /meeting 경로를 새 컴포넌트로 업데이트 */}
-            <Route path="/meeting" element={<RotationMeeting />} />
+            <Route path="/meeting" element={<MeetingPage />} />
 
             {/* ─── 3. Navbar가 있는 페이지들 (Layout 사용) ─── */}
             <Route element={<Layout />}>

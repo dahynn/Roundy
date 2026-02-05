@@ -449,4 +449,27 @@ public class RoomEventPublisher {
         );
         broadcastToRoom(room, roomState);
     }
+    
+    /**
+     * 첫인상 투표 결과 브로드캐스트
+     */
+    public void publishFirstVoteResults(RoomState room) {
+        java.util.List<FirstVoteResultMessage.VoteDetail> details = new java.util.ArrayList<>();
+        Map<Long, Long> votes = room.getFirstVotes();
+        
+        for (Map.Entry<Long, Long> entry : votes.entrySet()) {
+            Long voterId = entry.getKey();
+            Long targetId = entry.getValue();
+            
+            String voterName = room.getParticipant(voterId).map(ParticipantState::getNickname).orElse("Unknown");
+            String targetName = room.getParticipant(targetId).map(ParticipantState::getNickname).orElse("Unknown");
+            
+            details.add(new FirstVoteResultMessage.VoteDetail(voterId, voterName, targetId, targetName));
+        }
+        
+        FirstVoteResultMessage message = new FirstVoteResultMessage(details);
+        broadcastToRoom(room, message);
+        
+        log.info("FIRST_VOTE_RESULT 발행: roomId={}, 결과 {}건", room.getRoomId(), details.size());
+    }
 }

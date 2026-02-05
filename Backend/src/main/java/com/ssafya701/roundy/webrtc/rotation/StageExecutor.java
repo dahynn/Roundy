@@ -29,6 +29,7 @@ public class StageExecutor {
     
     private final RoomEventPublisher eventPublisher;
     private final MatchService matchService;
+    private final com.ssafya701.roundy.session.service.SessionService sessionService; // [추가] Redis 정리를 위해 주입
     private final GameQuestionRepository questionRepository;
     private final PairingStrategy pairingStrategy = new PairingStrategy();
     private final ScheduledExecutorService gameScheduler = Executors.newScheduledThreadPool(10);
@@ -163,6 +164,12 @@ public class StageExecutor {
         
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, stage);
+
+        // [추가] 첫인상 투표 결과 공개 (짧은 대화(1:1)의 첫 라운드 시작 시점 = 투표 직후)
+        if (!isLong && roundNumber == 1) {
+            log.info("📢 첫인상 투표 결과 공개: roomId={}", room.getRoomId());
+            eventPublisher.publishFirstVoteResults(room);
+        }
         
         // PAIR_ASSIGNED 발행
         eventPublisher.publishPairAssignments(room, stage.getOrder(), pairMap);
@@ -302,8 +309,15 @@ public class StageExecutor {
                 Long maleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId1 : userId2;
                 Long femaleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId2 : userId1;
                 
-                matchService.createMatch(room.getRoomId(), maleId, femaleId);
-                log.info("✅ 매칭 DB 저장 완료: male={}, female={}", maleId, femaleId);
+                // DB Session ID 사용 (없으면 Room ID 해시값 사용 - 비상용)
+                Long sessionId = room.getDbSessionId();
+                if (sessionId == null) {
+                    log.error("❌ 매칭 저장 실패: DB Session ID가 없습니다. (roomId={})", room.getRoomId());
+                    continue;
+                }
+                
+                matchService.createMatch(sessionId, maleId, femaleId);
+                log.info("✅ 매칭 DB 저장 완료: session={}, male={}, female={}", sessionId, maleId, femaleId);
                 
             } catch (Exception e) {
                 log.error("매칭 정보 DB 저장 실패: match={}", match, e);
@@ -379,6 +393,12 @@ public class StageExecutor {
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         cleanupScheduler.schedule(() -> {
             log.info("🔄 방 자동 데이터 정리 (얼굴 공개 시작 후): roomId={}", room.getRoomId());
+            
+            // [추가] Redis 데이터 정리 (좀비 방 방지)
+            if (sessionService != null) {
+                sessionService.cleanupRoom(room.getRoomId());
+            }
+
             // 주의: room.reset()은 참가자 목록을 다 지우므로, 
             // 혹시라도 이후에 서버에서 데이터를 조회해야 한다면 문제가 될 수 있음.
             // 하지만 현재는 OpenVidu 세션이 이미 생성되었으므로 P2P 통신에는 문제 없음.

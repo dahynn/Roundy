@@ -73,6 +73,11 @@ public enum Stage {
      * @return 다음 스테이지, 마지막 단계인 경우 null
      */
     public Stage getNextStage() {
+        // [수정] 이미지 게임 건너뛰기: ROTATION_SHORT -> ROTATION_LONG
+        if (this == ROTATION_SHORT) {
+            return ROTATION_LONG;
+        }
+
         for (Stage stage : values()) {
             if (stage.order == this.order + 1) {
                 return stage;

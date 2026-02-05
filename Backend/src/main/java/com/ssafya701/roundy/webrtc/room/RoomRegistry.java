@@ -1,5 +1,6 @@
 package com.ssafya701.roundy.webrtc.room;
 
+import com.ssafya701.roundy.match.enums.SessionStatus;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RoomRegistry {
     private final Map<String, RoomState> rooms = new ConcurrentHashMap<>();
     private final com.ssafya701.roundy.webrtc.rotation.RoomEventPublisher eventPublisher;
+    private final com.ssafya701.roundy.match.repository.SessionRepository sessionRepository;
     
     /**
      * 입장 가능한 방을 찾거나, 없으면 새로운 방을 생성
@@ -61,22 +63,26 @@ public class RoomRegistry {
 
     /**
      * 방 생성 또는 조회
-     * 
-     * TODO: [DB 연동] sessions 테이블 연동
-     * - DB에서 session 조회 (status가 RECRUITING 또는 ONGOING인지 확인)
-     * - 없으면 DB에 새 session INSERT (status=RECRUITING)
-     * - male_max, female_max 값 가져오기
-     * 
-     * 예시:
-     * Session dbSession = sessionRepository.findById(roomId)
-     *     .orElseGet(() -> sessionRepository.save(new Session(roomId, RECRUITING, 6, 6)));
      */
     public RoomState getOrCreateRoom(String roomId, RotationMode mode, String openViduSessionId) {
         return rooms.computeIfAbsent(roomId, id -> {
             log.info("새로운 방 생성: roomId={}, mode={}, sessionId={}", roomId, mode, openViduSessionId);
 
-            // TODO: [DB 연동] DB에서 조회한 male_max, female_max를 RoomState에 전달
-            return new RoomState(roomId, mode, openViduSessionId);
+            // [DB 연동] 새 Session 생성 및 저장
+            com.ssafya701.roundy.match.entity.Session session = com.ssafya701.roundy.match.entity.Session.builder()
+                    .roomId(roomId)
+                    .status(SessionStatus.RECRUITING)
+                    .maleMax(6) // 기본값
+                    .femaleMax(6) // 기본값
+                    .build();
+            
+            com.ssafya701.roundy.match.entity.Session savedSession = sessionRepository.save(session);
+            log.info("Session DB 저장 완료: id={}, roomId={}", savedSession.getId(), savedSession.getRoomId());
+            
+            RoomState roomState = new RoomState(roomId, mode, openViduSessionId);
+            roomState.setDbSessionId(savedSession.getId());
+            
+            return roomState;
         });
     }
     
@@ -117,18 +123,6 @@ public class RoomRegistry {
     
     /**
      * 참가자 제거
-     * 
-     * TODO: [DB 연동] participants 및 sessions 테이블 연동
-     * 1. participants 테이블에서 DELETE
-     *    participantRepository.deleteBySessionIdAndUserId(roomId, userId);
-     * 
-     * 2. 남은 인원 확인 후 sessions.status 업데이트
-     *    - 한 쪽 성별이 0명이 되면 status = CANCELLED
-     *    - 양쪽 모두 0명이면 status = CLOSED, finished_at = NOW()
-     * 
-     * 3. matches 테이블 업데이트 (해당 유저가 포함된 매칭)
-     *    - chat_status = TERMINATED
-     *    - male_left_at or female_left_at = NOW()
      */
     public void removeParticipant(String roomId, Long userId) {
         RoomState room = rooms.get(roomId);
@@ -144,8 +138,6 @@ public class RoomRegistry {
             
             // 로테이션 단계 중에 나간 경우 파트너에게 알림
             notifyPartnerIfInRotation(room, removed);
-            
-            // TODO: [DB 연동] 위 주석 참고하여 구현
         }
         
         // 방이 비었으면 삭제
@@ -210,21 +202,22 @@ public class RoomRegistry {
     }
     
     /**
-     * 방 삭제
-     * 
-     * TODO: [DB 연동] sessions 테이블 업데이트
-     * - sessions.status = CLOSED
-     * - sessions.finished_at = NOW()
-     * 
-     * 예시:
-     * sessionRepository.updateStatusById(roomId, SessionStatus.CLOSED, LocalDateTime.now());
+     * 방 삭제 및 DB 상태 업데이트
      */
     public void removeRoom(String roomId) {
         RoomState removed = rooms.remove(roomId);
         if (removed != null) {
             log.info("방 삭제: roomId={}", roomId);
             
-            // TODO: [DB 연동] 위 주석 참고하여 구현
+            // DB session 상태 업데이트 (CLOSED)
+            Long dbSessionId = removed.getDbSessionId();
+            if (dbSessionId != null) {
+                sessionRepository.findById(dbSessionId).ifPresent(session -> {
+                    session.updateStatus(com.ssafya701.roundy.match.enums.SessionStatus.CLOSED);
+                    sessionRepository.save(session);
+                    log.info("Session DB 상태 업데이트(CLOSED): id={}", dbSessionId);
+                });
+            }
         }
     }
     

@@ -51,7 +51,11 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final StageScheduler stageScheduler;
     private final WebRtcEventLogger eventLogger;
     private final DisconnectScheduler disconnectScheduler;
+
     private final RoomEventPublisher eventPublisher;
+    private final com.ssafya701.roundy.match.repository.RoomParticipantRepository roomParticipantRepository;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate; // [추가] Redis 검증용
+    private final com.ssafya701.roundy.session.service.SessionService sessionService; // [추가] 방 정리용
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -157,12 +161,31 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String username = (String) session.getAttributes().get("username");
         String genderStr = (String) session.getAttributes().get("gender");
         String modeStr = (String) session.getAttributes().get("mode");
-        String roomId = message.getRoomId();
-        
+        // String roomId = message.getRoomId();  <-- Removed duplicate declaration
         // Session attributes에 roomId 저장 (disconnect detection을 위해)
-        session.getAttributes().put("roomId", roomId);
+        // 주의: message.getRoomId()가 null일 수 있으므로(최초 진입 시), 여기서는 put 하지 않음.
+        // 아래에서 방 배정 후 확실한 roomId를 put 할 예정.
+        // if (roomId != null) session.getAttributes().put("roomId", roomId);
+
+        String roomId = null; // [수정] try-catch 범위 밖 선언
 
         try {
+            // [수정] Redis 기반 매칭 결과 사용
+            // JwtHandshakeInterceptor에서 이미 roomId를 session attribute에 넣어두었음
+            String assignedRoomId = (String) session.getAttributes().get("roomId");
+
+            if (assignedRoomId == null) {
+                log.error("❌ roomId가 할당되지 않음 (핸드셰이크 오류): userId={}", userId);
+                sendError(session, "NO_ROOM_ASSIGNED", "방이 할당되지 않았습니다. 매칭을 먼저 진행해주세요.");
+                return;
+            }
+
+            // 클라이언트가 보낸 roomId는 무시하고, 서버 세션(Redis 매칭)에 저장된 roomId 사용
+            // (보안 및 데이터 무결성 보장)
+            roomId = assignedRoomId;
+            
+            // Gender enum 변환
+            
             // Gender enum 변환
             Gender gender;
             try {
@@ -177,58 +200,40 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             try {
                 mode = RotationMode.valueOf(modeStr.toUpperCase());
             } catch (Exception e) {
-                log.warn("잘못된 mode 파라미터: {}, 기본값 FREE_TALK 사용", modeStr);
-                mode = RotationMode.FREE_TALK;
+                log.warn("잘못된 mode 파라미터: {}, 기본값 PAIR_ONLY 사용", modeStr);
+                mode = RotationMode.PAIR_ONLY;
             }
             
             // TODO: [DB 연동] User 엔티티로 사용자 검증
-            // User user = userService.findById(userId)
-            //     .orElseThrow(() -> new UserNotFoundException(userId));
-            // if (!user.isActive()) {
-            //     throw new UserInactiveException(userId);
-            // }
-            // gender = user.getGender(); // DB에서 gender 가져오기
+            // ... (주석 생략) ...
             
-            // 1. 방 자동 배정 (재시도 로직 포함)
-            // 매칭 로직: 모드, 성별, 대기 상태, 인원 수 고려
-            RoomState room = null;
-            int maxRetries = 3;
-            
-            for (int i = 0; i < maxRetries; i++) {
-                try {
-                    room = roomRegistry.findAvailableOrCreateRoom(mode, gender, openViduService);
-                    roomId = room.getRoomId();
-                    
-                    // 3. 참가자 추가 시도 (여기서 정원 초과 예외 발생 가능)
-                    roomRegistry.addParticipant(roomId, userId, username, gender, session);
-                    
-                    // 성공하면 루프 탈출
-                    break;
-                } catch (IllegalStateException e) {
-                    // 정원 초과 등 경쟁 상태 발생 시 재시도
-                    log.warn("방 참가 실패 (재시도 {}/{}): roomId={}, error={}", i+1, maxRetries, roomId, e.getMessage());
-                    if (i == maxRetries - 1) {
-                        throw e; // 마지막 시도도 실패하면 예외 던짐
-                    }
-                    // 잠시 대기 후 재시도 가능
-                }
+            // [참고] roomId와 mode는 위에서 이미 설정됨.
+            log.info("🚪 방 입장 시작: userId={}, roomId={} (Server Enforced)", userId, roomId);
+
+            // 1. 방 조회 또는 생성 (이미 매칭된 방이므로 없으면 만들어야 함)
+            RoomState room;
+            if (!roomRegistry.hasRoom(roomId)) {
+                // OpenVidu 세션 생성
+                String openViduSessionId = openViduService.ensureSession(roomId);
+                // 방 생성 (mode는 세션에서 가져온 값 사용)
+                room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
+                // DB Session ID 설정 (필요 시)
+                // room.setDbSessionId(...); 
+            } else {
+                room = roomRegistry.getRoom(roomId).orElseThrow();
             }
-            
-            // Session attributes에 roomId 저장 (disconnect detection을 위해)
-            session.getAttributes().put("roomId", roomId);
-            
-            log.info(">>> 사용자 방 배정 완료: userId={}, roomId={}, mode={}", userId, roomId, mode);
-            
-            // 2. (생략) OpenVidu Session은 findAvailableOrCreateRoom 내부에서 이미 보장됨
-            // String openViduSessionId = openViduService.ensureSession(roomId);
 
-            // 3. (생략) RoomState 조회도 이미 완료됨
-            // RoomState room = roomRegistry.getOrCreateRoom(roomId, mode, openViduSessionId);
-            
-            // 4. 참가자 추가 (Gender 포함)
-            roomRegistry.addParticipant(roomId, userId, username, gender, session);
+            // 2. 참가자 추가 (RoomRegistry가 동시성 처리)
+            try {
+                roomRegistry.addParticipant(roomId, userId, username, gender, session);
+            } catch (IllegalStateException e) {
+                log.error("방 참가 실패: {}", e.getMessage());
+                sendError(session, "ROOM_FULL", "방이 가득 찼거나 참가할 수 없습니다.");
+                return;
+            }
 
-            // 4. OpenVidu Token 발급
+            // 3. OpenVidu Token 발급
+            // (참고: addParticipant 내부나 이후에 토큰 설정)
             String token = openViduService.generateToken(roomId, userId);
             room.setParticipantToken(userId, token);
 
@@ -265,7 +270,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             if (room.isPairMode() && room.getCurrentStage() == Stage.WAITING) {
                 int maleCount = room.getMaleCount();
                 int femaleCount = room.getFemaleCount();
-                int minPerGender = 2; // 최소 남자 2명, 여자 2명
+                int minPerGender = 3; // 최소 남자 3명, 여자 3명
                 
                 // 남녀 동수 체크 (비대칭 허용 안 함)
                 if (maleCount >= minPerGender && femaleCount >= minPerGender && maleCount == femaleCount) {
@@ -286,10 +291,11 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             }
 
 
-            // TODO: [DB 연동] 방 참가 이벤트 기록
-            // roomParticipantRepository.save(new RoomParticipant(
-            //     roomId, userId, LocalDateTime.now(), null
-            // ));
+            // [DB 연동] 방 참가 이벤트 기록
+            roomParticipantRepository.save(com.ssafya701.roundy.match.entity.RoomParticipant.builder()
+                    .roomId(roomId)
+                    .userId(userId)
+                    .build());
             
             // TODO: [운영 환경] 모니터링 메트릭 추가
             // meterRegistry.counter("webrtc.room.join", "roomId", roomId).increment();
@@ -314,8 +320,12 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String roomId = message.getRoomId();
 
         try {
-            // TODO: [DB 연동] 방 퇴장 이벤트 기록
-            // roomParticipantRepository.updateLeftAt(roomId, userId, LocalDateTime.now());
+            // [DB 연동] 방 퇴장 이벤트 기록
+            roomParticipantRepository.findTopByRoomIdAndUserIdOrderByJoinedAtDesc(roomId, userId)
+                    .ifPresent(participant -> {
+                        participant.updateLeftAt(java.time.LocalDateTime.now());
+                        roomParticipantRepository.save(participant);
+                    });
             
             // 1. 참가자 제거
             roomRegistry.removeParticipant(roomId, userId);
@@ -327,9 +337,17 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                             // 3. ROOM_STATE 브로드캐스트
                             broadcastRoomState(room);
 
-                            // 4. 방이 비었으면 로테이션 중지
+                            // 4. 방이 비었으면 로테이션 중지 및 Redis 데이터 정리
                             if (room.isEmpty()) {
                                 rotationScheduler.stopRotation(roomId);
+                                
+                                // [추가] 마지막 사람이 나갔으므로 Redis 데이터 정리 (좀비 방 방지)
+                                try {
+                                    sessionService.cleanupRoom(roomId);
+                                    log.info("🧹 방이 비어 Redis 데이터 정리 수행: roomId={}", roomId);
+                                } catch (Exception e) {
+                                    log.error("방 정리 실패: roomId={}", roomId, e);
+                                }
                             }
                         } catch (Exception e) {
                             log.error("방 상태 브로드캐스트 실패: roomId={}", roomId, e);
@@ -430,10 +448,25 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             return false;
         }
         
+        log.info("🔍 시작 조건 검사: mode={}, currentTotal={}, male={}, female={}", 
+                room.getMode(), room.getParticipantCount(), room.getMaleCount(), room.getFemaleCount());
+
         if (room.getMode() == RotationMode.PAIR_ONLY) {
-            // 남녀 동수 체크 (2:2)
-            // 주의: getMaleCount() 등은 addParticipant 이전에 호출되면 안 됨 (지금은 이후에 호출됨)
-            return room.getMaleCount() >= 2 && room.getFemaleCount() >= 2;
+            // [Redis 검증] 매칭된 정원(Redis) 확인
+            String redisRoomKey = "room:" + room.getRoomId() + ":members";
+            Long matchedMemberCount = redisTemplate.opsForSet().size(redisRoomKey);
+            
+            if (matchedMemberCount == null || matchedMemberCount < 6) {
+                // Redis 정보가 없거나 6명 미만이면 기본값 6명(3:3) 강제 적용
+                log.warn("⚠️ Redis 방 정보 부족({}명), 최소 6명 강제 적용: roomId={}", matchedMemberCount, room.getRoomId());
+                matchedMemberCount = 6L;
+            }
+            
+            log.info("📊 인원 현황: 현재 {}명 / 매칭정원 {}명", room.getParticipantCount(), matchedMemberCount);
+            
+            // 현재 인원이 매칭된 정원 이상이면 시작
+            return room.getParticipantCount() >= matchedMemberCount;
+            
         } else {
             // FREE_TALK: 4명 되면 시작
             return room.getParticipantCount() >= 4;
