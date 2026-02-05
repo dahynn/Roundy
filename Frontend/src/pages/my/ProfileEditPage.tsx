@@ -147,7 +147,7 @@ export default function ProfileEditPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#FDF2F8] dark:bg-gray-950 flex flex-col items-center py-10 md:py-20 font-['Pretendard'] relative overflow-x-hidden">
+        <div className="w-full bg-[#FDF2F8] dark:bg-gray-950 flex flex-col items-center py-10 md:py-20 font-['Pretendard'] relative">
             {/* 배경 장식 */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-200/30 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 rounded-full blur-[120px] pointer-events-none" />
