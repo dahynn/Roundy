@@ -102,13 +102,19 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
                     // 스테이지가 변경될 때, 로테이션(1:1) 단계가 아니면 다시 로비(단체방) 세션으로 복귀해야 함
                     // 예: 로테이션 끝 -> 중간 투표(VOTE_FIRST) -> 다시 로비 세션 필요
+                    // 1:1 스테이지 리스트
                     const isPairStage = ['ROTATION_SHORT', 'ROTATION_LONG', 'FACE_REVEAL'].includes(payload.stage);
 
                     setState(prev => {
                         let nextPartner = prev.currentPartner;
 
-                        // 1:1 스테이지가 아니고, 현재 로비 세션이 아니라면 -> 로비로 복귀
+                        // 1:1 스테이지가 아니면 (SELF_INTRO 등) 로비(단체) 세션 사용
+                        // 직전 단계가 WAITING(로비)이었다면 currentPartner는 이미 로비 세션임.
+                        // 하지만 명시적으로 lobbyCredentials를 사용하여 세션 정보를 보장함.
                         if (!isPairStage && prev.lobbyCredentials) {
+                            // 로비 세션 ID가 기존과 동일하다면, 상태 업데이트 후에도 Meeting.tsx useEffect가 재실행되지 않도록
+                            // (혹은 재실행되더라도 joinSession 가드로 방어)
+                            // 여기서 nextPartner를 갱신
                             nextPartner = {
                                 id: null,
                                 nickname: 'Lobby',
@@ -127,7 +133,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                             currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
                             currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
                             currentGame: null, // 이미지 게임 정보 초기화
-                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`
+                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`,
+                            firstVoteResults: null // [NEW] 스테이지 변경 시 투표 결과 초기화 (화면 숨김)
                         };
                     });
                     break;
@@ -237,6 +244,26 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     setState(prev => ({ ...prev, lastMessage: '투표 완료!' }));
                     break;
 
+                case 'BREAK': {
+                    const payload = data as any; // BreakPayload
+                    setState(prev => ({
+                        ...prev,
+                        remainingTime: payload.durationSeconds,
+                        lastMessage: '잠시 후 다음 단계로 이동합니다...'
+                    }));
+                    break;
+                }
+
+                case 'FIRST_VOTE_RESULT': {
+                    const payload = data as any; // FirstVoteResultPayload
+                    setState(prev => ({
+                        ...prev,
+                        firstVoteResults: payload.results,
+                        lastMessage: '첫인상 투표 결과 집계 완료!'
+                    }));
+                    break;
+                }
+
                 case 'KICK': {
                     const payload = data as KickPayload;
                     // alert(`강제 퇴장: ${payload.reason}`); // 제거
@@ -266,6 +293,13 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                             connected: false,
                             roomId: null,
                             lastMessage: payload.message
+                        }));
+                    } else if (payload.code === 'OPENVIDU_ERROR') {
+                        // OpenVidu 에러는 치명적이지 않을 수 있으므로 경고만 표시하고 연결은 유지 시도
+                        console.error('🚨 OpenVidu Error:', payload.message);
+                        setState(prev => ({
+                            ...prev,
+                            lastMessage: `⚠️ 화상 연결 오류: ${payload.message}`
                         }));
                     } else {
                         // 기타 에러는 메시지만 표시

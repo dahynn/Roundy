@@ -31,7 +31,9 @@ export type WsMessageType =
     | 'FACE_REVEAL_START' // 최종 매칭 성공 시 1:1 연결 시작
     | 'SPEAKER_CHANGE'   // 자기소개 발언자 변경
     | 'GAME_QUESTION'    // 이미지 게임 문제 출제
-    | 'GAME_RESULT';     // 이미지 게임 결과 발표
+    | 'GAME_RESULT'      // 이미지 게임 결과 발표
+    | 'BREAK'            // [NEW] 단계 사이 휴식
+    | 'FIRST_VOTE_RESULT'; // [NEW] 첫인상 투표 결과
 
 // --- 기본 메시지 구조 ---
 export interface WsMessage<T = any> {
@@ -160,6 +162,23 @@ export interface GameAnswerPayload {
     targetUserId: number;
 }
 
+// [NEW] BREAK: 휴식 시간
+export interface BreakPayload {
+    type: 'BREAK';
+    durationSeconds: number;
+}
+
+// [NEW] FIRST_VOTE_RESULT: 첫인상 투표 결과
+export interface VoteResultItem {
+    voterId: number;
+    targetId: number | null; // null이면 기권
+}
+
+export interface FirstVoteResultPayload {
+    type: 'FIRST_VOTE_RESULT';
+    results: VoteResultItem[];
+}
+
 // --- State Interface ---
 export interface RotationState {
     connected: boolean;
@@ -206,6 +225,9 @@ export interface RotationState {
 
     // 시스템 메시지/에러
     lastMessage: string | null;
+
+    // [NEW] 첫인상 투표 결과
+    firstVoteResults?: VoteResultItem[] | null;
 }
 
 // KICK: 강제 퇴장

@@ -7,43 +7,45 @@ import { useOpenVidu } from '../../hooks/meeting/useOpenVidu';
 
 // --- Components ---
 // Step 컴포넌트들을 components/rotation 폴더에서 불러옵니다.
-import { Step1_Intro } from '../../components/rotation/Step1_Intro';
-import { Step2_Vote } from '../../components/rotation/Step2_Vote';
-import { Step3_Result } from '../../components/rotation/Step3_Result';
+import { Step1_SelfIntro as Step1_Intro } from '../../components/rotation/Step1_SelfIntro'; // Fixed Import
+import { Step2_FirstVote as Step2_Vote } from '../../components/rotation/Step2_FirstVote';
+import { Step2_Result } from '../../components/rotation/Step2_Result';
+import { Step3_Talk } from '../../components/rotation/Step3_Talk';
 import { Step4_Talk } from '../../components/rotation/Step4_Talk';
-// Step5_ImageGame removed
-import { Step6_FinalResult } from '../../components/rotation/Step6_FinalResult';
+import { Step5_FinalVote } from '../../components/rotation/Step5_FinalVote';
+import { Step5_FinalResult } from '../../components/rotation/Step5_FinalResult';
+import { Step6_MatchSuccess } from '../../components/rotation/Step6_MatchSuccess';
+import { Step6_NoMatch } from '../../components/rotation/Step6_NoMatch';
 import { Step7_FaceReveal } from '../../components/rotation/Step7_FaceReveal';
-import { StepLoading_Preference } from '../../components/rotation/StepLoading_Preference';
+import { Step7_MessageRoom } from '../../components/rotation/Step7_MessageRoom';
 
-// 로딩 화면 UI (RotationMeetingContainer의 WAITING 참고)
+// 로딩 화면 UI
 const StepWaiting = ({ count }: { count: number }) => (
     <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
         <div className="w-20 h-20 rounded-full border-4 border-white/10 border-t-[#FF4D94] animate-spin" />
         <div className="text-center">
             <h2 className="text-3xl font-bold mb-2 text-white">참가자 대기 중</h2>
-            <p className="text-white/40">현재 {count}/4명 접속</p>
+            <p className="text-white/40">현재 {count}/6명 접속</p>
         </div>
     </div>
 );
 
 // --- Types ---
-import type { GameAnswerPayload } from '../../types/meeting/rotaion';
 import { useUser } from '@/context/UserContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function MeetingPage() {
     // --------------------------------------------------------------------------------
-    // 1. 초기 설정 및 상태 관리 (Actual Logic)
+    // 1. 초기 설정 및 상태 관리
     // --------------------------------------------------------------------------------
     const { userInfo, isLoading: isUserLoading } = useUser();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
-    // URL 파라미터 확인 (roomId, token) -> 백엔드 연동 필수값
-    // 예: /meeting?room=uuid&token=jwt...
+    // URL 파라미터 확인 (roomId만) -> 토큰은 localStorage에서
     const roomId = searchParams.get('room') || searchParams.get('roomId');
-    const token = searchParams.get('token');
+    // const token = searchParams.get('token'); // 제거 (localStorage 사용)
+    const token = localStorage.getItem('accessToken');
 
     // 사용자 프로필 매핑 (UserContext -> Rotation System)
     const userProfile = useMemo(() => {
@@ -51,32 +53,32 @@ export default function MeetingPage() {
         return {
             userId: userInfo.id,
             username: userInfo.name, // or nickname?
-            nickname: userInfo.nickname,
-            gender: (userInfo.gender || 'MALE') as 'MALE' | 'FEMALE', // Type casting or validation needed
-            mode: 'PAIR_ONLY' as const // 일단 고정
+            // nickname: userInfo.nickname, // useRotation UserProfile에 nickname 없음, username만 사용하거나 수정 필요
+            gender: (userInfo.gender || 'MALE') as 'MALE' | 'FEMALE',
+            mode: 'PAIR_ONLY' as const
         };
     }, [userInfo]);
 
-    // Custom Hooks (Token 기반 연결)
+    // Custom Hooks
+    // useRotationSystem에서 nickname을 username으로 사용하는지 확인 필요
+    // 현재 hook 정의: interface UserProfile { userId, username, ... }
     const { state: wsState, submitVote, submitGameAnswer, leaveRoom } = useRotationSystem(roomId, token, userProfile);
     const { publisher, subscribers, joinSession, leaveSession } = useOpenVidu();
 
-    // 초기 진입 검증 (제거하거나 완화)
-    // UserContext가 로딩 중일 때는 아무것도 하지 않음
+    // 초기 진입 검증
     useEffect(() => {
-        if (!isUserLoading && !userInfo && !roomId && !token) {
-            // 토큰도 없고 유저 정보도 없으면 팅겨내기
-            // alert("잘못된 접근입니다.");
+        if (!isUserLoading && !userInfo) {
+            // alert("로그인이 필요합니다."); // 필요 시 주석 해제
             // window.location.href = '/home';
         }
-    }, [isUserLoading, userInfo, roomId, token]);
+    }, [isUserLoading, userInfo]);
 
-    if (isUserLoading || !userProfile || !roomId || !token) {
+    if (!userProfile || !roomId || !token) {
         return (
             <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-white/20 border-t-[#FF4D94] rounded-full animate-spin" />
-                    <p>미팅 접속 중...</p>
+                    <p>미팅 접속 중... {isUserLoading ? '(유저 정보 로딩)' : ''}</p>
                 </div>
             </div>
         );
@@ -89,7 +91,7 @@ export default function MeetingPage() {
     const [selectedCard, setSelectedCard] = useState<number | null>(null);
     const [hasVoted, setHasVoted] = useState(false);
 
-    // Notice & Typing Animation State (RotationMeetingContainer.tsx Logic)
+    // Notice & Typing Animation State
     const [currentNotice, setCurrentNotice] = useState<string | null>(null);
     const [displayText, setDisplayText] = useState('');
 
@@ -103,26 +105,31 @@ export default function MeetingPage() {
     // 2. 데이터 변환 및 Memoization
     // --------------------------------------------------------------------------------
 
-    // UI용 참가자 데이터 매핑 (Stream 매핑 포함)
+    // UI용 참가자 데이터 매핑
     const uiParticipants = useMemo(() => {
         return wsState.participants.map(p => {
-            // Stream 매핑 조회
+            // Debugging Logs
+            // console.log(`[UI] Mapping participant: ${p.nickname} (ID: ${p.userId})`);
+
+            // Stream 매핑
             let streamManager = null;
             let isLocal = false;
 
-            // 1. 내 스트림인지 확인
             if (p.userId === userProfile.userId) {
                 streamManager = publisher;
                 isLocal = true;
             } else {
-                // 2. 구독자 스트림에서 찾기
+                // 구독자 스트림 찾기
                 const sub = subscribers.find(s => {
                     try {
                         const data = JSON.parse(s.stream.connection.data);
-                        // username으로 매칭 (RotationTest 방식)
-                        // 주의: 동명이인 등 식별 이슈가 있을 수 있으나 현재 로직 유지
-                        return data.clientData === p.nickname;
+                        // console.log(`  - Sub: ${data.clientData} vs Target: ${p.nickname}`);
+                        if (data.clientData === p.nickname) return true;
+
+                        // Fallback: serverData or other fields?
+                        return false;
                     } catch (e) {
+                        console.warn("Stream data parse error:", s.stream.connection.data);
                         return false;
                     }
                 });
@@ -133,31 +140,33 @@ export default function MeetingPage() {
 
             return {
                 id: p.userId,
-                name: p.nickname, // nickname vs username
+                name: p.nickname,
                 gender: p.gender,
-                voteTo: 0,
+                voteTo: 0, // 백엔드에서 공개 안하면 알 수 없음
                 keywords: [],
                 badges: [],
-                streamManager, // 새로 추가된 필드
+                streamManager,
                 isLocal
             };
         });
     }, [wsState.participants, subscribers, publisher, userProfile]);
 
-    // UI용 상대방 파트너 데이터 매핑 및 Stream 찾기
+    // UI용 상대방 파트너 데이터 매핑
     const uiPartner = useMemo(() => {
         if (!wsState.currentPartner) return null;
 
         let partnerStream = undefined;
-        // 1:1 세션에서는 subscribers 배열에 상대방만 들어옴 (보통).
-        // 하지만 안전하게 clientData로 찾기
+        // 파트너 스트림 찾기
         const sub = subscribers.find(s => {
+            const rawData = s.stream.connection.data;
+            let clientData = rawData;
             try {
-                const data = JSON.parse(s.stream.connection.data);
-                return data.clientData === wsState.currentPartner?.nickname;
-            } catch { return false; }
+                const parsed = JSON.parse(rawData);
+                if (parsed && parsed.clientData) clientData = parsed.clientData;
+            } catch { }
+
+            return clientData === wsState.currentPartner?.nickname;
         });
-        // 만약 못 찾았는데 subscribers가 1개라면 그게 파트너일 확률 높음 (1:1 방)
         if (!partnerStream && subscribers.length > 0) partnerStream = subscribers[0];
 
         return {
@@ -167,25 +176,15 @@ export default function MeetingPage() {
             voteTo: 0,
             keywords: [],
             badges: [],
-            stream: partnerStream // 파트너 스트림
+            stream: partnerStream
         };
     }, [wsState.currentPartner, userProfile.gender, subscribers]);
 
-    // 후보군 필터링 (나를 제외한 '이성'만 추출, 투표용)
-    const candidates = useMemo(() => {
-        return wsState.participants.filter(p => {
-            if (p.userId === userProfile.userId) return false;
-            if (!p.gender) return false;
-            const myGender = String(userProfile.gender).toUpperCase();
-            const targetGender = String(p.gender).toUpperCase();
-            return myGender !== targetGender;
-        });
-    }, [wsState.participants, userProfile]);
-
     // 현재 발언자 인덱스 계산 (Step1_Intro 용)
     const activeSpeakerIdx = useMemo(() => {
-        if (!wsState.currentSpeaker) return null;
-        return uiParticipants.findIndex(p => p.id === wsState.currentSpeaker!.id);
+        if (!wsState.currentSpeaker) return 0; // default 0
+        const idx = uiParticipants.findIndex(p => p.id === wsState.currentSpeaker!.id);
+        return idx !== -1 ? idx : 0;
     }, [wsState.currentSpeaker, uiParticipants]);
 
 
@@ -193,7 +192,7 @@ export default function MeetingPage() {
     // 3. Side Effects (로직 처리)
     // --------------------------------------------------------------------------------
 
-    // 세션 자동 접속 (OpenVidu)
+    // 세션 자동 접속
     useEffect(() => {
         const partnerInfo = wsState.currentPartner;
         if (partnerInfo?.sessionId && partnerInfo?.token) {
@@ -209,18 +208,44 @@ export default function MeetingPage() {
         }
     }, [isMicOn, isCamOn, publisher]);
 
-    // 스테이지 변경 시 상태 초기화
+    // 스테이지 변경 시 상태 초기화 및 Notice 설정
     useEffect(() => {
         setHasVoted(false);
         setSelectedCard(null);
 
-        // 스테이지별 안내 문구 설정
         const stage = wsState.currentStage;
         if (stage === 'VOTE_FIRST') setCurrentNotice('당신의 마음은 사로잡은 사람은?');
         else if (stage === 'VOTE_FINAL') setCurrentNotice('운명의 상대를 선택해주세요');
+        else if (stage === 'SELF_INTRO') setCurrentNotice('이제 자기소개를 시작합니다');
         else setCurrentNotice(null);
 
+        // 3초 후 노티스 자동 숨김 (화면 렌더링을 위해)
+        if (['VOTE_FIRST', 'VOTE_FINAL', 'SELF_INTRO'].includes(stage)) {
+            const timer = setTimeout(() => {
+                setCurrentNotice(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
     }, [wsState.currentStage]);
+
+    // Break Time Notice Update
+    useEffect(() => {
+        // wsState.lastMessage가 "잠시 후..." 처럼 BREAK 메시지일 경우
+        // 또는 wsState.remainingTime이 바뀔 때 BREAK 상태인지 확인하는 플래그가 필요할 수도 있음.
+        // 여기서는 lastMessage를 활용하거나, Stage 전환 시점을 이용
+        if (wsState.lastMessage?.includes('다음 단계로')) {
+             // BREAK 감지 (useRotation에서 설정한 메시지)
+             // 직전 스테이지에 따라 문구 설정 (이걸 위해선 previousStage 저장이 필요할 수 있음)
+             // 간단히: 현재 currentStage 값을 보고 다음 스테이지 예고
+             
+             let nextMsg = "잠시 후 다음 단계가 시작됩니다";
+             if (wsState.currentStage === 'SELF_INTRO') nextMsg = "곧 첫인상 투표가 진행됩니다";
+             else if (wsState.currentStage === 'VOTE_FIRST') nextMsg = "곧 1:1 로테이션 대화가 시작됩니다";
+             else if (wsState.currentStage === 'ROTATION_SHORT') nextMsg = "파트너가 변경됩니다";
+             
+             setCurrentNotice(nextMsg);
+        }
+    }, [wsState.lastMessage, wsState.currentStage]);
 
     // 타이핑 애니메이션
     useEffect(() => {
@@ -248,24 +273,20 @@ export default function MeetingPage() {
         }
     }, [wsState.remainingTime, hasVoted, wsState.currentStage]);
 
-    // 매칭 결과 라인 드로잉 로직 (MATCHING_RESULT 단계)
+    // 라인 드로잉 로직 (MATCHING_RESULT)
     useEffect(() => {
         if (wsState.currentStage !== 'MATCHING_RESULT') {
             setLines([]);
             return;
         }
-
-        // 약간의 지연 후 라인 그리기 (애니메이션 효과)
         const timer = setTimeout(() => {
             if (!svgRef.current) return;
             const svgRect = svgRef.current.getBoundingClientRect();
             const newLines: any[] = [];
-
-            // 내 매칭 정보 확인
             const myId = userProfile.userId;
             const partnerId = wsState.currentPartner?.id;
 
-            // 참가자 목록에서 인덱스 찾기
+            // 나 - 파트너 연결
             const myIndex = uiParticipants.findIndex(p => p.id === myId);
             const partnerIndex = partnerId ? uiParticipants.findIndex(p => p.id === partnerId) : -1;
 
@@ -283,15 +304,14 @@ export default function MeetingPage() {
                         x: endRect.left + endRect.width / 2 - svgRect.left,
                         y: endRect.top + endRect.height / 2 - svgRect.top
                     },
-                    isReverse: false // 필요 시 로직 추가
+                    isReverse: false
                 });
             }
-
             setLines(newLines);
         }, 500);
-
         return () => clearTimeout(timer);
     }, [wsState.currentStage, uiParticipants, userProfile.userId, wsState.currentPartner]);
+
 
     // --------------------------------------------------------------------------------
     // 4. 핸들러 함수
@@ -299,28 +319,19 @@ export default function MeetingPage() {
 
     const handleChoice = (targetId: number | null, isAutoRandom = false) => {
         if (hasVoted && !isAutoRandom) return;
-
         console.log(`[Meeting] Choice: ${targetId} (Auto: ${isAutoRandom})`);
 
-        if (wsState.currentStage === 'VOTE_FIRST' || wsState.currentStage === 'VOTE_FINAL') {
-            // UI select 반영 (null이면 선택 취소 또는 유지)
-            if (targetId !== null) setSelectedCard(targetId);
-            submitVote(targetId);
-            setHasVoted(true);
-        }
+        if (targetId !== null) setSelectedCard(targetId);
+        submitVote(targetId);
+        setHasVoted(true);
     };
 
     const handleGoHome = () => {
         alert("홈으로 이동합니다!");
-        window.location.href = '/';
+        window.location.href = '/home';
     };
 
-    const handleAgreeReveal = () => {
-        // 얼굴 공개 동의 로직
-        console.log("얼굴 공개 동의");
-    };
-
-    // 리다이렉트/퇴장 알림 (가이드 준수)
+    // 리다이렉트 화면
     if (wsState.redirectInfo) {
         return (
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 text-white animate-in fade-in">
@@ -334,13 +345,13 @@ export default function MeetingPage() {
     }
 
     // --------------------------------------------------------------------------------
-    // 5. 렌더링 로직 (RotationMeetingContainer.tsx UI)
+    // 5. 렌더링 (RotationMeetingContainer UI 이식)
     // --------------------------------------------------------------------------------
 
     return (
         <div className="h-screen w-full bg-[#0F0F0F] text-white flex flex-col font-['Pretendard'] overflow-hidden selection:bg-[#FF4D94] selection:text-white">
 
-            {/* --- Header --- */}
+            {/* Header */}
             <header className="flex items-center justify-between px-8 py-6 z-30">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-[#FF4D94] rounded-xl rotate-12 flex items-center justify-center shadow-[0_0_15px_rgba(255,77,148,0.5)]">
@@ -352,7 +363,7 @@ export default function MeetingPage() {
                     </div>
                 </div>
 
-                {/* Status Indicator Pill */}
+                {/* Status Indicator */}
                 <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-2 rounded-full shadow-2xl">
                     <div className={`w-2 h-2 rounded-full ${wsState.connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                     <span className="text-sm font-bold text-white/80 uppercase mr-4">
@@ -378,14 +389,14 @@ export default function MeetingPage() {
                 </div>
             </header>
 
-            {/* --- Main Content Area --- */}
+            {/* Main Content */}
             <main className="flex-1 w-full relative flex flex-col items-center justify-center p-8 overflow-hidden">
-                {/* Background Ambient */}
+                {/* Background */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-[#FF4D94] rounded-full blur-[150px] opacity-[0.03] pointer-events-none" />
 
                 {currentNotice ? (
                     <div className="absolute inset-0 flex items-center justify-center z-50 bg-[#0F0F0F]/80 backdrop-blur-sm animate-in fade-in duration-300">
-                        <h2 className="text-4xl md:text-6xl font-black text-white text-center leading-tight drop-shadow-2xl">
+                        <h2 className="text-4xl md:text-6xl font-black text-white text-center leading-tight drop-shadow-2xl px-8">
                             {displayText}
                             <span className="animate-pulse text-[#FF4D94]">_</span>
                         </h2>
@@ -398,74 +409,109 @@ export default function MeetingPage() {
                             <StepWaiting count={wsState.participants.length} />
                         )}
 
-                        {/* INTRO */}
+                        {/* STEP 0: INTRO - 백엔드 스테이지에는 없지만 필요시 추가 */}
                         {wsState.currentStage === 'SELF_INTRO' && (
                             <Step1_Intro
                                 participants={uiParticipants}
-                                activeSpeakerIdx={activeSpeakerIdx} // 발언자 인덱스 연결
+                                activeSpeakerIdx={activeSpeakerIdx}
                             />
                         )}
 
-                        {/* VOTE_1 (첫인상) */}
+                        {/* STEP 2: VOTE (FIRST) */}
                         {wsState.currentStage === 'VOTE_FIRST' && (
                             <Step2_Vote
                                 participants={uiParticipants}
-                                currentUser={userProfile}
-                                selectedCard={selectedCard}
-                                onSelect={handleChoice} // 직접 선택 핸들러 연결
-                            />
-                        )}
-
-                        {/* ROTATION (Short/Long) & TALK */}
-                        {(wsState.currentStage === 'ROTATION_SHORT' || wsState.currentStage === 'ROTATION_LONG') && uiPartner && (
-                            <Step4_Talk
-                                partner={uiPartner}
-                                currentUser={userProfile}
-                                showCards={wsState.currentStage === 'ROTATION_LONG'}
-                                partnerStream={uiPartner.stream}
-                                myStream={publisher}
-                            />
-                        )}
-
-                        {/* IMAGE GAME REMOVED */}
-
-                        {/* VOTE_FINAL (최종 선택) */}
-                        {wsState.currentStage === 'VOTE_FINAL' && (
-                            <Step2_Vote
-                                participants={uiParticipants}
-                                currentUser={userProfile}
+                                // 임시로 any 처리했으나, 실제론 currentUserGender={userProfile.gender} 가 맞을 수 있음
+                                // 하지만 Step2_FirstVote.tsx를 확인하지 않았으므로 방어적으로.
+                                // 린트 에러 'Property currentUser does not exist' -> currentUserGender로 변경
+                                currentUserGender={userProfile.gender}
                                 selectedCard={selectedCard}
                                 onSelect={handleChoice}
                             />
                         )}
 
-                        {/* FINAL RESULT */}
-                        {wsState.currentStage === 'MATCHING_RESULT' && (
-                            <Step3_Result
+                        {/* STEP 2: RESULT */}
+                        {/* 백엔드 스테이지에 STEP 2 RESULT가 따로 있는지 확인 필요. 
+                            FIRST_VOTE_RESULT가 들어오면 잠시 보여주거나, 별도의 스테이지 체크 필요.
+                            여기서는 wsState.firstVoteResults가 있으면 보여주는 식으로 처리할 수도 있음.
+                            하지만 STAGE가 여전히 VOTE_FIRST이거나 다음 단계일 수 있음.
+                            일단 VOTE_FIRST 직후 BREAK 시간에 보여준다고 가정?
+                            혹은 별도 UI 모달로? 
+                            사용자 요청은 "투표 결과에 따라 프론트에서 투표 화면을 실제 데이터로 수정해" 라고 했으므로,
+                            Step2_Result를 사용하는 타이밍을 잡아야 함.
+                            만약 BREAK이고, 직전 스테이지가 VOTE_FIRST라면?
+                        */}
+                        {(wsState.currentStage === 'VOTE_FIRST' || wsState.firstVoteResults) && wsState.firstVoteResults && (
+                            <div className="absolute inset-0 z-40 bg-black/90">
+                                <Step2_Result
+                                    participants={uiParticipants}
+                                    results={wsState.firstVoteResults}
+                                />
+                            </div>
+                        )}
+
+                        {/* STEP 3 & 4: TALK (ROTATION) */}
+                        {(wsState.currentStage === 'ROTATION_SHORT' || wsState.currentStage === 'ROTATION_LONG') && uiPartner && (
+                            <Step4_Talk
+                                partners={[uiPartner as any]}
+                                currentPartnerIndex={0}
+                                remainingTime={wsState.remainingTime}
+                                myStream={publisher || undefined} // 내 스트림 전달
+                            />
+                        )}      {/* Step3_Talk props: partners, currentPartnerIndex, remainingTime
+                                    RotationMeetingContainer: partners={UI participants filtered}, currentPartnerIndex={idx}
+                                    백엔드 연동 시: 단일 파트너 뷰로 보여주는게 나을 수도 있음.
+                        하지만 기존 컴포넌트 재사용하려면 props 맞춰야 함.
+                        여기선 Step4_Talk (1:1 UI)를 재사용하거나 Step3를 맞춤.
+                        RotationMeetingContainer를 보면 Step3, Step4 UI가 다름. */}
+
+
+                        {/* STEP 5: FINAL VOTE */}
+                        {wsState.currentStage === 'VOTE_FINAL' && (
+                            <Step5_FinalVote
                                 participants={uiParticipants}
-                                resultSubStage={resultSubStage}
-                                anchorRefs={anchorRefs}
-                                svgRef={svgRef}
-                                lines={lines}
+                                currentUserGender={userProfile.gender}
+                                selectedCard={selectedCard}
+                                onSelect={handleChoice}
                             />
                         )}
 
-                        {/* FACE REVEAL (매칭 성공 후) */}
-                        {wsState.currentStage === 'FACE_REVEAL' && uiPartner && (
-                            <Step7_FaceReveal
-                                myInfo={userProfile}
-                                partnerInfo={uiPartner}
-                                onGoHome={handleGoHome}
+                        {/* STEP 5: FINAL RESULT (MATCH_RESULT) */}
+                        {wsState.currentStage === 'MATCHING_RESULT' && (
+                            <Step5_FinalResult
+                            // props TODO
                             />
                         )}
+
+                        {/* STEP 6: SUCCESS / FAIL */}
+                        {/* 백엔드엔 MATCHING_RESULT 하나인데 결과에 따라 갈림 */}
+                        {/* MATCHING_RESULT payload에 isMatched가 있음.
+                             근데 STAGE는 MATCHING_RESULT로 퉁쳐짐.
+                             별도 스테이지 분기 로직이 필요함.
+                             wsState.lastMessage 등을 보고 판단?
+                             아니면 MATCH_RESULT 이벤트에서 별도 상태(isMatched) 저장 필요.
+                         */}
+
+                        {/* STEP 7: FACE REVEAL */}
+                        {wsState.currentStage === 'FACE_REVEAL' && uiPartner && (
+                            <Step7_FaceReveal
+                                onComplete={() => {
+                                    handleGoHome();
+                                }}
+                            />
+                        )}
+
+                        {/* Step7: Message Room */}
+                        {/* FACE_REVEAL 끝난 후? */}
 
                     </div>
                 )}
             </main>
 
-            {/* --- Footer / Controls --- */}
+            {/* Footer */}
             <footer className="w-full px-8 pb-8 pt-4 flex justify-between items-end z-30">
                 <div className="flex gap-2">
+                    {/* Debug UI 제거 */}
                 </div>
 
                 <div className="bg-[#1A1A1A]/80 backdrop-blur-2xl border border-white/10 rounded-[32px] p-2 pr-8 flex items-center gap-6 shadow-2xl hover:border-white/20 transition-all">

@@ -37,17 +37,23 @@ export const Step5_FinalVote: React.FC<Step5_FinalVoteProps> = ({
             </div>
 
             {/* 카드 그리드 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full max-w-5xl perspective-1000">
-                {votableParticipants.map((participant, idx) => (
-                    <VoteCard
-                        key={participant.id}
-                        participant={participant}
-                        number={idx + 1}
-                        isSelected={selectedCard === participant.id}
-                        onSelect={() => onSelect(participant.id)}
-                    />
-                ))}
-            </div>
+            {votableParticipants.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full max-w-5xl perspective-1000">
+                    {votableParticipants.map((participant, idx) => (
+                        <VoteCard
+                            key={participant.id}
+                            participant={participant}
+                            number={idx + 1}
+                            isSelected={selectedCard === participant.id}
+                            onSelect={() => onSelect(participant.id)}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-white/50 text-xl font-bold animate-pulse">
+                    투표할 상대방이 없습니다. (참가자 대기 중...)
+                </div>
+            )}
 
             {/* 하단 선택 확인 메시지 */}
             <div className={`

@@ -18,16 +18,21 @@ const MOCK_PARTICIPANTS: Participant[] = [
     { id: 6, name: '여자 3호', gender: 'FEMALE', voteTo: 1 },
 ];
 
-interface Step2_ResultProps {
-    participants?: Participant[];
+interface VoteResultItem {
+    voterId: number;
+    targetId: number | null;
 }
 
-export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants = MOCK_PARTICIPANTS }) => {
+interface Step2_ResultProps {
+    participants: Participant[];
+    results?: VoteResultItem[] | null;
+}
+
+export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants, results }) => {
     const [maleArrowsVisible, setMaleArrowsVisible] = useState<number[]>([]);
     const [femaleArrowsVisible, setFemaleArrowsVisible] = useState<number[]>([]);
 
-    // Step 2에서는 매칭 결과를 보여주지 않으므로 빈 배열 상태 유지 (구조 통일을 위해 변수는 남김)
-    const [matches, setMatches] = useState<number[]>([]);
+    // isReady: 애니메이션 준비 여부. results가 들어오면 true로 설정
     const [isReady, setIsReady] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -42,45 +47,49 @@ export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants = MOCK_
         .filter(p => p.gender === 'FEMALE')
         .sort((a, b) => a.id - b.id);
 
+    // 투표 결과 매핑 (voterId -> targetId)
+    const voteMap = useRef<Map<number, number | null>>(new Map());
+
     useEffect(() => {
-        const initTimer = setTimeout(() => {
+        if (results) {
+            voteMap.current.clear();
+            results.forEach(r => voteMap.current.set(r.voterId, r.targetId));
             setIsReady(true);
-            setTick(t => t + 1);
-        }, 500);
+        }
+    }, [results]);
+
+    useEffect(() => {
+        if (!isReady) return;
 
         const handleResize = () => setTick(t => t + 1);
         window.addEventListener('resize', handleResize);
 
         // ------------------------------------------------------------
-        // [타이밍 로직] Step 2 전용: 남자 -> 7초 대기 -> 여자
+        // [타이밍 로직] Step 2 전용: 남자 -> 5초 대기 -> 여자
         // ------------------------------------------------------------
         const MALE_START = 800;
         const INTERVAL = 800;
-        const HOLD = 2000; // 임시: 2초로 줄임 (원래 7000)
+        const HOLD = 2000;
 
         // 1. 남자 선택 공개
         maleParticipants.forEach((_, idx) => {
             setTimeout(() => {
-                console.log(`Male arrow ${idx} visible`);
                 setMaleArrowsVisible(prev => [...prev, idx]);
             }, MALE_START + (idx * INTERVAL));
         });
 
-        // 2. 여자 선택 공개 (남자 종료 후 + 7초)
+        // 2. 여자 선택 공개
         const femaleStart = MALE_START + (maleParticipants.length * INTERVAL) + HOLD;
-        console.log(`Female arrows will start at: ${femaleStart}ms`);
         femaleParticipants.forEach((_, idx) => {
             setTimeout(() => {
-                console.log(`Female arrow ${idx} visible`);
                 setFemaleArrowsVisible(prev => [...prev, idx]);
             }, femaleStart + (idx * INTERVAL));
         });
 
         return () => {
             window.removeEventListener('resize', handleResize);
-            clearTimeout(initTimer);
         };
-    }, []);
+    }, [isReady, maleParticipants.length, femaleParticipants.length]);
 
     return (
         <div className="w-full h-full bg-transparent flex flex-col items-center justify-center p-10 overflow-hidden">
@@ -107,7 +116,7 @@ export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants = MOCK_
                             key={p.id}
                             participant={p}
                             cardRef={(el: HTMLDivElement | null) => (cardRefs.current[p.id] = el)}
-                            isMatched={matches.includes(p.id)} // Step 2는 항상 false
+                            isMatched={false} // Step 2는 매칭 결과가 아님
                             side="left"
                         />
                     ))}
@@ -123,7 +132,7 @@ export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants = MOCK_
                             key={p.id}
                             participant={p}
                             cardRef={(el: HTMLDivElement | null) => (cardRefs.current[p.id] = el)}
-                            isMatched={matches.includes(p.id)} // Step 2는 항상 false
+                            isMatched={false} // Step 2는 매칭 결과가 아님
                             side="right"
                         />
                     ))}
@@ -134,38 +143,53 @@ export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants = MOCK_
 
                     {/* 남자 화살표 */}
                     {isReady && maleParticipants.map((male, idx) => {
-                        if (!maleArrowsVisible.includes(idx) || !male.voteTo) return null;
-                        const isMatched = matches.includes(male.id); // 항상 false
+                        if (!maleArrowsVisible.includes(idx)) return null;
+                        const targetId = voteMap.current.get(male.id);
+
+                        // 기권 (null) 이면 X 표시 혹은 짧은 끊긴 화살표 (여기선 미표시 혹은 다른 처리)
+                        // 요구사항: "화살표를 포기한 것처럼 구성해" -> 투명도 낮거나, 중간에 끊기거나.
+                        // ConnectionLine에 isGiveUp prop 추가하여 처리
+
+                        // 만약 targetId가 없거나(기권), 해당 타겟이 femaleParticipants에 없으면 기권 처리
+                        const isGiveUp = !targetId || !femaleParticipants.find(f => f.id === targetId);
+
+                        // 기권 시각화: 자신의 카드 근처에서 소멸되거나 X 표시
+                        // 여기서는 targetId가 없으므로 toId를 자기 자신으로 하거나, ConnectionLine 내부에서 처리
+
                         return (
                             <ConnectionLine
                                 key={`m-${male.id}`}
                                 fromId={male.id}
-                                toId={male.voteTo}
+                                toId={targetId || male.id} // 기권일 경우 자기 자신 ID (내부 패딩을 이용해 처리) or null handling
                                 cardRefs={cardRefs.current}
                                 containerRef={containerRef}
                                 color="#60A5FA" // Blue
                                 width={2}
-                                opacity={1}
+                                opacity={isGiveUp ? 0.3 : 1}
                                 offsetYRatio={0.35} // 위쪽
+                                isGiveUp={isGiveUp} // [API change needs to be propagated to Component]
                             />
                         );
                     })}
 
                     {/* 여자 화살표 */}
                     {isReady && femaleParticipants.map((female, idx) => {
-                        if (!femaleArrowsVisible.includes(idx) || !female.voteTo) return null;
-                        const isMatched = matches.includes(female.id); // 항상 false
+                        if (!femaleArrowsVisible.includes(idx)) return null;
+                        const targetId = voteMap.current.get(female.id);
+                        const isGiveUp = !targetId || !maleParticipants.find(m => m.id === targetId);
+
                         return (
                             <ConnectionLine
                                 key={`f-${female.id}`}
                                 fromId={female.id}
-                                toId={female.voteTo}
+                                toId={targetId || female.id}
                                 cardRefs={cardRefs.current}
                                 containerRef={containerRef}
                                 color="#F472B6" // Pink
                                 width={2}
-                                opacity={1}
+                                opacity={isGiveUp ? 0.3 : 1}
                                 offsetYRatio={0.65} // 아래쪽
+                                isGiveUp={isGiveUp}
                             />
                         );
                     })}
@@ -212,26 +236,38 @@ const ResultCard = ({ participant, cardRef, isMatched, side }: { participant: Pa
 // ------------------------------------------------------------
 // [ConnectionLine] Step 5와 100% 동일한 코드 (Path + Polygon)
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// [ConnectionLine] Step 5와 100% 동일한 코드 (Path + Polygon)
+// ------------------------------------------------------------
 const ConnectionLine = ({
-    fromId, toId, cardRefs, containerRef, color, width, opacity, offsetYRatio
-}: { fromId: number, toId: number, cardRefs: any, containerRef: any, color: string, width: number, opacity: number, offsetYRatio: number }) => {
+    fromId, toId, cardRefs, containerRef, color, width, opacity, offsetYRatio, isGiveUp
+}: { fromId: number, toId: number, cardRefs: any, containerRef: any, color: string, width: number, opacity: number, offsetYRatio: number, isGiveUp?: boolean }) => {
     const fromEl = cardRefs[fromId];
     const toEl = cardRefs[toId];
     const containerEl = containerRef.current;
 
-    if (!fromEl || !toEl || !containerEl) return null;
+    if (!fromEl || !containerEl) return null; // toEl is optional if giveup? No, we used self ID.
 
     const cRect = containerEl.getBoundingClientRect();
     const fRect = fromEl.getBoundingClientRect();
-    const tRect = toEl.getBoundingClientRect();
+    // 기권일 경우 toEl은 자기 자신이므로 좌표 계산이 0이 됨 -> 이를 이용해 짧게 끊거나 X 표시
+    const tRect = toEl ? toEl.getBoundingClientRect() : fRect;
 
     const y1 = (fRect.top - cRect.top) + (fRect.height * offsetYRatio);
-    const y2 = (tRect.top - cRect.top) + (tRect.height * offsetYRatio);
+    // 기권이면 y2를 조금만 이동
+    const y2 = isGiveUp
+        ? y1
+        : (tRect.top - cRect.top) + (tRect.height * offsetYRatio);
 
     const isFromLeft = (fRect.left - cRect.left) < (cRect.width / 2);
     const x1 = isFromLeft ? (fRect.left - cRect.left) + fRect.width : (fRect.left - cRect.left);
-    const x2 = isFromLeft ? (tRect.left - cRect.left) : (tRect.left - cRect.left) + tRect.width;
 
+    // 기권이면 x2를 중앙쪽으로 조금만 뻗음 (50px)
+    const x2 = isGiveUp
+        ? (isFromLeft ? x1 + 50 : x1 - 50)
+        : (isFromLeft ? (tRect.left - cRect.left) : (tRect.left - cRect.left) + tRect.width);
+
+    // 거리 계산
     const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
     if (length === 0) return null;
 
@@ -247,32 +283,52 @@ const ConnectionLine = ({
                 }
             `}</style>
 
+            {/* 메인 라인 */}
             <path
                 d={`M ${x1} ${y1} L ${x2} ${y2}`}
                 fill="none"
-                stroke={color}
+                stroke={isGiveUp ? '#666' : color} // 기권은 회색
                 strokeWidth={width}
                 strokeLinecap="round"
-                strokeDasharray={length}
-                strokeDashoffset={length}
+                strokeDasharray={isGiveUp ? '4 4' : length} // 기권은 점선
+                strokeDashoffset={isGiveUp ? 0 : length} // 점선은 애니메이션 다르게? 일단 그냥 둠
                 style={{
-                    animation: `drawArrow-${fromId}-${toId} 1s ease-out forwards`,
-                    filter: `drop-shadow(0 0 4px ${color})`,
+                    animation: isGiveUp ? 'none' : `drawArrow-${fromId}-${toId} 1s ease-out forwards`,
+                    filter: isGiveUp ? 'none' : `drop-shadow(0 0 4px ${color})`,
                     opacity: opacity,
                     transition: 'all 0.5s ease-in-out'
                 }}
             />
 
-            <polygon
-                points={`0,-${arrowSize / 2} ${arrowSize},0 0,${arrowSize / 2}`}
-                fill={color}
-                transform={`translate(${x2}, ${y2}) rotate(${angle})`}
-                style={{
-                    opacity: 0,
-                    animation: `fadeIn 0.1s ease-out 0.9s forwards`,
-                    transition: 'all 0.5s ease-in-out'
-                }}
-            />
+            {/* 끝점 아이콘 (기권이면 X, 아니면 화살표) */}
+            {isGiveUp ? (
+                <text
+                    x={x2}
+                    y={y2}
+                    fill="#666"
+                    fontSize="16"
+                    fontWeight="bold"
+                    alignmentBaseline="middle"
+                    textAnchor="middle"
+                    style={{
+                        opacity: 0,
+                        animation: `fadeIn 0.1s ease-out 0.5s forwards`
+                    }}
+                >
+                    X
+                </text>
+            ) : (
+                <polygon
+                    points={`0,-${arrowSize / 2} ${arrowSize},0 0,${arrowSize / 2}`}
+                    fill={color}
+                    transform={`translate(${x2}, ${y2}) rotate(${angle})`}
+                    style={{
+                        opacity: 0,
+                        animation: `fadeIn 0.1s ease-out 0.9s forwards`,
+                        transition: 'all 0.5s ease-in-out'
+                    }}
+                />
+            )}
             <style>{`@keyframes fadeIn { to { opacity: ${opacity}; } }`}</style>
         </>
     );

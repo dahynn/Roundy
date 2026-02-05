@@ -63,10 +63,29 @@ export default function WaitingLobby() {
     if (tokenToSet) {
       localStorage.setItem('accessToken', tokenToSet);
     }
+
+    // Auto start check
+    if (searchParams.get('auto') === 'true') {
+      const token = localStorage.getItem('accessToken') || tokenToSet;
+      if (token) {
+        setIsMatching(true);
+      }
+    }
   }, [searchParams]);
 
   // --- 매칭 로직 ---
-  const [isMatching, setIsMatching] = useState(true);
+  const [isMatching, setIsMatching] = useState(false);
+
+  const startMatching = () => {
+    // 1. 토큰 존재 여부 확인
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert("로그인이 필요합니다. 홈으로 이동합니다.");
+      navigate('/home');
+      return;
+    }
+    setIsMatching(true);
+  };
 
   useEffect(() => {
     if (!isMatching) return;
@@ -83,7 +102,7 @@ export default function WaitingLobby() {
         if (response.roomId) {
           const token = localStorage.getItem('accessToken');
           if (token) {
-            window.location.href = `/meeting?room=${response.roomId}&token=${token}`;
+            navigate(`/meeting?room=${response.roomId}`);
             return;
           } else {
             alert("인증 토큰이 만료되었습니다.");
