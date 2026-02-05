@@ -48,7 +48,7 @@ spec:
         - name: DOMAIN_OR_PUBLIC_IP
           value: "i14a701.p.ssafy.io"
         - name: OPENVIDU_PUBLICURL
-          value: "https://i14a701.p.ssafy.io"
+          value: "https://i14a701.p.ssafy.io/openvidu/"
         - name: CERTIFICATE_TYPE
           value: "selfsigned"
         - name: TURN_PORT_TCP
