@@ -3,6 +3,20 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Moon, Bell, LogOut } from 'lucide-react';
 import { enterMatchQueue } from '@/api/match'; // API Import
 
+/**
+ * ------------------------------------------------------------------
+ * [TEST CONFIG] 6인 테스트용 하드코딩 토큰 (User 1 ~ 6)
+ * ------------------------------------------------------------------
+ */
+const TEST_TOKENS = [
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MjUsImV4cCI6MTc3MDQyODcyNX0.Vb38pTtoqaBT54PQfeWk_qKJVLiwjqvsX3vCK30veZI",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MzgsImV4cCI6MTc3MDQyODczOH0.LrEW-B7wlz0cWuskTCqTVFgpSRR1OmbKCu4lg6M30A4",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NTAsImV4cCI6MTc3MDQyODc1MH0.65KkNu2oTMCH6Df345_Xyq-dVZmRvluBU1I7me677ig",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NjIsImV4cCI6MTc3MDQyODc2Mn0.PnVyVyou5c3RnxD-Z3unRZm1nFSgnRKQfBZr3u8Vc4",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NzQsImV4cCI6MTc3MDQyODc3NH0.xkBiR5IPpC2mpPmYSfgMm9dR2VIVEQ75jR7OijUiyFI",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5ODUsImV4cCI6MTc3MDQyODc4NX0.ZA0C5P5MeCld1YwKhwcBybsdcHPXbxUWeq5NWhbngOI"
+];
+
 export default function WaitingLobby() {
   const navigate = useNavigate();
 
@@ -14,16 +28,41 @@ export default function WaitingLobby() {
   const progress = Math.floor((currentParticipants / totalRequired) * 100);
 
   useEffect(() => {
+    const queryUser = searchParams.get('user');
     const queryToken = searchParams.get('token');
-    if (queryToken) {
-      console.log("🔑 테스트용 토큰 감지 및 설정:", queryToken);
-      localStorage.setItem('accessToken', queryToken);
+
+    let tokenToSet = '';
+
+    // 1. ?user=0~5 형식 확인
+    if (queryUser) {
+      const idx = parseInt(queryUser, 10);
+      if (TEST_TOKENS[idx]) {
+        tokenToSet = TEST_TOKENS[idx];
+        console.log(`🧪 테스트 모드: User ${idx + 1} 토큰 로드`);
+      }
+    }
+    // 2. ?token=... 형식 확인
+    else if (queryToken) {
+      tokenToSet = queryToken;
+    }
+
+    if (tokenToSet) {
+      console.log("🔑 인증 토큰 설정 완료");
+      localStorage.setItem('accessToken', tokenToSet);
       // 필요 시 refreshToken 등은 비우거나 처리
     }
   }, [searchParams]);
 
   // --- 매칭 로직 ---
+  const [isMatching, setIsMatching] = useState(false);
+
+  const startMatching = () => {
+    setIsMatching(true);
+  };
+
   useEffect(() => {
+    if (!isMatching) return;
+
     let isMounted = true;
     let timer: number | null = null;
     let retryCount = 0;
@@ -32,55 +71,43 @@ export default function WaitingLobby() {
       if (!isMounted) return;
       try {
         console.log(`📡 매칭 대기열 요청 중... (시도: ${retryCount + 1})`);
+        // 서버 업데이트: requestId: null 전송, roomId가 있으면 즉시 반환됨
         const response: any = await enterMatchQueue();
-        // 응답 구조: { roomId: "uuid...", gender: "MALE" } (success는 _client에서 처리됨)
 
         if (response && response.roomId) {
           console.log("🎉 매칭 성공! Room ID:", response.roomId);
-
-          // 토큰 가져오기 (localStorage)
           const token = localStorage.getItem('accessToken');
-          console.log("🔑 토큰:", token);
-
-          // 미팅 페이지로 이동
           if (token) {
+            // 즉시 이동하고 폴링 중단
             navigate(`/meeting?room=${response.roomId}&token=${token}`);
+            return;
           } else {
-            alert("인증 토큰이 만료되었습니다. 다시 로그인해주세요.");
+            alert("인증 토큰이 만료되었습니다.");
             navigate('/home');
           }
-        } else {
-          // 매칭 안됨 -> 재시도 (3초 후)
-          // console.log("⏳ 매칭 대기 중...");
-          timer = window.setTimeout(pollMatch, 3000);
-          retryCount++;
-
-          // UI 업데이트 (대기 인원 Mocking을 좀 더 현실적으로?)
-          // setCurrentParticipants(prev => (prev + 1) % 5 + 2); // 예시
         }
+
+        // roomId가 없으면 계속 폴링 (3초 간격)
+        // console.log("⏳ 매칭 대기 중...");
+        timer = window.setTimeout(pollMatch, 3000);
+        retryCount++;
 
       } catch (error) {
         console.error("매칭 요청 실패:", error);
-        // 에러 발생 시에도 재시도 할지 결정 (일시적 서버 오류일 수 있음)
-        // 너무 자주 실패하면 중단
-        if (retryCount < 50) { // 예: 50번까지만 재시도
-          timer = window.setTimeout(pollMatch, 5000); // 에러 시 5초 대기
-          retryCount++;
-        } else {
-          alert("매칭 서버 연결에 실패했습니다.");
-          navigate('/home');
-        }
+        // 에러가 나도 일단 계속 시도 (서버 일시적 오류 가능성)
+        // 50회 이상 실패 시 중단 방지 (무한 시도)
+        timer = window.setTimeout(pollMatch, 3000);
+        retryCount++;
       }
     };
 
-    // 최초 실행
     pollMatch();
 
     return () => {
       isMounted = false;
       if (timer) clearTimeout(timer);
     };
-  }, [navigate]);
+  }, [isMatching, navigate]);
 
 
   return (
@@ -172,6 +199,16 @@ export default function WaitingLobby() {
           >
             <LogOut size={14} />
             <span>대기열 나가기</span>
+          </button>
+
+          {/* [TEST] 매칭 시작 버튼 */}
+          <button
+            onClick={startMatching}
+            disabled={isMatching}
+            className={`mt-4 px-6 py-3 rounded-full font-bold text-white transition-all ${isMatching ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FF4D94] hover:bg-[#ff3385] shadow-lg hover:shadow-xl hover:-translate-y-1'
+              }`}
+          >
+            {isMatching ? '📡 매칭 요청 중...' : '🚀 매칭 시작 (TEST)'}
           </button>
         </div>
       </main>

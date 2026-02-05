@@ -12,7 +12,7 @@ export const getChatRooms = () => client.get('/matches');
  * 매칭 대기열 등록 (폴링)
  * 응답: { roomId: string | null, gender: string } (매칭 전에는 roomId가 없을 수 있음)
  */
-export const enterMatchQueue = () => client.post('/session/enter');
+export const enterMatchQueue = () => client.post('/session/enter', { requestId: null });
 
 /**
  * 쪽지 전송
