@@ -1,128 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Mic, Video, VideoOff } from 'lucide-react';
+import { Timer, Video, Mic, MicOff, VideoOff, MessageCircle } from 'lucide-react';
 
-interface Step7Props {
-    myInfo: any;
-    partnerInfo: any;
-    onGoHome: () => void;
+interface Step7_FaceRevealProps {
+    onComplete: () => void;
 }
 
-export const Step7_FaceReveal = ({ myInfo, partnerInfo, onGoHome }: Step7Props) => {
-    const [internalPhase, setInternalPhase] = useState<'COUNTDOWN' | 'LIVE'>('COUNTDOWN');
-    const [countdown, setCountdown] = useState(10);
-    const [meetingTime, setMeetingTime] = useState(60);
+export const Step7_FaceReveal: React.FC<Step7_FaceRevealProps> = ({ onComplete }) => {
+    const [status, setStatus] = useState<'COUNTDOWN' | 'VIDEO_CHAT'>('COUNTDOWN');
+    const [count, setCount] = useState(10);
+    const [chatTime, setChatTime] = useState(60); // 1분
 
-    // Countdown & Timer Logic
+    // 카운트다운 로직
     useEffect(() => {
-        let timer: ReturnType<typeof setTimeout>;
-        if (internalPhase === 'COUNTDOWN') {
-            timer = setInterval(() => {
-                setCountdown((prev) => {
-                    if (prev <= 1) {
-                        setInternalPhase('LIVE');
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        } else if (internalPhase === 'LIVE') {
-            timer = setInterval(() => {
-                setMeetingTime((prev) => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
+        if (status === 'COUNTDOWN') {
+            if (count > 0) {
+                const timer = setTimeout(() => setCount(c => c - 1), 1000);
+                return () => clearTimeout(timer);
+            } else {
+                setStatus('VIDEO_CHAT');
+            }
         }
-        return () => clearInterval(timer);
-    }, [internalPhase]);
+    }, [count, status]);
 
-    // --- 1. 카운트다운 화면 ---
-    if (internalPhase === 'COUNTDOWN') {
-        return (
-            <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center animate-in fade-in">
-                <div className="text-[#FF4D94] font-black text-[120px] md:text-[200px] animate-pulse leading-none font-['Pretendard']">
-                    {countdown}
-                </div>
-                <p className="text-white/50 text-xl font-bold mt-8 animate-bounce">
-                    커플 매칭 성공! 얼굴 공개까지...
-                </p>
-            </div>
-        );
-    }
+    // 영상 채팅 타이머 로직
+    useEffect(() => {
+        if (status === 'VIDEO_CHAT') {
+            if (chatTime > 0) {
+                const timer = setTimeout(() => setChatTime(t => t - 1), 1000);
+                return () => clearTimeout(timer);
+            } else {
+                onComplete();
+            }
+        }
+    }, [chatTime, status, onComplete]);
 
-    // --- 2. 1:1 얼굴 공개 (LIVE SESSION) ---
     return (
-        <div className="w-full h-full relative flex bg-black animate-in fade-in duration-1000 z-50">
-            {/* Header Overlay */}
-            <div className="absolute top-0 w-full h-20 bg-gradient-to-b from-black/80 to-transparent z-40 flex items-center justify-between px-8">
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[#FF4D94] animate-pulse" />
-                    <span className="text-[#FF4D94] font-bold text-sm tracking-wider">LIVE SESSION</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-1 bg-white/10 rounded-full backdrop-blur-md border border-white/10">
-                    <span className="text-white font-black tabular-nums text-xl">
-                        00:{meetingTime.toString().padStart(2, '0')}
-                    </span>
-                </div>
-            </div>
+        <div className="absolute inset-0 z-10 w-full h-full bg-transparent flex flex-col items-center justify-center overflow-hidden">
 
-            {/* Split Screen Video */}
-            <div className="flex-1 grid grid-cols-2 gap-1 p-4 h-full">
-                {/* Left: Partner (Revealed) */}
-                <div className="relative bg-gray-900 rounded-[32px] overflow-hidden border border-white/10 shadow-2xl">
-                    {/* Placeholder for Video Feed */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center opacity-50">
-                            <p className="text-6xl mb-4">👩🏻</p>
-                            <p className="text-white font-bold text-xl">{partnerInfo?.name}</p>
-                        </div>
-                        {/* Floating Hearts Simulation */}
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            <div className="absolute bottom-20 left-10 text-[#FF4D94] animate-[float_3s_ease-in-out_infinite] opacity-0" style={{ animationDelay: '0.5s' }}>♥</div>
-                            <div className="absolute bottom-32 right-20 text-[#FF4D94] animate-[float_4s_ease-in-out_infinite] opacity-0" style={{ animationDelay: '1.2s' }}>♥</div>
-                            <div className="absolute bottom-10 left-1/2 text-[#FF4D94] animate-[float_2.5s_ease-in-out_infinite] opacity-0" style={{ animationDelay: '2.0s' }}>♥</div>
+            {/* 카운트다운 페이즈 */}
+            {status === 'COUNTDOWN' && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="relative">
+                        {/* 펄스 효과 */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/20 rounded-full animate-ping duration-1000" />
+                        <div className="relative z-10 text-[120px] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-pink-200 to-pink-500 tabular-nums animate-bounce">
+                            {count}
                         </div>
                     </div>
-                    <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl text-white font-bold text-sm border border-white/10">
-                        {partnerInfo?.name}
-                    </div>
-                </div>
-
-                {/* Right: Me (Revealed) */}
-                <div className="relative bg-gray-800 rounded-[32px] overflow-hidden border border-white/10 shadow-2xl">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center opacity-50">
-                            <p className="text-6xl mb-4">🧑🏻</p>
-                            <p className="text-white font-bold text-xl">{myInfo?.username}</p>
-                        </div>
-                    </div>
-                    <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl text-white font-bold text-sm border border-white/10">
-                        {myInfo?.username} (나)
-                    </div>
-                </div>
-            </div>
-
-            {/* Central Heart Overlay */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
-                <div className="relative">
-                    <Heart size={80} className="text-[#FF4D94] fill-[#FF4D94] animate-pulse drop-shadow-[0_0_30px_rgba(255,77,148,0.6)]" />
-                </div>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 text-center w-64">
-                    <p className="text-white font-bold text-lg drop-shadow-md animate-bounce">
-                        1분간의 만남이 시작됩니다
+                    <p className="mt-8 text-2xl text-white/60 font-medium animate-pulse">
+                        두근두근, 얼굴 공개까지...
                     </p>
                 </div>
+            )}
+
+            {/* 비디오 채팅 페이즈 */}
+            <div className={`w-full h-full flex flex-col transition-opacity duration-1000 ${status === 'VIDEO_CHAT' ? 'opacity-100' : 'opacity-0'}`}>
+
+                {/* 상단 타이머 바 */}
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-6 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-white font-mono text-lg font-bold">
+                        {Math.floor(chatTime / 60)}:{(chatTime % 60).toString().padStart(2, '0')}
+                    </span>
+                </div>
+
+                {/* 비디오 그리드 */}
+                <div className="flex-1 grid grid-cols-2 gap-4 p-4 md:p-8 max-w-7xl mx-auto w-full h-full items-center">
+
+                    {/* 내 화면 */}
+                    <VideoCard name="나 (User)" isMe={true} />
+
+                    {/* 상대방 화면 */}
+                    <VideoCard name="여자 1호" isMe={false} />
+
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const VideoCard = ({ name, isMe }: { name: string, isMe: boolean }) => {
+    return (
+        <div className="relative w-full aspect-[4/3] md:aspect-video bg-zinc-800 rounded-3xl overflow-hidden shadow-2xl border border-white/5 group">
+            {/* 가짜 비디오 피드 (placeholder) */}
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-900">
+                <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center backdrop-blur-sm">
+                    <Video size={48} className="text-white/20" />
+                </div>
             </div>
 
-            {/* Bottom Controls */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50 bg-black/40 backdrop-blur-xl p-2 rounded-full border border-white/10">
-                <button className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:scale-110 transition-transform">
-                    <Mic size={20} />
-                </button>
-                <button className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:scale-110 transition-transform">
-                    <Video size={20} />
-                </button>
-                <button className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform" onClick={onGoHome}>
-                    <VideoOff size={20} />
-                </button>
+            {/* 오버레이 정보 */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${isMe ? 'bg-green-500' : 'bg-blue-500'}`} />
+                        <span className="text-white font-bold text-lg">{name}</span>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <div className="p-2 rounded-full bg-white/10 backdrop-blur-md">
+                            <Mic size={16} className="text-white" />
+                        </div>
+                        <div className="p-2 rounded-full bg-white/10 backdrop-blur-md">
+                            <Video size={16} className="text-white" />
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            {/* 하이라이트 효과 (오픈 시) */}
+            <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" style={{ animationDuration: '0.5s', animationIterationCount: 1 }} />
         </div>
     );
 };
