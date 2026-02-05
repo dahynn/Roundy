@@ -40,80 +40,46 @@ const RotationTest: React.FC = () => {
     const [wsLogs, setWsLogs] = useState<string[]>([]);
 
     const { state: wsState, submitVote, submitGameAnswer, leaveRoom } = useRotationSystem(activeRoomId || "", userProfile);
-    // [FIX] publisherReady 추가 - Publisher의 stream이 완전히 생성된 후에만 replaceTrack 실행
-    const { session, publisher, subscribers, publisherReady, joinSession, leaveSession, initSelfCamera } = useOpenVidu();
+    const { session, publisher, subscribers, joinSession, leaveSession, initSelfCamera } = useOpenVidu();
 
-    // [ADD] AI Magic Mirror Hook - canvasRef 필수! (Canvas가 DOM에 있어야 captureStream 작동)
-    const { canvasRef, maskedStream, setMode, isLoaded: isAiLoaded } = useMagicMirror();
+    // [ADD] AI Magic Mirror Hook - isStreamReady 추가!
+    const { canvasRef, maskedStream, isStreamReady, setMode, isLoaded: isAiLoaded } = useMagicMirror();
 
     // ---------------------------------------------------------
-    // [KEY CHANGE] Vanilla Logic + Track Replacement
-    // 1. 일단 웹캠을 띄운다 (즉시 송출)
-    // 2. 마스킹 스트림이 준비되면 트랙만 교체한다 (끊김 없음)
+    // [NEW ARCHITECTURE] AI-First Publisher
+    // 1. maskedStream 준비 대기 (isStreamReady)
+    // 2. AI 트랙으로 바로 Publisher 생성
+    // 3. replaceTrack 불필요!
     // ---------------------------------------------------------
 
-    // 1. 초기 웹캠 실행
+    // 1. AI 스트림 준비 후 Publisher 생성
     useEffect(() => {
-        initSelfCamera();
-    }, [initSelfCamera]);
-
-    // 2. AI 트랙 교체 - Publisher가 완전히 준비된 후에만 실행
-    // [OPTIMIZATION] 500ms 지연으로 상대방의 안정적인 subscribe 유도
-    useEffect(() => {
-        // 1. 기본 조건 확인
-        if (!publisherReady || !maskedStream || !publisher) {
-            console.log("⏳ [RotationTest] Waiting for publisher or maskedStream...", {
-                publisherReady,
-                hasMaskedStream: !!maskedStream,
-                publisherId: publisher?.stream?.streamId
-            });
+        if (!isStreamReady || !maskedStream) {
+            console.log('⏳ [RotationTest] AI 스트림 준비 대기 중...', { isStreamReady, hasMaskedStream: !!maskedStream });
             return;
         }
 
         // 2. MediaStream 활성 상태 검증
         if (!maskedStream.active) {
-            console.warn("⚠️ [RotationTest] maskedStream is not active, skipping replaceTrack");
+            console.warn('⚠️ [RotationTest] maskedStream is not active');
             return;
         }
 
         const videoTrack = maskedStream.getVideoTracks()[0];
-        if (!videoTrack) {
-            console.warn("⚠️ [RotationTest] maskedStream에 videoTrack 없음");
+        if (!videoTrack || videoTrack.readyState !== 'live') {
+            console.warn('⚠️ [RotationTest] videoTrack is not live');
             return;
         }
 
-        // 3. 현재 트랙과 동일하다면 교체 스킵 (Publisher 재사용 시 핵심)
-        const currentTrack = publisher.stream?.getMediaStream()?.getVideoTracks()[0];
-        if (currentTrack?.id === videoTrack.id) {
-            console.log("✅ [RotationTest] Track is already masked. Skipping replaceTrack.", {
-                currentTrackId: currentTrack.id,
-                maskedTrackId: videoTrack.id
-            });
-            return;
-        }
+        // 3. Publisher 생성 (AI 트랙으로)
+        console.log('🎭 [RotationTest] AI 스트림 준비 완료! Publisher 생성 시작...');
+        initSelfCamera(videoTrack, true) // forceNew: true로 새로 생성
+            .then(() => console.log('✅ [RotationTest] Publisher created with AI track'))
+            .catch(err => console.error('❌ [RotationTest] Publisher creation failed:', err));
 
-        // 4. 지연 실행 (상대방의 안정적인 subscribe 유도)
-        const timer = setTimeout(async () => {
-            try {
-                console.log("🎭 [RotationTest] Replacing track with AI Masking track (delayed 500ms)", {
-                    publisherId: publisher.stream?.streamId,
-                    oldTrackId: currentTrack?.id,
-                    newTrackId: videoTrack.id
-                });
+    }, [isStreamReady, maskedStream, initSelfCamera]);
 
-                await publisher.replaceTrack(videoTrack);
-
-                console.log("✅ [Roundy] replaceTrack success", {
-                    publisherId: publisher.stream?.streamId,
-                    newTrackId: videoTrack.id
-                });
-            } catch (error) {
-                console.error("❌ [Roundy] replaceTrack failed:", error);
-            }
-        }, 500); // 500ms 지연으로 상대방 subscribe 완료 대기
-
-        return () => clearTimeout(timer);
-    }, [publisherReady, maskedStream, publisher]);
+    // replaceTrack useEffect 완전 제거!
 
     // [ADD] Stage에 따른 마스킹 모드 설정
     useEffect(() => {
@@ -178,9 +144,20 @@ const RotationTest: React.FC = () => {
     useEffect(() => {
         const partnerInfo = wsState.currentPartner;
         if (partnerInfo?.sessionId && partnerInfo?.token) {
-            joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username);
+            // 🆕 세션 전환 시 maskedStream의 트랙을 전달하여 트랙 검증에 활용
+            const videoTrack = maskedStream?.getVideoTracks()[0];
+
+            // 🔍 디버깅: maskedStream 상태 확인
+            console.log('🔍 [RotationTest] 세션 접속 전 maskedStream 상태:', {
+                hasMaskedStream: !!maskedStream,
+                isActive: maskedStream?.active,
+                hasVideoTrack: !!videoTrack,
+                trackState: videoTrack?.readyState
+            });
+
+            joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username, videoTrack);
         }
-    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile.username]);
+    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile.username, maskedStream]);
 
     // ---------------------------------------------------------
     // 컴포넌트 언마운트 시 정리
@@ -387,66 +364,84 @@ const RotationTest: React.FC = () => {
         />
     );
 
-    if (!activeRoomId) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f8f9fa' }}>
-                {hiddenCanvas}
-                <div style={{ padding: '40px', background: 'white', borderRadius: '16px', textAlign: 'center' }}>
-                    <h1>💘 Roundy Meeting</h1>
-                    <p>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</p>
-                    <p style={{ fontSize: '14px', color: isAiLoaded ? '#10b981' : '#f59e0b', marginBottom: '15px' }}>
-                        {isAiLoaded ? '✅ AI 모델 로드 완료' : '⏳ AI 모델 로딩 중...'}
-                    </p>
-                    <button onClick={handleEnterRoom} style={{ padding: '15px 30px', background: '#ff4081', color: 'white', border: 'none', borderRadius: '50px', fontSize: '18px', cursor: 'pointer' }}>
-                        참여하기
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
+    // [FIX] 렌더링 구조 최적화: Canvas는 항상 최상위에 유지 (Unmount 방지)
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {/* 1. Magic Mirror Canvas (절대 숨김 & 유지) */}
             {hiddenCanvas}
-            <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
-                <div>
-                    <h2>🎥 Rotation System Test (AI Enabled)</h2>
-                    <span>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</span>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#d9534f' }}>
-                        {wsState.currentStage} ({wsState.remainingTime}s)
+
+            {/* 2. 조건부 컨텐츠 렌더링 */}
+            {!activeRoomId ? (
+                // 대기 화면 (로그인)
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <div style={{ padding: '40px', background: 'white', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: '#333' }}>💘 Roundy Meeting</h1>
+                        <p style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</p>
+                        <p style={{ fontSize: '14px', color: isAiLoaded ? '#10b981' : '#f59e0b', marginBottom: '15px', fontWeight: 'bold' }}>
+                            {isAiLoaded ? '✅ AI 모델 로드 완료' : '⏳ AI 모델 로딩 중...'}
+                        </p>
+                        <button
+                            onClick={handleEnterRoom}
+                            disabled={!isAiLoaded}
+                            style={{
+                                padding: '15px 40px',
+                                background: isAiLoaded ? '#ff4081' : '#ccc',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '50px',
+                                fontSize: '18px',
+                                cursor: isAiLoaded ? 'pointer' : 'not-allowed',
+                                transition: 'transform 0.1s'
+                            }}
+                        >
+                            {isAiLoaded ? '참여하기' : '로딩 중...'}
+                        </button>
                     </div>
-                    <small>{wsState.connected ? '🟢 연결됨' : '🔴 끊김'}</small>
                 </div>
-            </header>
+            ) : (
+                // 메인 룸 화면
+                <>
+                    <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
+                        <div>
+                            <h2>🎥 Rotation System Test (AI Enabled)</h2>
+                            <span>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#d9534f' }}>
+                                {wsState.currentStage} ({wsState.remainingTime}s)
+                            </div>
+                            <small>{wsState.connected ? '🟢 연결됨' : '🔴 끊김'}</small>
+                        </div>
+                    </header>
 
-            <div style={{ display: 'flex', gap: '20px' }}>
-                {/* 메인 화면 */}
-                <div style={{ flex: 3, background: '#f0f0f0', padding: '20px', borderRadius: '12px', minHeight: '500px' }}>
-                    {renderMainContent()}
-                </div>
+                    <div style={{ display: 'flex', gap: '20px', flex: 1 }}>
+                        {/* 메인 화면 */}
+                        <div style={{ flex: 3, background: '#f0f0f0', padding: '20px', borderRadius: '12px', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+                            {renderMainContent()}
+                        </div>
 
-                {/* 사이드바 */}
-                <div style={{ flex: 1, background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
-                    <h4>참가자 ({wsState.participants.length})</h4>
-                    <ul>
-                        {wsState.participants.map(p => (
-                            <li key={p.userId} style={{ color: p.userId === userProfile.userId ? 'blue' : 'black' }}>
-                                {p.nickname} <span style={{ fontSize: '0.8em', color: '#888' }}>({p.gender})</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid #eee' }} />
+                        {/* 사이드바 */}
+                        <div style={{ flex: 1, background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
+                            <h4>참가자 ({wsState.participants.length})</h4>
+                            <ul>
+                                {wsState.participants.map(p => (
+                                    <li key={p.userId} style={{ color: p.userId === userProfile.userId ? 'blue' : 'black' }}>
+                                        {p.nickname} <span style={{ fontSize: '0.8em', color: '#888' }}>({p.gender})</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid #eee' }} />
 
-                    <h4>📡 Logs</h4>
-                    <div style={{ flex: 1, maxHeight: '250px', overflowY: 'auto', background: '#222', color: '#0f0', padding: '10px', fontSize: '12px', fontFamily: 'monospace' }}>
-                        {wsLogs.map((log, i) => <div key={i}>{log}</div>)}
+                            <h4>📡 Logs</h4>
+                            <div style={{ flex: 1, maxHeight: '250px', overflowY: 'auto', background: '#222', color: '#0f0', padding: '10px', fontSize: '12px', fontFamily: 'monospace', borderRadius: '4px' }}>
+                                {wsLogs.map((log, i) => <div key={i}>{log}</div>)}
+                            </div>
+
+                            <button onClick={leaveRoom} style={{ marginTop: '10px', padding: '10px', width: '100%', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>나가기</button>
+                        </div>
                     </div>
-
-                    <button onClick={leaveRoom} style={{ marginTop: '10px', padding: '10px', width: '100%' }}>나가기</button>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 };

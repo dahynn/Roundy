@@ -7,7 +7,6 @@ export const useOpenVidu = () => {
     const [session, setSession] = useState<Session | undefined>(undefined);
     const [publisher, setPublisher] = useState<Publisher | undefined>(undefined);
     const [subscribers, setSubscribers] = useState<StreamManager[]>([]);
-    const [publisherReady, setPublisherReady] = useState<boolean>(false); // [NEW] Publisher stream 생성 완료 여부
 
     // 로직 내부 참조용 Ref (State 변경에 따라 함수가 재생성되는 것을 방지)
     const sessionRef = useRef<Session | undefined>(undefined);
@@ -50,9 +49,18 @@ export const useOpenVidu = () => {
         isInitializingRef.current = true;
         try {
             console.log('📷 [initSelfCamera] 카메라 권한 요청...');
+
+            // [FIX] 트랙 복제: OpenVidu가 트랙을 stop시켜도 원본 maskedStream은 유지됨
+            // OpenVidu SDK는 전달받은 트랙을 내부적으로 관리하며, disconnect 시 stop시킴
+            // 따라서 원본 트랙 대신 복제본을 전달해야 maskedStream이 계속 살아있음
+            const videoSourceTrack = customVideoTrack ? customVideoTrack.clone() : undefined;
+            if (videoSourceTrack) {
+                console.log('🔄 [initSelfCamera] 트랙 복제 완료:', videoSourceTrack.id);
+            }
+
             const newPublisher = await OV.current!.initPublisherAsync(undefined, {
                 audioSource: undefined,
-                videoSource: customVideoTrack || undefined, // Use custom track if provided
+                videoSource: videoSourceTrack || undefined, // Use CLONED track if provided
                 publishAudio: true,
                 publishVideo: true,
                 resolution: '640x480',
@@ -94,6 +102,13 @@ export const useOpenVidu = () => {
      */
     const cleanupSession = useCallback(() => {
 
+        // [FIX] 1. 먼저 배열 비우기 (UI 즉시 업데이트, 레이스 컨디션 방지)
+        setSubscribers([]);
+        subscribersRef.current = [];
+        setSession(undefined);
+        currentSessionIdRef.current = null;
+
+        // [FIX] 2. 그 다음 disconnect (이벤트 발생해도 이미 빈 배열)
         if (sessionRef.current) {
             console.log('🧹 기존 세션 정리 중...');
             try {
@@ -101,18 +116,10 @@ export const useOpenVidu = () => {
             } catch (e) {
                 console.warn('세션 종료 중 오류(무시 가능):', e);
             }
+            sessionRef.current = undefined;
         }
-        sessionRef.current = undefined;
-        subscribersRef.current = [];
 
-        // State 업데이트
-        setSession(undefined);
-        setSubscribers([]);
-        currentSessionIdRef.current = null;
-
-        // [FIX] publisherReady 리셋 - 새 세션에서 replaceTrack 재실행을 위해 필수
-        setPublisherReady(false);
-        console.log('🔄 [cleanupSession] publisherReady 리셋 완료');
+        console.log('🔄 [cleanupSession] 정리 완료');
 
         // [VANILLA PATTERN] Publisher는 재사용 - 세션 전환해도 유지
         // AI 마스킹 트랙을 사용하는 Publisher를 여러 세션에서 재사용 가능
@@ -148,10 +155,10 @@ export const useOpenVidu = () => {
         console.log(`🔄 [joinSession] 세션 접속 시도: ${sessionId}`);
 
         // 1. 기존 세션이 있다면 확실히 끊기
-        // [FIX] 세션 전환 딜레이 증가 (100ms → 300ms) - 안정적인 세션 전환을 위해
+        // [FIX] 세션 전환 딜레이 증가 (300ms → 500ms) - 안정적인 세션 전환을 위해
         if (sessionRef.current) {
             cleanupSession();
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         // 2. 새 세션 객체 생성
@@ -193,21 +200,46 @@ export const useOpenVidu = () => {
             setSession(newSession);
             currentSessionIdRef.current = sessionId;
 
-            // [NEW] 기존 Publisher가 있다면 즉시 Publish
+            // [NEW] 기존 Publisher가 있다면 트랙 상태 확인 후 Publish
             if (publisherRef.current) {
                 console.log('📤 [joinSession] Publisher publish 시작');
 
-                // [FIX] Publisher의 streamCreated 이벤트 리스너 등록
-                publisherRef.current.once('streamCreated', (event) => {
-                    console.log('✅ [Publisher] Stream created and ready:', event.stream.streamId);
-                    setPublisherReady(true);
-                });
+                // 🔍 트랙 상태 검증
+                const mediaStream = publisherRef.current.stream?.getMediaStream();
+                const videoTrack = mediaStream?.getVideoTracks()[0];
 
-                try {
-                    await newSession.publish(publisherRef.current);
-                    console.log('📤 [joinSession] Publisher publish 완료');
-                } catch (err) {
-                    console.error('❌ [joinSession] Publisher publish 실패:', err);
+                if (!videoTrack || videoTrack.readyState !== 'live') {
+                    console.warn('⚠️ [joinSession] Publisher 트랙이 무효화됨!', {
+                        hasMediaStream: !!mediaStream,
+                        hasVideoTrack: !!videoTrack,
+                        trackState: videoTrack?.readyState
+                    });
+
+                    // customVideoTrack이 제공되었다면 새 Publisher 생성
+                    if (customVideoTrack && customVideoTrack.readyState === 'live') {
+                        console.log('🔄 [joinSession] 새로운 트랙으로 Publisher 재생성...');
+                        await initSelfCamera(customVideoTrack, true);
+
+                        // 재생성된 Publisher로 publish
+                        if (publisherRef.current) {
+                            try {
+                                await newSession.publish(publisherRef.current);
+                                console.log('📤 [joinSession] 새 Publisher publish 완료');
+                            } catch (err) {
+                                console.error('❌ [joinSession] 새 Publisher publish 실패:', err);
+                            }
+                        }
+                    } else {
+                        console.error('❌ [joinSession] 유효한 트랙이 없어 publish 불가');
+                    }
+                } else {
+                    // 트랙이 유효하면 기존 Publisher 그대로 사용
+                    try {
+                        await newSession.publish(publisherRef.current);
+                        console.log('📤 [joinSession] Publisher publish 완료');
+                    } catch (err) {
+                        console.error('❌ [joinSession] Publisher publish 실패:', err);
+                    }
                 }
             } else {
                 console.log('⏳ [joinSession] Publisher 없음. maskedStream 준비 후 생성될 예정...');
@@ -238,7 +270,6 @@ export const useOpenVidu = () => {
         session,
         publisher,
         subscribers,
-        publisherReady, // [NEW] Export publisherReady state
         joinSession,
         leaveSession,
         initSelfCamera,
