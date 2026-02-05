@@ -8,4 +8,4 @@ spec:
     prefixes:
       - /minio-console
       - /minio-api
-    forceSlash: true # 이 옵션이 중요합니다.
+    forceSlash: true
