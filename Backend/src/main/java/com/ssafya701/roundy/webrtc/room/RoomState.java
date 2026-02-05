@@ -36,6 +36,19 @@ public class RoomState {
     private final String openViduSessionId;
     private RoundInfo currentRound;
     
+    /**
+     * DB의 Session 엔티티 PK (Phase 7: 영속화용)
+     */
+    private Long dbSessionId;
+
+    public void setDbSessionId(Long dbSessionId) {
+        this.dbSessionId = dbSessionId;
+    }
+    
+    public Long getDbSessionId() {
+        return dbSessionId;
+    }
+    
     // ========== 8단계 로테이션 필드 ==========
     
     /**
