@@ -5,10 +5,14 @@ interface Props {
   onClose: () => void;
 }
 
+
+
 export default function LoginModal({ onClose }: Props) {
+  const apiUrl = import.meta.env.VITE_API_URL;
   const handleKakaoLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/login`;
-    // window.location.href = `http://localhost:8080/api/auth/login`;
+    // console.log("전체 환경변수:", import.meta.env);
+    // console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+    window.location.href = `${apiUrl}/api/auth/login`;
   };
 
   return (
