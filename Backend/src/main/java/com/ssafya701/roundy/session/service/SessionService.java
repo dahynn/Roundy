@@ -221,6 +221,18 @@ public class SessionService {
         return gender == GenderType.MALE ? SESSION_QUEUE_MALE : SESSION_QUEUE_FEMALE;
     }
 
+    // [추가] 유저의 매칭된 방 정보(currentRoom) 확인
+    public String getUserCurrentRoom(Long userId) {
+        String userRoomKey = "user:" + userId + ":currentRoom";
+        return stringRedisTemplate.opsForValue().get(userRoomKey);
+    }
+    
+    // [추가] 유저의 currentRoom 키 삭제 (예외 상황용)
+    public void removeUserCurrentRoomKey(Long userId) {
+        String userRoomKey = "user:" + userId + ":currentRoom";
+        redisTemplate.delete(userRoomKey);
+    }
+
     /**
      * 방 관련 Redis 데이터 정리 (좀비 방 방지)
      * @param roomId 방 ID

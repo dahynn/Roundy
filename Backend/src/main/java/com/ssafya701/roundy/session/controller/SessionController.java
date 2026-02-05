@@ -73,10 +73,31 @@ public class SessionController {
                                                         new SessionEnterResponse(false, "성별 정보가 없습니다.", null)));
                 }
 
-                // 4. 세션 큐에 추가 + 매칭 시도
+                // 4. [수정] 이미 매칭된 방이 있는지 먼저 확인 (Polling 로직 개선)
+                String existingRoomId = sessionService.getUserCurrentRoom(userId);
+                if (existingRoomId != null) {
+                    // 이미 매칭된 상태라면 즉시 방 정보 반환
+                    RoomMemberInfo memberInfo = sessionService.getRoomMemberInfo(userId, existingRoomId);
+                    
+                    if (memberInfo != null) {
+                        SessionEnterResponse response = SessionEnterResponse.matched(
+                                        memberInfo.getRoomId(),
+                                        memberInfo.getGender());
+        
+                        log.info("User already matched (polling catch): userId={}, roomId={}", 
+                                        userId, memberInfo.getRoomId());
+                        return ResponseEntity.ok(CommonResponse.ofSuccess(response));
+                    } else {
+                        // 정보가 없으면 키 삭제 후 재시도 유도 (Self-Repair)
+                        log.warn("User has room key but no member info: userId={}, roomId={}", userId, existingRoomId);
+                        sessionService.removeUserCurrentRoomKey(userId);
+                    }
+                }
+
+                // 5. 세션 큐에 그제서야 추가 + 매칭 시도
                 RoomMatchResult matchResult = sessionService.addToQueueAndMatch(userId, gender);
 
-                // 5. 매칭 결과에 따른 응답
+                // 6. 매칭 결과에 따른 응답
                 if ("MATCHED".equals(matchResult.getStatus())) {
                         // 매칭 성공 → Redis에서 본인 번호 조회
                         RoomMemberInfo memberInfo = sessionService.getRoomMemberInfo(userId, matchResult.getRoomId());

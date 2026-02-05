@@ -55,6 +55,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final RoomEventPublisher eventPublisher;
     private final com.ssafya701.roundy.match.repository.RoomParticipantRepository roomParticipantRepository;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate; // [추가] Redis 검증용
+    private final com.ssafya701.roundy.session.service.SessionService sessionService; // [추가] 방 정리용
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -336,9 +337,17 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                             // 3. ROOM_STATE 브로드캐스트
                             broadcastRoomState(room);
 
-                            // 4. 방이 비었으면 로테이션 중지
+                            // 4. 방이 비었으면 로테이션 중지 및 Redis 데이터 정리
                             if (room.isEmpty()) {
                                 rotationScheduler.stopRotation(roomId);
+                                
+                                // [추가] 마지막 사람이 나갔으므로 Redis 데이터 정리 (좀비 방 방지)
+                                try {
+                                    sessionService.cleanupRoom(roomId);
+                                    log.info("🧹 방이 비어 Redis 데이터 정리 수행: roomId={}", roomId);
+                                } catch (Exception e) {
+                                    log.error("방 정리 실패: roomId={}", roomId, e);
+                                }
                             }
                         } catch (Exception e) {
                             log.error("방 상태 브로드캐스트 실패: roomId={}", roomId, e);
