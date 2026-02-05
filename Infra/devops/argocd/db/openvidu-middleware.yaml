@@ -1,0 +1,10 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: openvidu-strip
+  namespace: roundy-app
+spec:
+  stripPrefix:
+    prefixes:
+      - /openvidu
+    forceSlash: true
