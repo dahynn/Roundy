@@ -13,6 +13,7 @@ public enum WsMessageType {
     // 신규: 8단계 로테이션
     SUBMIT_VOTE,          // 투표 제출 (첫인상/최종)
     SUBMIT_GAME_VOTE,     // 게임 투표 제출 (이미지 게임)
+    RENDER_COMPLETE,      // [신규] 클라이언트 렌더링 완료 신호
     
     // ========== Outbound (서버 → 클라이언트) ==========
     
@@ -28,6 +29,7 @@ public enum WsMessageType {
     
     // 신규: 8단계 로테이션
     STAGE_CHANGE,         // 스테이지 전환 (SELF_INTRO → VOTE_FIRST 등)
+    START_TIMER,          // [신규] 모든 렌더링 완료 후 타이머 시작
     SPEAKER_CHANGE,       // 자기소개 발언자 변경
     GAME_QUESTION,        // 게임 문제 출제
     GAME_RESULT,          // 게임 결과 발표
