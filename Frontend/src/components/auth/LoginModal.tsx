@@ -13,10 +13,10 @@ export default function LoginModal({ onClose }: Props) {
     : '';
   const handleKakaoLogin = () => {
     // console.log("전체 환경변수:", import.meta.env);
-    // console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-    // window.location.href = `${apiUrl}/api/auth/login`;
-    const tempUrl = "https://i14a701.p.ssafy.io";
-    window.location.href = `${tempUrl}/api/auth/login`;
+    console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+    window.location.href = `${apiUrl}/api/auth/login`;
+    // const tempUrl = "https://i14a701.p.ssafy.io";
+    // window.location.href = `${tempUrl}/api/auth/login`;
   };
 
   return (
