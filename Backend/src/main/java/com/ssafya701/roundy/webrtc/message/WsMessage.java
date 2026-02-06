@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.ssafya701.roundy.webrtc.message.inbound.JoinRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
+import com.ssafya701.roundy.webrtc.message.inbound.RenderCompleteMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.SubmitGameVoteMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.SubmitVoteMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.*;
@@ -40,6 +41,8 @@ import com.ssafya701.roundy.webrtc.message.outbound.*;
     @JsonSubTypes.Type(value = FirstVoteResultMessage.class, name = "FIRST_VOTE_RESULT"),
     @JsonSubTypes.Type(value = BreakMessage.class, name = "BREAK"),
     @JsonSubTypes.Type(value = PartnerLeftMessage.class, name = "PARTNER_LEFT"),
+    @JsonSubTypes.Type(value = RenderCompleteMessage.class, name = "RENDER_COMPLETE"),
+    @JsonSubTypes.Type(value = StartTimerMessage.class, name = "START_TIMER"),
     @JsonSubTypes.Type(value = PartnerReconnectedMessage.class, name = "PARTNER_RECONNECTED")
 })
 public interface WsMessage {
