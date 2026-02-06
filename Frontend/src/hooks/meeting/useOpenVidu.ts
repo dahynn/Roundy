@@ -186,6 +186,15 @@ export const useOpenVidu = () => {
             }
         });
 
+        // [NEW] 서버측 세션 종료 감지
+        newSession.on('sessionDisconnected', (event) => {
+            console.warn('🔌 [OpenVidu] 세션 연결 해제됨:', event.reason);
+            if (event.reason !== 'disconnect') {
+                // 의도치 않은 해제일 경우 정리
+                cleanupSession();
+            }
+        });
+
         try {
             // 4. [VANILLA PATTERN] Publisher는 별도 관리
             // Publisher가 이미 있으면 그대로 사용, 없으면 나중에 initSelfCamera에서 publish 될 것임

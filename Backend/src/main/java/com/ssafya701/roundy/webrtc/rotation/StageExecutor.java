@@ -29,6 +29,7 @@ public class StageExecutor {
     
     private final RoomEventPublisher eventPublisher;
     private final MatchService matchService;
+    private final com.ssafya701.roundy.session.service.SessionService sessionService; // [추가] Redis 정리를 위해 주입
     private final GameQuestionRepository questionRepository;
     private final PairingStrategy pairingStrategy = new PairingStrategy();
     private final ScheduledExecutorService gameScheduler = Executors.newScheduledThreadPool(10);
@@ -55,6 +56,25 @@ public class StageExecutor {
         
         log.info("자기소개 진행: roomId={}, 발언자={}, 남은사람={}", 
                 room.getRoomId(), speakerId, room.getRemainingspeakers());
+    }
+
+    /**
+     * 쉬는 시간 실행 (5초)
+     * 이 시간 동안 결과(투표 직후)가 있으면 보여줌
+     */
+    public void executeBreak(RoomState room) {
+        // STAGE_CHANGE 브로드캐스트 (BREAK) -> 수정: BREAK 메시지 전송
+        eventPublisher.publishBreak(room);
+
+        // 만약 이전 스테이지가 첫인상 투표였다면 -> 결과 공개!
+        // (VOTE_FIRST -> BREAK -> ROTATION_SHORT 흐름일 때만, 로테이션 라운드 1일 때)
+        // 주의: ROTATION_SHORT R1 -> R2 사이의 Break에서도 pending=ROTATION_SHORT이므로 중복 전송됨 방지
+        if (room.getPendingNextStage() == Stage.ROTATION_SHORT && room.getCurrentRotationRound() == 1) {
+             log.info("📢 첫인상 투표 결과 공개 (Break Time): roomId={}", room.getRoomId());
+             eventPublisher.publishFirstVoteResults(room);
+        }
+
+        log.info("☕ 휴식 시간(Break): roomId={}, duration={}", room.getRoomId(), Stage.BREAK.getDurationSeconds());
     }
     
     /**
@@ -163,6 +183,11 @@ public class StageExecutor {
         
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, stage);
+
+        // [삭제] 첫인상 투표 결과 공개는 이제 executeBreak(이전 단계)에서 처리됨
+        // if (!isLong && roundNumber == 1) { ... }
+        
+        // PAIR_ASSIGNED 발행
         
         // PAIR_ASSIGNED 발행
         eventPublisher.publishPairAssignments(room, stage.getOrder(), pairMap);
@@ -302,8 +327,15 @@ public class StageExecutor {
                 Long maleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId1 : userId2;
                 Long femaleId = (gender1 == com.ssafya701.roundy.webrtc.room.enums.Gender.MALE) ? userId2 : userId1;
                 
-                matchService.createMatch(room.getRoomId(), maleId, femaleId);
-                log.info("✅ 매칭 DB 저장 완료: male={}, female={}", maleId, femaleId);
+                // DB Session ID 사용 (없으면 Room ID 해시값 사용 - 비상용)
+                Long sessionId = room.getDbSessionId();
+                if (sessionId == null) {
+                    log.error("❌ 매칭 저장 실패: DB Session ID가 없습니다. (roomId={})", room.getRoomId());
+                    continue;
+                }
+                
+                matchService.createMatch(sessionId, maleId, femaleId);
+                log.info("✅ 매칭 DB 저장 완료: session={}, male={}, female={}", sessionId, maleId, femaleId);
                 
             } catch (Exception e) {
                 log.error("매칭 정보 DB 저장 실패: match={}", match, e);
@@ -379,6 +411,12 @@ public class StageExecutor {
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         cleanupScheduler.schedule(() -> {
             log.info("🔄 방 자동 데이터 정리 (얼굴 공개 시작 후): roomId={}", room.getRoomId());
+            
+            // [추가] Redis 데이터 정리 (좀비 방 방지)
+            if (sessionService != null) {
+                sessionService.cleanupRoom(room.getRoomId());
+            }
+
             // 주의: room.reset()은 참가자 목록을 다 지우므로, 
             // 혹시라도 이후에 서버에서 데이터를 조회해야 한다면 문제가 될 수 있음.
             // 하지만 현재는 OpenVidu 세션이 이미 생성되었으므로 P2P 통신에는 문제 없음.

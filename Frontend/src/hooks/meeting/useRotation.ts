@@ -13,7 +13,7 @@ import type {
     SpeakerChangePayload, // Import SpeakerChangePayload
     GameQuestionPayload, // Import GameQuestionPayload
     GameResultPayload, // Import GameResultPayload
-    // RotationStage // Import Stage Type
+    RotationStage // Import Stage Type
 } from '../../types/meeting/rotaion';
 
 interface UserProfile {
@@ -29,15 +29,22 @@ interface LobbyCredentials {
     token: string;
 }
 
-export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
+
+
+export const useRotationSystem = (roomId: string | null, token: string | null, userProfile: UserProfile | null) => {
     const socketRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<number | null>(null);
 
     const [state, setState] = useState<RotationState & { lobbyCredentials?: LobbyCredentials }>({
         connected: false,
         roomId: null,
+        mode: null,
         currentStage: 'WAITING',
+        currentRound: 0,
+        totalRounds: 0,
         remainingTime: 0,
+        totalTime: 0, // [NEW]
+        isBreak: false, // [NEW]
         participants: [],
         currentSpeaker: null,
         currentGame: null,
@@ -97,13 +104,19 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
 
                     // 스테이지가 변경될 때, 로테이션(1:1) 단계가 아니면 다시 로비(단체방) 세션으로 복귀해야 함
                     // 예: 로테이션 끝 -> 중간 투표(VOTE_FIRST) -> 다시 로비 세션 필요
+                    // 1:1 스테이지 리스트
                     const isPairStage = ['ROTATION_SHORT', 'ROTATION_LONG', 'FACE_REVEAL'].includes(payload.stage);
 
                     setState(prev => {
                         let nextPartner = prev.currentPartner;
 
-                        // 1:1 스테이지가 아니고, 현재 로비 세션이 아니라면 -> 로비로 복귀
+                        // 1:1 스테이지가 아니면 (SELF_INTRO 등) 로비(단체) 세션 사용
+                        // 직전 단계가 WAITING(로비)이었다면 currentPartner는 이미 로비 세션임.
+                        // 하지만 명시적으로 lobbyCredentials를 사용하여 세션 정보를 보장함.
                         if (!isPairStage && prev.lobbyCredentials) {
+                            // 로비 세션 ID가 기존과 동일하다면, 상태 업데이트 후에도 Meeting.tsx useEffect가 재실행되지 않도록
+                            // (혹은 재실행되더라도 joinSession 가드로 방어)
+                            // 여기서 nextPartner를 갱신
                             nextPartner = {
                                 id: null,
                                 nickname: 'Lobby',
@@ -119,10 +132,13 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                             ...prev,
                             currentStage: payload.stage,
                             remainingTime: payload.durationSeconds,
+                            totalTime: payload.durationSeconds, // [NEW] 전체 시간 설정
+                            isBreak: false, // [NEW] 스테이지 시작 시 휴식 해제
                             currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
                             currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
                             currentGame: null, // 이미지 게임 정보 초기화
-                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`
+                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`,
+                            firstVoteResults: null // [NEW] 스테이지 변경 시 투표 결과 초기화 (화면 숨김)
                         };
                     });
                     break;
@@ -150,7 +166,8 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                     const payload = data as MatchResultPayload;
                     setState(prev => ({
                         ...prev,
-                        lastMessage: payload.isMatched
+                        matchResult: payload, // [NEW] 최종 결과 저장 (UI 표시용)
+                        lastMessage: payload.matched
                             ? `🎉 최종 커플: ${payload.partnerNickname}`
                             : '최종 매칭 실패 ㅠㅠ'
                     }));
@@ -232,6 +249,30 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                     setState(prev => ({ ...prev, lastMessage: '투표 완료!' }));
                     break;
 
+                case 'BREAK': {
+                    console.log('🛑 [WS] BREAK Received:', data);
+                    const payload = data as any; // BreakPayload
+                    setState(prev => ({
+                        ...prev,
+                        remainingTime: payload.durationSeconds,
+                        // totalTime: payload.durationSeconds, // 휴식 시간도 게이지로 보여줄지 여부 -> 일단은 유지 or 업데이트? 보통 휴식은 짧아서 업데이트 권장
+                        isBreak: true, // [NEW] 휴식 상태 진입
+                        lastMessage: '잠시 후 다음 단계로 이동합니다...'
+                    }));
+                    break;
+                }
+
+                case 'FIRST_VOTE_RESULT': {
+                    console.log('📊 [WS] FIRST_VOTE_RESULT Received:', data);
+                    const payload = data as any; // FirstVoteResultPayload
+                    setState(prev => ({
+                        ...prev,
+                        firstVoteResults: payload.results,
+                        lastMessage: '첫인상 투표 결과 집계 완료!'
+                    }));
+                    break;
+                }
+
                 case 'KICK': {
                     const payload = data as KickPayload;
                     // alert(`강제 퇴장: ${payload.reason}`); // 제거
@@ -262,6 +303,13 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
                             roomId: null,
                             lastMessage: payload.message
                         }));
+                    } else if (payload.code === 'OPENVIDU_ERROR') {
+                        // OpenVidu 에러는 치명적이지 않을 수 있으므로 경고만 표시하고 연결은 유지 시도
+                        console.error('🚨 OpenVidu Error:', payload.message);
+                        setState(prev => ({
+                            ...prev,
+                            lastMessage: `⚠️ 화상 연결 오류: ${payload.message}`
+                        }));
                     } else {
                         // 기타 에러는 메시지만 표시
                         setState(prev => ({
@@ -277,33 +325,50 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         }
     }, []);
 
-    // WebSocket 연결 (생략 가능하지만 전체 흐름 유지 위해 포함)
+    // WebSocket 연결 (가이드 준수)
+    // 1. URL: VITE_WS_URL + ?token={token}
+    // 2. JOIN_ROOM: 연결 후 전송
     useEffect(() => {
-        if (!roomId) return;
+        // roomId는 연결 URL에 필요 없지만, JOIN_ROOM 메시지에는 필요함
+        // 연결 로직은 token이 있을 때만 시도
+        if (!token) return;
 
-        const params = new URLSearchParams({
-            userId: userProfile.userId.toString(),
-            username: userProfile.username,
-            gender: userProfile.gender,
-            mode: userProfile.mode
-        }).toString();
-
+        // 사용자 요청: ws://localhost:8080/ws/webrtc?token=
         const baseUrl = import.meta.env.VITE_WS_URL;
-        const WS_URL = `${baseUrl}?${params}`;
+        if (!baseUrl || baseUrl === 'undefined') {
+            console.error('[WS] VITE_WS_URL 환경변수가 설정되지 않았습니다.');
+            return;
+        }
+
+        const WS_URL = `${baseUrl}?token=${token}`;
+        console.log(`[WS] Connecting to ${WS_URL}`);
 
         const socket = new WebSocket(WS_URL);
         socketRef.current = socket;
 
         socket.onopen = () => {
             console.log('[WS] Connected');
-            sendMessage('JOIN_ROOM', { roomId });
+            // 가이드상 JOIN_ROOM 전송 권장
+            if (roomId) {
+                sendMessage('JOIN_ROOM', { roomId });
+            }
         };
 
         socket.onmessage = handleMessage;
-        socket.onclose = () => setState(prev => ({ ...prev, connected: false }));
+        socket.onclose = (event) => {
+            console.log('[WS] Disconnected:', event.code, event.reason);
+            setState(prev => ({ ...prev, connected: false }));
+        };
 
-        return () => socket.close();
-    }, [roomId, userProfile.userId, sendMessage, handleMessage]);
+        socket.onerror = (error) => {
+            console.error('[WS] Error:', error);
+        };
+
+        return () => {
+            console.log('[WS] Closing connection');
+            socket.close();
+        };
+    }, [token, roomId, sendMessage, handleMessage]); // userProfile 의존성 제거
 
     // 타이머 (기존 게임 타이머)
     useEffect(() => {
@@ -341,9 +406,10 @@ export const useRotationSystem = (roomId: string, userProfile: UserProfile) => {
         return () => { if (redirectTimer) clearInterval(redirectTimer); };
     }, [state.redirectInfo]);
 
-    const submitVote = (targetUserId: number) => sendMessage('SUBMIT_VOTE', { targetUserId });
+    const submitVote = (targetUserId: number | null) => sendMessage('SUBMIT_VOTE', { targetUserId });
     const submitGameAnswer = (answer: string) => sendMessage('SUBMIT_GAME_ANSWER', { answer });
     const leaveRoom = () => sendMessage('LEAVE_ROOM', { roomId });
+    const sendFaceRevealPermission = (accepted: boolean) => sendMessage('FACE_REVEAL_PERMISSION', { accepted });
 
-    return { state, submitVote, submitGameAnswer, leaveRoom };
+    return { state, submitVote, submitGameAnswer, leaveRoom, sendFaceRevealPermission };
 };

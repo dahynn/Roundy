@@ -218,6 +218,21 @@ public class RoomEventPublisher {
         log.info("STAGE_CHANGE 발행: roomId={}, stage={}, duration={}s", 
                 room.getRoomId(), stage, stage.getDurationSeconds());
     }
+
+    /**
+     * BREAK 메시지 발행 (쉬는 시간)
+     */
+    public void publishBreak(RoomState room) {
+        com.ssafya701.roundy.webrtc.message.outbound.BreakMessage message = 
+            new com.ssafya701.roundy.webrtc.message.outbound.BreakMessage(
+                room.getRoomId(),
+                Stage.BREAK.getDurationSeconds()
+            );
+        
+        broadcastToRoom(room, message);
+        log.info("BREAK 발행: roomId={}, duration={}s", 
+                room.getRoomId(), Stage.BREAK.getDurationSeconds());
+    }
     
     /**
      * SPEAKER_CHANGE 브로드캐스트 (자기소개 발언자 변경)
@@ -448,5 +463,36 @@ public class RoomEventPublisher {
                 room.getParticipantCount()
         );
         broadcastToRoom(room, roomState);
+    }
+    
+    /**
+     * 첫인상 투표 결과 브로드캐스트
+     */
+    public void publishFirstVoteResults(RoomState room) {
+        java.util.List<FirstVoteResultMessage.VoteDetail> details = new java.util.ArrayList<>();
+        Map<Long, Long> votes = room.getFirstVotes();
+        
+        for (Map.Entry<Long, Long> entry : votes.entrySet()) {
+            Long voterId = entry.getKey();
+            Long targetId = entry.getValue();
+            // -1L인 경우 (기권/미선택) 처리
+            Long realTargetId = (targetId != null && targetId == -1L) ? null : targetId;
+            
+            String voterName = room.getParticipant(voterId).map(ParticipantState::getNickname).orElse("Unknown");
+            String targetName = "Unknown";
+            
+            if (realTargetId != null) {
+                targetName = room.getParticipant(realTargetId).map(ParticipantState::getNickname).orElse("Unknown");
+            } else {
+                targetName = "None"; // 또는 null
+            }
+            
+            details.add(new FirstVoteResultMessage.VoteDetail(voterId, voterName, realTargetId, targetName));
+        }
+        
+        FirstVoteResultMessage message = new FirstVoteResultMessage(details);
+        broadcastToRoom(room, message);
+        
+        log.info("FIRST_VOTE_RESULT 발행: roomId={}, 결과 {}건", room.getRoomId(), details.size());
     }
 }

@@ -59,10 +59,12 @@ const UserVideo: React.FC<Props> = ({ streamManager, isLocal = false }) => {
     }, [streamManager, isLocal]);
 
     const getNickname = () => {
+        const rawData = streamManager.stream.connection.data;
         try {
-            return JSON.parse(streamManager.stream.connection.data).clientData;
+            const parsed = JSON.parse(rawData);
+            return parsed.clientData || parsed;
         } catch {
-            return 'Unknown';
+            return rawData || 'Unknown';
         }
     };
 

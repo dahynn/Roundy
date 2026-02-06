@@ -116,6 +116,24 @@ public class UserController {
         return ResponseEntity.ok(CommonResponse.ofSuccess("검증 사진 등록 완료"));
     }
 
+    // 프로필 수정
+    @Operation(summary = "프로필 수정", description = "기본 정보(닉네임, MBTI, 성별) 및 프로필/검증 사진을 수정합니다.")
+    @PatchMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateProfile(
+            @Parameter(description = "수정할 텍스트 정보 (JSON)") @RequestPart(value = "data", required = false) UserSignUpRequest request,
+            @Parameter(description = "프로필 이미지 파일") @RequestPart(value = "profileImage", required = false) MultipartFile profileImage,
+            @Parameter(description = "검증용 이미지 파일") @RequestPart(value = "verificationImage", required = false) MultipartFile verificationImage,
+            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+
+        if (principal == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
+        }
+
+        userService.updateProfile(principal.getUser().getId(), request, profileImage, verificationImage);
+
+        return ResponseEntity.ok(CommonResponse.ofSuccess("프로필 수정 완료"));
+    }
+
     // 온보딩: 취향 정보 입력 (토큰 재발급 필요 - Role 변경)
     @Operation(summary = "온보딩 완료", description = "연애 성향 및 특징 정보를 입력하여 온보딩을 완료합니다. User 상태가 VALID로 변경되며 새로운 토큰이 발급됩니다.")
     @PostMapping("/onboarding")

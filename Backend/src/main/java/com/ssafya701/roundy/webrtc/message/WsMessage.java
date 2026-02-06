@@ -28,8 +28,21 @@ import com.ssafya701.roundy.webrtc.message.outbound.*;
     @JsonSubTypes.Type(value = RoundEndMessage.class, name = "ROUND_END"),
     @JsonSubTypes.Type(value = PairAssignedMessage.class, name = "PAIR_ASSIGNED"),
     @JsonSubTypes.Type(value = ErrorMessage.class, name = "ERROR"),
-    @JsonSubTypes.Type(value = KickMessage.class, name = "KICK")
+    @JsonSubTypes.Type(value = KickMessage.class, name = "KICK"),
+    // 신규 추가 메시지들 등록
+    @JsonSubTypes.Type(value = StageChangeMessage.class, name = "STAGE_CHANGE"),
+    @JsonSubTypes.Type(value = SpeakerChangeMessage.class, name = "SPEAKER_CHANGE"),
+    @JsonSubTypes.Type(value = GameQuestionMessage.class, name = "GAME_QUESTION"),
+    @JsonSubTypes.Type(value = GameResultMessage.class, name = "GAME_RESULT"),
+    @JsonSubTypes.Type(value = MatchResultMessage.class, name = "MATCH_RESULT"),
+    @JsonSubTypes.Type(value = FaceRevealStartMessage.class, name = "FACE_REVEAL_START"),
+    @JsonSubTypes.Type(value = VoteSubmittedMessage.class, name = "VOTE_SUBMITTED"),
+    @JsonSubTypes.Type(value = FirstVoteResultMessage.class, name = "FIRST_VOTE_RESULT"),
+    @JsonSubTypes.Type(value = BreakMessage.class, name = "BREAK"),
+    @JsonSubTypes.Type(value = PartnerLeftMessage.class, name = "PARTNER_LEFT"),
+    @JsonSubTypes.Type(value = PartnerReconnectedMessage.class, name = "PARTNER_RECONNECTED")
 })
 public interface WsMessage {
+    @com.fasterxml.jackson.annotation.JsonIgnore
     WsMessageType getType();
 }

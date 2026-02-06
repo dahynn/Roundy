@@ -23,4 +23,13 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
             "ORDER BY m.lastMessageAt DESC")
     List<Match> findMyMatches(@Param("userId") Long userId);
 
+    /**
+     * 전체 매칭 이력 조회 (종료된 대화 포함)
+     * */
+    @Query("SELECT m FROM Match m " +
+            "WHERE (m.maleId = :userId OR m.femaleId = :userId) " +
+            "AND m.deletedAt IS NULL " +
+            "ORDER BY m.createdAt DESC")
+    List<Match> findMatchHistory(@Param("userId") Long userId);
+
 }

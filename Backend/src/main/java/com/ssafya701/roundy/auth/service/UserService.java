@@ -81,7 +81,6 @@ public class UserService {
         return tokenPair.getAccessToken();
     }
 
-    // 회원가입 -> 추가 정보 입력
     @Transactional
     public void signUp(Long userId, UserSignUpRequest request, MultipartFile file) {
         User user = findUserById(userId);
@@ -91,6 +90,30 @@ public class UserService {
 
         // 앱 전용 닉네임, 성별, 생일 등 설정
         user.signUp(request.getNickName(), request.getGender(), request.getBirthDate(), request.getMbti(), profilePath);
+    }
+
+    // 프로필 정보 수정 (기본 정보 + 검증 사진)
+    @Transactional
+    public void updateProfile(Long userId, UserSignUpRequest request, MultipartFile profileFile,
+            MultipartFile verificationFile) {
+        User user = findUserById(userId);
+
+        // 1. 기본 정보 수정
+        if (request != null) {
+            user.updateBasicInfo(request.getNickName(), request.getMbti(), request.getGender());
+        }
+
+        // 2. 프로필 이미지 수정
+        if (profileFile != null && !profileFile.isEmpty()) {
+            String profilePath = minioService.uploadImage(userId, profileFile, "profile");
+            user.updateProfileImage(profilePath);
+        }
+
+        // 3. 검증용 사진 수정 (업로드 시 검증 대기 상태로 변경됨)
+        if (verificationFile != null && !verificationFile.isEmpty()) {
+            String verificationPath = minioService.uploadImage(userId, verificationFile, "verification");
+            user.uploadVerificationImage(verificationPath);
+        }
     }
 
     @Transactional

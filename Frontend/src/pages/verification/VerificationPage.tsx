@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { RefreshCcw } from 'lucide-react';
 import * as verificationApi from '@/api/verification.ts';
+import { useToast } from '@/components/ui/toast-context';
 
 import faceMatchImg from '@/assets/face-verification.png';
 
@@ -19,6 +20,7 @@ interface VerificationResultResponse {
 
 export default function VerificationPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // 기존 repFile state 제거 -> 서버에서 받아온 이미지 URL로 대체
   const [liveBlob, setLiveBlob] = useState<Blob | null>(null);
@@ -51,11 +53,11 @@ export default function VerificationPage() {
         console.error('인증 이미지 조회 실패:', error);
         const status = error.response?.status;
         if (status === 401 || status === 403) {
-          alert('인증 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
+          toast('인증 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.', 'error');
           localStorage.removeItem('accessToken');
           navigate('/');
         } else {
-          alert('인증 이미지를 불러오는데 실패했습니다.');
+          toast('인증 이미지를 불러오는데 실패했습니다.', 'error');
         }
       }
     };
@@ -98,22 +100,28 @@ export default function VerificationPage() {
       // 응답: { requestId: "UUID", verified: true }
       if (responseData.verified) {
         setIsSuccess(true);
-        alert('인증 성공! 다음 단계로 이동합니다.');
+        toast('인증 성공! 대기실로 이동합니다.', 'success');
         // 다음 단계(/loading)로 requestId 전달
         navigate('/loading', { state: { requestId: responseData.requestId } });
       } else {
-        alert('본인 인증에 실패했습니다. 다시 시도해주세요.');
+        // verified: false 인 경우
+        if (responseData.error) {
+          toast(responseData.error, 'error');
+        } else {
+          toast('본인 인증에 실패했습니다. 다시 시도해주세요.', 'error');
+        }
       }
     } catch (error: any) {
       console.error('인증 요청 실패:', error);
 
-      // success: false인 경우 (얼굴 감지 실패)
+      // success: false인 경우 (얼굴 감지 실패 등)
       if (error.response?.data?.success === false) {
         const errorMessage = error.response.data?.message || '얼굴을 인식할 수 없습니다.';
-        alert(`⚠️ ${errorMessage}\n\n다시 촬영해주세요.`);
+        // 에러 메시지 그대로 출력
+        toast(errorMessage, 'error');
       } else {
         // 기타 에러 (네트워크, 서버 오류 등)
-        alert('인증 과정에서 오류가 발생했습니다.');
+        toast('인증 과정에서 오류가 발생했습니다.', 'error');
       }
     } finally {
       setIsVerifying(false);

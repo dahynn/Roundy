@@ -28,10 +28,14 @@ public class MessageTestController {
 
     private final WsMessageSerializer serializer;
     private final com.ssafya701.roundy.match.service.MatchService matchService;
+    private final com.ssafya701.roundy.global.jwt.JwtTokenProvider jwtTokenProvider;
 
-    public MessageTestController(WsMessageSerializer serializer, com.ssafya701.roundy.match.service.MatchService matchService) {
+    public MessageTestController(WsMessageSerializer serializer, 
+                                 com.ssafya701.roundy.match.service.MatchService matchService,
+                                 com.ssafya701.roundy.global.jwt.JwtTokenProvider jwtTokenProvider) {
         this.serializer = serializer;
         this.matchService = matchService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     /**
@@ -180,6 +184,28 @@ public class MessageTestController {
             return CommonResponse.ofSuccess("매칭 저장 완료: ID=" + match.getId());
         } catch (Exception e) {
             return CommonResponse.ofFailure("매칭 저장 실패: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 개발용 간편 로그인 (JWT 발급)
+     * POST /api/test/ws-message/dev-login?userId={userId}
+     */
+    @PostMapping("/dev-login")
+    public CommonResponse<?> devLogin(@RequestParam Long userId) {
+        try {
+            // 개발용이므로 별도 비밀번호 확인 없이 토큰 발급
+            // role은 기본적으로 USER로 설정
+            String accessToken = jwtTokenProvider.createAccessToken(userId, com.ssafya701.roundy.auth.enums.UserRole.USER);
+            String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+
+            Map<String, String> tokens = new HashMap<>();
+            tokens.put("accessToken", accessToken);
+            tokens.put("refreshToken", refreshToken);
+
+            return CommonResponse.ofSuccess(tokens);
+        } catch (Exception e) {
+            return CommonResponse.ofFailure("토큰 발급 실패: " + e.getMessage());
         }
     }
     

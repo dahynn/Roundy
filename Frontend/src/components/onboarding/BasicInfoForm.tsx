@@ -23,9 +23,10 @@ export interface BasicInfoData {
 export interface BasicInfoFormProps {
   initialData: BasicInfoData;
   onNext: (data: BasicInfoData) => void;
+  hideHeader?: boolean;
 }
 
-export default function BasicInfoForm({ initialData, onNext }: BasicInfoFormProps) {
+export default function BasicInfoForm({ initialData, onNext, hideHeader }: BasicInfoFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<BasicInfoData>(initialData);
 
@@ -62,7 +63,7 @@ export default function BasicInfoForm({ initialData, onNext }: BasicInfoFormProp
   // ✅ 디버깅용: 어떤 필드가 누락되었는지 콘솔에 출력
   useEffect(() => {
     const missingFields = {
-      photo: !formData.profileFile,
+      photo: !formData.profileFile && !formData.previewUrl,
       nickname: !formData.nickName.trim(),
       gender: !formData.gender,
       birthYear: !formData.birth.year,
@@ -78,7 +79,7 @@ export default function BasicInfoForm({ initialData, onNext }: BasicInfoFormProp
   }, [formData]);
 
   const isFormValid =
-    formData.profileFile !== null &&
+    (formData.profileFile !== null || formData.previewUrl !== '') &&
     formData.nickName.trim().length > 0 &&
     formData.gender !== null &&
     formData.birth.year !== '' &&
@@ -94,13 +95,15 @@ export default function BasicInfoForm({ initialData, onNext }: BasicInfoFormProp
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="text-center mb-10 z-10">
-        <div className="w-14 h-14 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg shadow-pink-100">
-          <Heart size={28} fill="white" className="text-white" />
+      {!hideHeader && (
+        <div className="text-center mb-10 z-10">
+          <div className="w-14 h-14 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg shadow-pink-100">
+            <Heart size={28} fill="white" className="text-white" />
+          </div>
+          <h1 className="text-3xl font-black text-[#1A1F36] mb-2">프로필 설정</h1>
+          <p className="text-gray-400 font-medium text-sm">나를 표현하는 모든 항목을 입력해주세요.</p>
         </div>
-        <h1 className="text-3xl font-black text-[#1A1F36] mb-2">프로필 설정</h1>
-        <p className="text-gray-400 font-medium text-sm">나를 표현하는 모든 항목을 입력해주세요.</p>
-      </div>
+      )}
 
       <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[60px] p-8 md:p-16 shadow-2xl border border-white z-10 overflow-visible">
         <form className="space-y-12" onSubmit={(e) => e.preventDefault()}>

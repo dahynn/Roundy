@@ -102,13 +102,16 @@ export default function MyPage() {
                   </div>
                 </div>
 
-                {/* 메뉴 스켈레톤 */}
+                {/* 고객 지원 스켈레톤 */}
                 <div className="space-y-6">
                   <Skeleton className="h-6 w-32 rounded ml-2" />
-                  <div className="bg-white/80 dark:bg-black/40 rounded-[28px] overflow-hidden border border-gray-100 dark:border-white/10 p-1 space-y-1">
-                    <Skeleton className="h-16 w-full rounded-2xl" />
-                    <Skeleton className="h-16 w-full rounded-2xl" />
-                  </div>
+                  <Skeleton className="h-[136px] w-full rounded-[28px]" />
+                </div>
+
+                {/* 계정 설정 스켈레톤 */}
+                <div className="space-y-6">
+                  <Skeleton className="h-6 w-32 rounded ml-2" />
+                  <Skeleton className="h-[202px] w-full rounded-[28px]" />
                 </div>
               </div>
             ) : (
@@ -158,7 +161,10 @@ export default function MyPage() {
                           </span>
                         </h2>
                       </div>
-                      <button className="w-full md:w-auto mt-1 px-8 py-3 bg-[#1A1F36] dark:bg-white text-white dark:text-[#1A1F36] rounded-xl font-bold text-sm shadow-lg hover:bg-[#FF4D94] dark:hover:bg-[#FF4D94] dark:hover:text-white hover:shadow-pink-200 hover:-translate-y-0.5 transition-all duration-300">
+                      <button
+                        onClick={() => navigate('/mypage/profile')}
+                        className="w-full md:w-auto mt-1 px-8 py-3 bg-[#1A1F36] dark:bg-white text-white dark:text-[#1A1F36] rounded-xl font-bold text-sm shadow-lg hover:bg-[#FF4D94] dark:hover:bg-[#FF4D94] dark:hover:text-white hover:shadow-pink-200 hover:-translate-y-0.5 transition-all duration-300"
+                      >
                         프로필 상세 수정
                       </button>
                     </div>

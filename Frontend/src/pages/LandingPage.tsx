@@ -120,6 +120,7 @@ export default function LandingPage() {
       </footer>
 
       {isLoginModalOpen && <LoginModal onClose={() => setIsLoginModalOpen(false)} />}
+      <DevLoginButtons />
     </div>
   );
 }
@@ -146,6 +147,62 @@ function StatCard({
         {value}
       </span>
       <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// [DEV] 테스트용 토큰 목록 (여기에 실제 서버 발급 토큰을 넣어주세요)
+// ----------------------------------------------------------------------
+const TEST_TOKENS = [
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMiIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTEyLCJleHAiOjE3NzA0Nzk3MTJ9.KtBhGZVHQFBBhpnGUIZ8EGd1dfL7CW8in4W2f7EO6X4",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMSIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTY1LCJleHAiOjE3NzA0Nzk3NjV9.ryWDOcwSPl434fkQ4_r8FjzqYG2Q54zRqKHgjQAGYCk",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMCIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTgzLCJleHAiOjE3NzA0Nzk3ODN9.mQmlA7FY6GKPbUUBUiqmNRY0DZ9qXZ71A5g7RlmCg1s",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDY5OTYsImV4cCI6MTc3MDQ3OTc5Nn0.ra2UGst4Yx64Zizu4TlvIRlQfq0hG0TulUIrUI-KlwY",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDcwMTAsImV4cCI6MTc3MDQ3OTgxMH0.meVj4TYM7oxCON5j9jXKP8y44Zpl-htsiR5iHc-XcCY",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDcwMjcsImV4cCI6MTc3MDQ3OTgyN30.HamjmotD7mUX9EQ6lERZG7-a6HDRmj9TxPF33snBxmI",
+
+];
+
+function DevLoginButtons() {
+  const navigate = useNavigate();
+
+  const handleDevLogin = (index: number) => {
+    const token = TEST_TOKENS[index];
+    if (!token || token.startsWith("YOUR_")) {
+      alert(`[오류] TEST_TOKENS[${index}]에 유효한 토큰을 입력해주세요.`);
+      return;
+    }
+    localStorage.setItem('accessToken', token);
+    navigate('/loading?auto=true');
+    // location.reload(); // 필요 시 리로드
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 p-3 bg-black/80 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl scale-90 opacity-80 hover:scale-100 hover:opacity-100 transition-all">
+      <span className="text-[10px] font-bold text-white/50 text-center uppercase tracking-wider mb-1">
+        Dev Quick Login
+      </span>
+      <div className="grid grid-cols-2 gap-2">
+        {['M1', 'M2', 'M3'].map((label, idx) => (
+          <button
+            key={label}
+            onClick={() => handleDevLogin(idx)}
+            className="w-10 h-8 bg-blue-500/20 hover:bg-blue-500 text-blue-300 hover:text-white border border-blue-500/50 rounded-lg text-xs font-bold transition-all"
+          >
+            {label}
+          </button>
+        ))}
+        {['F1', 'F2', 'F3'].map((label, idx) => (
+          <button
+            key={label}
+            onClick={() => handleDevLogin(idx + 3)}
+            className="w-10 h-8 bg-pink-500/20 hover:bg-pink-500 text-pink-300 hover:text-white border border-pink-500/50 rounded-lg text-xs font-bold transition-all"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

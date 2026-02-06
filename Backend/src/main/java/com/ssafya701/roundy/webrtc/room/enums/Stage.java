@@ -12,11 +12,16 @@ public enum Stage {
      * 대기 단계 - 참가자들이 모이는 시간
      */
     WAITING(0, 0),
+
+    /**
+     * 쉬는 시간 (10초) - 스테이지 사이 대기
+     */
+    BREAK(10, -1),
     
     /**
-     * 자기소개 - 한 명씩 발언권을 가지고 소개 (5초, 테스트용)
+     * 자기소개 - 한 명씩 발언권을 가지고 소개 (10초, 테스트용)
      */
-    SELF_INTRO(5, 1),
+    SELF_INTRO(10, 1),
     
     /**
      * 첫인상 투표 - 첫 느낌으로 마음에 드는 사람 선택 (10초, 테스트용)
@@ -73,6 +78,15 @@ public enum Stage {
      * @return 다음 스테이지, 마지막 단계인 경우 null
      */
     public Stage getNextStage() {
+        if (this == ROTATION_SHORT) {
+            return ROTATION_LONG;
+        }
+
+        // BREAK는 순서가 -1이므로 자동 계산에서 제외
+        if (this == BREAK) {
+            return null; // 스케줄러에서 pendingNextStage를 사용하므로 여기선 null
+        }
+
         for (Stage stage : values()) {
             if (stage.order == this.order + 1) {
                 return stage;

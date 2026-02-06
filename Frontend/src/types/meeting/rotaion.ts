@@ -17,6 +17,7 @@ export type WsMessageType =
     | 'LEAVE_ROOM'
     | 'SUBMIT_VOTE'
     | 'SUBMIT_GAME_ANSWER'
+    | 'FACE_REVEAL_PERMISSION' // [NEW] 최종 매칭 후 얼굴 공개 동의 여부 전송
     // Server -> Client
     | 'JOIN_OK'
     | 'ROOM_STATE'
@@ -31,7 +32,9 @@ export type WsMessageType =
     | 'FACE_REVEAL_START' // 최종 매칭 성공 시 1:1 연결 시작
     | 'SPEAKER_CHANGE'   // 자기소개 발언자 변경
     | 'GAME_QUESTION'    // 이미지 게임 문제 출제
-    | 'GAME_RESULT';     // 이미지 게임 결과 발표
+    | 'GAME_RESULT'      // 이미지 게임 결과 발표
+    | 'BREAK'            // [NEW] 단계 사이 휴식
+    | 'FIRST_VOTE_RESULT'; // [NEW] 첫인상 투표 결과
 
 // --- 기본 메시지 구조 ---
 export interface WsMessage<T = any> {
@@ -100,7 +103,7 @@ export interface PairAssignedPayload {
 
 // MATCH_RESULT: 최종 매칭 결과
 export interface MatchResultPayload {
-    isMatched: boolean;
+    matched: boolean;
     partnerId: number | null;
     partnerNickname: string | null;
 }
@@ -160,6 +163,23 @@ export interface GameAnswerPayload {
     targetUserId: number;
 }
 
+// [NEW] BREAK: 휴식 시간
+export interface BreakPayload {
+    type: 'BREAK';
+    durationSeconds: number;
+}
+
+// [NEW] FIRST_VOTE_RESULT: 첫인상 투표 결과
+export interface VoteResultItem {
+    voterId: number;
+    targetId: number | null; // null이면 기권
+}
+
+export interface FirstVoteResultPayload {
+    type: 'FIRST_VOTE_RESULT';
+    results: VoteResultItem[];
+}
+
 // --- State Interface ---
 export interface RotationState {
     connected: boolean;
@@ -206,6 +226,14 @@ export interface RotationState {
 
     // 시스템 메시지/에러
     lastMessage: string | null;
+
+    // [NEW] 첫인상 투표 결과
+    firstVoteResults?: VoteResultItem[] | null;
+
+    // [NEW] 최종 매칭 결과 (추가)
+    matchResult?: MatchResultPayload | null;
+    totalTime: number; // [NEW] 스테이지 전체 시간 (게이지 바 용)
+    isBreak: boolean; // [NEW] 휴식/전환 상태 여부
 }
 
 // KICK: 강제 퇴장

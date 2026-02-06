@@ -1,5 +1,7 @@
 package com.ssafya701.roundy.webrtc.config;
 
+import com.ssafya701.roundy.auth.entity.User;
+import com.ssafya701.roundy.auth.repository.UserRepository;
 import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,8 @@ import java.util.Map;
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository;
+    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
     @Override
     public boolean beforeHandshake(
@@ -46,7 +50,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             Long userId = Long.parseLong(userIdParam);
             String username = usernameParam != null ? usernameParam : "TestUser" + userId;
             String gender = genderParam != null ? genderParam : "MALE";
-            String mode = modeParam != null ? modeParam : "FREE_TALK";
+            String mode = modeParam != null ? modeParam : "PAIR_ONLY";
             
             attributes.put("userId", userId);
             attributes.put("username", username);
@@ -85,20 +89,57 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
+            // DB에서 실제 유저 정보 조회
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. userId=" + userId));
+
             // 사용자 정보를 WebSocket 세션 속성에 저장
             attributes.put("userId", userId);
-            attributes.put("username", String.valueOf(userId)); // username은 userId로 대체
             
-            // TODO: 실제 서비스에서는 DB에서 Gender, Nickname 등을 조회해서 넣어야 함
-            // 임시: 기본값 설정
-            attributes.put("gender", "MALE"); 
-            attributes.put("mode", "FREE_TALK");
+            // 닉네임 설정 (없으면 이름 사용)
+            String nickname = user.getNickName();
+            if (nickname == null || nickname.isEmpty()) {
+                nickname = user.getName();
+            }
+            attributes.put("username", nickname);
+            
+            // 성별 설정
+            if (user.getGender() != null) {
+                attributes.put("gender", user.getGender().name());
+            } else {
+                log.warn("사용자 성별 정보 없음: userId={}", userId);
+                attributes.put("gender", "UNKNOWN");
+            }
+            
+            // 모드는 기본값 PAIR_ONLY (소개팅 모드)
+            attributes.put("mode", "PAIR_ONLY");
 
-            log.info("WebSocket 핸드셰이크 성공: userId={}", userId);
+            // [추가] Redis에서 유저의 할당된 방(roomId) 조회
+            // Session API 매칭 시 'user:{userId}:currentRoom' 키가 생성됨
+            String userRoomKey = "user:" + userId + ":currentRoom";
+            String roomId = redisTemplate.opsForValue().get(userRoomKey);
+
+            if (roomId == null) {
+                log.warn("❌ WebSocket 연결 실패: 배정된 방 없음 - userId={}", userId);
+                return false;
+            }
+            
+            // 방 멤버 권한 재확인 (방어적 코드)
+            String memberKey = "room:" + roomId + ":member:" + userId;
+            if (Boolean.FALSE.equals(redisTemplate.hasKey(memberKey))) {
+                 log.warn("❌ WebSocket 연결 실패: 방 입장 권한 없음 (System Error) - userId={}, roomId={}", 
+                         userId, roomId);
+                return false;
+            }
+
+            attributes.put("roomId", roomId);
+
+            log.info("WebSocket 핸드셰이크 성공: userId={}, roomId={}, nickName={}, gender={}", 
+                    userId, roomId, nickname, attributes.get("gender"));
             return true;
 
         } catch (Exception e) {
-            log.warn("WebSocket 연결 실패: JWT 검증 실패 - {}", e.getMessage());
+            log.warn("WebSocket 연결 실패: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             return false;
         }
     }

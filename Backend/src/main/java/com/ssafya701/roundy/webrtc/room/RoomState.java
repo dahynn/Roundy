@@ -36,12 +36,32 @@ public class RoomState {
     private final String openViduSessionId;
     private RoundInfo currentRound;
     
+    /**
+     * DB의 Session 엔티티 PK (Phase 7: 영속화용)
+     */
+    private Long dbSessionId;
+
+    public void setDbSessionId(Long dbSessionId) {
+        this.dbSessionId = dbSessionId;
+    }
+    
+    public Long getDbSessionId() {
+        return dbSessionId;
+    }
+    
     // ========== 8단계 로테이션 필드 ==========
     
     /**
      * 현재 진행 중인 스테이지
      */
+    @lombok.Setter
     private Stage currentStage = Stage.WAITING;
+
+    /**
+     * 쉬는 시간 이후 진행할 다음 스테이지 저장
+     */
+    @lombok.Setter
+    private Stage pendingNextStage;
     
     /**
      * 스테이지 타이머 (각 Stage 종료 시점에 다음 Stage로 전환)
@@ -306,14 +326,17 @@ public class RoomState {
     /**
      * 투표 제출
      * @param voterId 투표자 사용자 ID
-     * @param targetId 투표 대상 사용자 ID
+     * @param targetId 투표 대상 사용자 ID (null인 경우 기권/미선택)
      * @param isFinal true: 최종 투표, false: 첫인상 투표
      */
     public void submitVote(Long voterId, Long targetId, boolean isFinal) {
+        // ConcurrentHashMap은 value에 null을 허용하지 않으므로 -1L로 대체
+        Long storedTargetId = (targetId == null) ? -1L : targetId;
+        
         if (isFinal) {
-            finalVotes.put(voterId, targetId);
+            finalVotes.put(voterId, storedTargetId);
         } else {
-            firstVotes.put(voterId, targetId);
+            firstVotes.put(voterId, storedTargetId);
         }
     }
     

@@ -3,8 +3,12 @@ import axios from 'axios';
 /**
  * 1. Axios 인스턴스 생성
  */
+const apiBaseUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== 'undefined'
+    ? import.meta.env.VITE_API_URL
+    : '';
+
 const client = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api`,
+    baseURL: `${apiBaseUrl}/api`,
     headers: { 'Content-Type': 'application/json' },
 });
 
@@ -44,7 +48,7 @@ client.interceptors.response.use(
                 try {
                     // 토큰 재발급 요청 (헤더에 refreshToken 포함)
                     const { data } = await axios.post(
-                        `${import.meta.env.VITE_API_URL}/api/auth/re-issue`,
+                        `${apiBaseUrl}/api/auth/re-issue`,
                         {},
                         {
                             headers: {
