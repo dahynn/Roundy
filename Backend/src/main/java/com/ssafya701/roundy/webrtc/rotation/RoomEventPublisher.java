@@ -495,4 +495,14 @@ public class RoomEventPublisher {
         
         log.info("FIRST_VOTE_RESULT 발행: roomId={}, 결과 {}건", room.getRoomId(), details.size());
     }
+    
+    /**
+     * 타이머 시작 알림
+     */
+    public void publishStartTimer(RoomState room, int durationSeconds) {
+        StartTimerMessage message = new StartTimerMessage(durationSeconds);
+        
+        broadcastToRoom(room, message);
+        log.info("START_TIMER 발행: roomId={}, duration={}s", room.getRoomId(), durationSeconds);
+    }
 }

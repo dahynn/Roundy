@@ -68,10 +68,51 @@ public class RoomState {
      */
     private ScheduledFuture<?> stageTimer;
     
+    /**
+     * 렌더링 완료 대기 중인 사용자 ID 집합 (Phase 8 동기화)
+     */
+    private Set<Long> pendingRenderUsers = new ConcurrentHashMap().newKeySet();
     
     /**
-     * 투표 데이터
+     * 렌더링 대기 타임아웃 작업
      */
+    private ScheduledFuture<?> renderTimeoutTask;
+    
+    // ... (existing code for votes) ...
+
+    /**
+     * 렌더링 대기 초기화
+     * @param userIds 대기할 사용자 ID 리스트
+     */
+    public void initRenderWait(List<Long> userIds) {
+        clearRenderWait(); // 기존 작업 정리
+        pendingRenderUsers.addAll(userIds);
+    }
+    
+    /**
+     * 사용자 렌더링 완료 처리
+     * @param userId 완료한 사용자 ID
+     * @return 모든 사용자가 준비되었으면 true, 아니면 false
+     */
+    public boolean markUserReady(Long userId) {
+        pendingRenderUsers.remove(userId);
+        return pendingRenderUsers.isEmpty();
+    }
+    
+    /**
+     * 렌더링 대기 상태 정리
+     */
+    public void clearRenderWait() {
+        pendingRenderUsers.clear();
+        if (renderTimeoutTask != null && !renderTimeoutTask.isDone()) {
+            renderTimeoutTask.cancel(false);
+        }
+        renderTimeoutTask = null;
+    }
+    
+    public void setRenderTimeoutTask(ScheduledFuture<?> task) {
+        this.renderTimeoutTask = task;
+    }
     private final Map<Long, Long> firstVotes = new ConcurrentHashMap<>();  // 첫인상 투표
     private final Map<Long, Long> finalVotes = new ConcurrentHashMap<>();  // 최종 투표
     
