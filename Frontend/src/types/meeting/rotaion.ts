@@ -18,6 +18,7 @@ export type WsMessageType =
     | 'SUBMIT_VOTE'
     | 'SUBMIT_GAME_ANSWER'
     | 'FACE_REVEAL_PERMISSION' // [NEW] 최종 매칭 후 얼굴 공개 동의 여부 전송
+    | 'RENDER_COMPLETE' // [NEW] 렌더링 완료 신호 전송
     // Server -> Client
     | 'JOIN_OK'
     | 'ROOM_STATE'
@@ -172,7 +173,9 @@ export interface BreakPayload {
 // [NEW] FIRST_VOTE_RESULT: 첫인상 투표 결과
 export interface VoteResultItem {
     voterId: number;
+    voterNickname: string; // [NEW]
     targetId: number | null; // null이면 기권
+    targetNickname: string | null; // [NEW]
 }
 
 export interface FirstVoteResultPayload {
