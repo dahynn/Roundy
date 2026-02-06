@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { User, Mic, Sparkles } from 'lucide-react';
+import { StreamManager } from 'openvidu-browser';
+import UserVideo from '../meeting/UserVideo';
 
 interface Participant {
     id: number;
     name: string;
     gender: 'MALE' | 'FEMALE';
+    streamManager?: StreamManager | null; // 추가
+    isLocal?: boolean; // 추가
 }
 
 interface Step1_SelfIntroProps {
@@ -83,32 +87,41 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({ participant, isActive, speake
                 ${isActive ? 'bg-[#1a1a2e]' : 'bg-black/80'}`}
             />
 
-            {/* 활성 상태일 때 배경 그라데이션 효과 (Spotlight) */}
+            {/* 비디오 렌더링 (Video Component) - 최우선 렌더링 */}
+            {participant.streamManager && (
+                <div className="absolute inset-0 z-0">
+                    <UserVideo streamManager={participant.streamManager} isLocal={participant.isLocal} />
+                </div>
+            )}
+
+            {/* 활성 상태일 때 배경 그라데이션 효과 (Spotlight) - 비디오 위에 살짝 얹기 */}
             {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4D94]/20 via-transparent to-blue-500/10 opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4D94]/20 via-transparent to-blue-500/10 opacity-60 pointer-events-none z-10" />
             )}
 
             {/* 컨텐츠 컨테이너 */}
             <div className="relative w-full h-full flex flex-col items-center justify-center">
 
-                {/* 실루엣 아이콘 */}
-                <div className={`relative transition-all duration-700 ${isActive ? 'translate-y-[-10%]' : 'translate-y-0'}`}>
-                    <div className={`
-                        relative z-10 p-6 rounded-full border border-white/5 
-                        ${isActive ? 'bg-white/5 backdrop-blur-md' : 'bg-transparent'}
-                    `}>
-                        <User
-                            size={isActive ? 64 : 48}
-                            className={`transition-all duration-700 ${isActive ? 'text-white' : 'text-white/30'}`}
-                            strokeWidth={1}
-                        />
-                    </div>
+                {/* 실루엣 아이콘 (비디오 없을 때만 표시) */}
+                {!participant.streamManager && (
+                    <div className={`relative transition-all duration-700 ${isActive ? 'translate-y-[-10%]' : 'translate-y-0'}`}>
+                        <div className={`
+                            relative z-10 p-6 rounded-full border border-white/5 
+                            ${isActive ? 'bg-white/5 backdrop-blur-md' : 'bg-transparent'}
+                        `}>
+                            <User
+                                size={isActive ? 64 : 48}
+                                className={`transition-all duration-700 ${isActive ? 'text-white' : 'text-white/30'}`}
+                                strokeWidth={1}
+                            />
+                        </div>
 
-                    {/* 활성 상태일 때 뒤쪽 글로우 */}
-                    {isActive && (
-                        <div className="absolute inset-0 bg-[#FF4D94] blur-[40px] opacity-40 animate-pulse" />
-                    )}
-                </div>
+                        {/* 활성 상태일 때 뒤쪽 글로우 */}
+                        {isActive && (
+                            <div className="absolute inset-0 bg-[#FF4D94] blur-[40px] opacity-40 animate-pulse" />
+                        )}
+                    </div>
+                )}
 
                 {/* 오디오 비주얼라이저 (말하고 있다는 시각적 표현) */}
                 {isActive && (

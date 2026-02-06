@@ -155,14 +155,13 @@ function StatCard({
 // [DEV] 테스트용 토큰 목록 (여기에 실제 서버 발급 토큰을 넣어주세요)
 // ----------------------------------------------------------------------
 const TEST_TOKENS = [
-  // 남자 1, 2, 3
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MjUsImV4cCI6MTc3MDQyODcyNX0.Vb38pTtoqaBT54PQfeWk_qKJVLiwjqvsX3vCK30veZI",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MzgsImV4cCI6MTc3MDQyODczOH0.LrEW-B7wlz0cWuskTCqTVFgpSRR1OmbKCu4lg6M30A4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NTAsImV4cCI6MTc3MDQyODc1MH0.65KkNu2oTMCH6Df345_Xyq-dVZmRvluBU1I7me677ig",
-  // 여자 1, 2, 3
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NjIsImV4cCI6MTc3MDQyODc2Mn0.PnVyVyou5c3RnxD-Z3unRZm1nFSgnRKzQfBZr3u8Vc4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NzQsImV4cCI6MTc3MDQyODc3NH0.xkBiR5IPpC2mpPmYSfgMm9dR2VIVEQ75jR7OijUiyFI",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5ODUsImV4cCI6MTc3MDQyODc4NX0.ZA0C5P5MeCld1YwKhwcBybsdcHPXbxUWeq5NWhbngOI"
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMiIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTEyLCJleHAiOjE3NzA0Nzk3MTJ9.KtBhGZVHQFBBhpnGUIZ8EGd1dfL7CW8in4W2f7EO6X4",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMSIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTY1LCJleHAiOjE3NzA0Nzk3NjV9.ryWDOcwSPl434fkQ4_r8FjzqYG2Q54zRqKHgjQAGYCk",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMCIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTgzLCJleHAiOjE3NzA0Nzk3ODN9.mQmlA7FY6GKPbUUBUiqmNRY0DZ9qXZ71A5g7RlmCg1s",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDY5OTYsImV4cCI6MTc3MDQ3OTc5Nn0.ra2UGst4Yx64Zizu4TlvIRlQfq0hG0TulUIrUI-KlwY",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDcwMTAsImV4cCI6MTc3MDQ3OTgxMH0.meVj4TYM7oxCON5j9jXKP8y44Zpl-htsiR5iHc-XcCY",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDcwMjcsImV4cCI6MTc3MDQ3OTgyN30.HamjmotD7mUX9EQ6lERZG7-a6HDRmj9TxPF33snBxmI",
+
 ];
 
 function DevLoginButtons() {
@@ -175,7 +174,7 @@ function DevLoginButtons() {
       return;
     }
     localStorage.setItem('accessToken', token);
-    navigate('/loading');
+    navigate('/loading?auto=true');
     // location.reload(); // 필요 시 리로드
   };
 

@@ -139,6 +139,15 @@ export const useOpenVidu = () => {
             }
         });
 
+        // [NEW] 서버측 세션 종료 감지
+        newSession.on('sessionDisconnected', (event) => {
+            console.warn('🔌 [OpenVidu] 세션 연결 해제됨:', event.reason);
+            if (event.reason !== 'disconnect') {
+                // 의도치 않은 해제일 경우 정리
+                cleanupSession();
+            }
+        });
+
         try {
             // 4. 카메라 준비 확인 (없으면 재시도)
             let myPublisher = publisher;
