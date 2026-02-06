@@ -146,6 +146,14 @@ public class StageScheduler {
              // 로테이션 스테이지는 항상 끝날 때마다 휴식 (다음 라운드든, 다음 스테이지든)
              needBreak = true;
         }
+        // 4. 최종 투표 끝 -> 매칭 결과
+        else if (currentStage == Stage.VOTE_FINAL) {
+             needBreak = true;
+        }
+        // 5. 매칭 결과 -> 얼굴 공개
+        else if (currentStage == Stage.MATCHING_RESULT) {
+             needBreak = true;
+        }
         
         Stage targetStage = nextStage;
         int delaySeconds = currentStage.getDurationSeconds();
