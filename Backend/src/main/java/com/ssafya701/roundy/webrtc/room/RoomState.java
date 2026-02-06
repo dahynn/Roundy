@@ -95,6 +95,11 @@ public class RoomState {
      * @return 모든 사용자가 준비되었으면 true, 아니면 false
      */
     public boolean markUserReady(Long userId) {
+        // 이미 대기열이 비어있다면(= 동기화 완료 후) 중복 실행 방지
+        if (pendingRenderUsers.isEmpty()) {
+            return false;
+        }
+        
         pendingRenderUsers.remove(userId);
         return pendingRenderUsers.isEmpty();
     }

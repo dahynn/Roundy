@@ -17,17 +17,20 @@ import org.springframework.web.reactive.function.client.WebClient;
 @RequiredArgsConstructor
 public class KakaoService {
 
-    @Value("${kakao.client-id}") private String clientId;
-    @Value("${kakao.redirect-uri}") private String redirectUri;
-    @Value("${kakao.admin-key}") private String adminKey;
-    @Value("${kakao.secret-key}") private String secretKey;
+    @Value("${kakao.client-id}")
+    private String clientId;
+    @Value("${kakao.redirect-uri}")
+    private String redirectUri;
+    @Value("${kakao.admin-key}")
+    private String adminKey;
+    @Value("${kakao.secret-key}")
+    private String secretKey;
 
     private final WebClient webClient = WebClient.builder()
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
             .build();
 
     public String getAccessToken(String code) {
-
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("grant_type", "authorization_code");
@@ -54,23 +57,34 @@ public class KakaoService {
     }
 
     public void unlink(Long kakaoId) {
+        if (adminKey == null || adminKey.isEmpty()) {
+            log.error("Kakao Admin Key is missing! Cannot perform unlink.");
+            return;
+        }
+
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("target_id_type", "user_id");
         params.add("target_id", String.valueOf(kakaoId));
 
+        log.info("Attempting Kakao unlink for target_id: {}", kakaoId);
+
         try {
-            webClient.post()
+            String response = webClient.post()
                     .uri("https://kapi.kakao.com/v1/user/unlink")
-                    .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + adminKey) // 핵심: KakaoAK 사용
+                    .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + adminKey)
                     .bodyValue(params)
                     .retrieve()
+                    .onStatus(org.springframework.http.HttpStatusCode::isError, clientResponse -> {
+                        return clientResponse.bodyToMono(String.class)
+                                .doOnNext(errorBody -> log.error("Kakao Unlink Error Response: {}", errorBody))
+                                .map(errorBody -> new RuntimeException("Kakao Unlink Failed: " + errorBody));
+                    })
                     .bodyToMono(String.class)
-                    .block(); // 결과 받을때까지 기다리기 -> 동기적으로 처리함
+                    .block();
 
-            log.info("카카오 연결 끊기 성공. target_id: {}", kakaoId);
+            log.info("카카오 연결 끊기 성공. response: {}", response);
 
         } catch (Exception e) {
-            // 연결 끊기에 실패하더라도 우리 DB에서의 탈퇴는 진행되어야 하므로 로그만 찍음
             log.error("카카오 연결 끊기 실패 (하지만 회원탈퇴는 진행됨): {}", e.getMessage());
         }
     }
