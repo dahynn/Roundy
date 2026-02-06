@@ -57,20 +57,20 @@ public class UserController {
     @Hidden
     @GetMapping("/kakao/callback")
     public void kakaoCallback(@RequestParam String code, HttpServletResponse response) throws IOException {
-        String token = userService.kakaoLogin(code);
+        TokenPair tokens = userService.kakaoLogin(code);
 
-        // Access Token 쿠키 생성
-        ResponseCookie cookie = ResponseCookie.from("accessToken", token)
+        // Refresh Token 쿠키 생성
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
                 .httpOnly(true)
                 .secure(true) // HTTPS 필수
                 .path("/")
-                .maxAge(jwtTokenProvider.getExpirationTime() / 1000) // 초 단위 설정
-                .sameSite("Lax") // 동일 도메인이므로 Lax 권장
+                .maxAge(14 * 24 * 60 * 60) // 14일
+                .sameSite("Lax")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        // 프론트엔드 콜백 페이지로 리다이렉트 (URL에 토큰 없음!)
+        // 프론트엔드 콜백 페이지로 리다이렉트 (URL 파라미터 없음!)
         response.sendRedirect(frontendUrl + "/auth/callback");
     }
 
@@ -156,35 +156,44 @@ public class UserController {
     @PostMapping("/onboarding")
     public ResponseEntity<?> completeOnboarding(
             @Parameter(description = "선택한 Preference ID 목록", required = true) @RequestBody com.ssafya701.roundy.auth.dto.request.OnboardingRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal,
+            HttpServletResponse response) {
         if (principal == null) {
             return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
         }
         TokenPair tokenPair = userService.completeOnboarding(principal.getUser().getId(), request.getPreferenceIds());
 
+        // Refresh Token 쿠키 갱신
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokenPair.getRefreshToken())
+                .httpOnly(true).secure(true).path("/").maxAge(14 * 24 * 60 * 60).sameSite("Lax").build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         Map<String, String> result = new HashMap<>();
         result.put("accessToken", tokenPair.getAccessToken());
-        result.put("refreshToken", tokenPair.getRefreshToken());
 
         return ResponseEntity.ok(CommonResponse.ofSuccess(result));
     }
 
     // 토큰 재발급 (Refresh Token Rotation)
-    @Operation(summary = "토큰 재발급", description = "Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급받습니다. (RTR 적용)")
+    @Operation(summary = "토큰 재발급", description = "Refresh Token (쿠키)을 사용하여 새로운 Access Token과 Refresh Token을 발급받습니다.")
     @PostMapping("/re-issue")
     public ResponseEntity<?> reissue(
-            @Parameter(description = "Refresh Token (Bearer ...)", required = true) @RequestHeader("Authorization") String refreshToken) {
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
 
-        // Bearer 제거 로직
-        if (refreshToken != null && refreshToken.startsWith("Bearer ")) {
-            refreshToken = refreshToken.substring(7);
+        if (refreshToken == null) {
+            return ResponseEntity.status(401).body(CommonResponse.ofFailure("Refresh Token이 없습니다."));
         }
 
         TokenPair tokenPair = userService.reissueToken(refreshToken);
 
+        // Refresh Token 쿠키 갱신 (RTR)
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokenPair.getRefreshToken())
+                .httpOnly(true).secure(true).path("/").maxAge(14 * 24 * 60 * 60).sameSite("Lax").build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         Map<String, String> result = new HashMap<>();
         result.put("accessToken", tokenPair.getAccessToken());
-        result.put("refreshToken", tokenPair.getRefreshToken());
 
         return ResponseEntity.ok(CommonResponse.ofSuccess(result));
     }
@@ -200,14 +209,9 @@ public class UserController {
         }
         userService.logout(principal.getUser().getId());
 
-        // 쿠키 삭제 (만료 시간을 0으로 설정)
-        ResponseCookie cookie = ResponseCookie.from("accessToken", "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
-                .build();
+        // 쿠키 삭제
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true).secure(true).path("/").maxAge(0).sameSite("Lax").build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return ResponseEntity.ok(CommonResponse.ofSuccess());

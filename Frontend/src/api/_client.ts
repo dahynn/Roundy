@@ -13,8 +13,6 @@ const client = axios.create({
     withCredentials: true, // 쿠키 전송 활성화
 });
 
-// [제거] 더 이상 프론트에서 Authorization 헤더를 수동으로 넣지 않음 (쿠키 자동 전송)
-/*
 client.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('accessToken');
@@ -25,7 +23,6 @@ client.interceptors.request.use(
     },
     (error) => Promise.reject(error),
 );
-*/
 
 /**
  * 3. 응답 인터셉터: 데이터 추출 및 에러 제어
@@ -53,7 +50,12 @@ client.interceptors.response.use(
                     );
 
                     if (data.success) {
-                        // 성공 시 쿠키가 업데이트됨
+                        // 성공 시 새로운 Access Token을 localStorage에 저장
+                        const newToken = data.data.accessToken;
+                        localStorage.setItem('accessToken', newToken);
+
+                        // 기존 요청 헤더 업데이트 및 재시도
+                        originalRequest.headers.Authorization = `Bearer ${newToken}`;
                         return client(originalRequest);
                     }
                 } catch (refreshError) {

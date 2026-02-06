@@ -1,16 +1,25 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getSignupDetails } from '@/api/auth';
+import { getSignupDetails, reissueToken } from '@/api/auth';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // [변경] 더 이상 URL에서 토큰을 추출하지 않음 (HTTP-Only 쿠키 사용)
-
-    const checkUserStatus = async () => {
+    const handleInitialAuth = async () => {
       try {
+        console.log('🔄 하이브리드 인증 시작: 쿠키로 Access 토큰 발급 시도');
+        // 1. 재발급 API 호출 (백엔드에서 쿠키를 읽음)
+        const response: any = await reissueToken();
+        const accessToken = response.accessToken;
+
+        if (accessToken) {
+          console.log('🪙 Access 토큰 획득 성공: localStorage에 저장');
+          localStorage.setItem('accessToken', accessToken);
+        }
+
+        // 2. 유저 정보 조회 및 상태 체크
         const userData: any = await getSignupDetails();
 
         const status = userData.status;
@@ -38,12 +47,12 @@ export default function AuthCallback() {
           navigate('/onboarding');
         }
       } catch (error) {
-        console.error('❌ 유저 정보 조회 실패 (인증되지 않음):', error);
+        console.error('❌ 인증 실패 (토큰 없거나 만료됨):', error);
         navigate('/'); // 실패 시 랜딩 페이지로
       }
     };
 
-    checkUserStatus();
+    handleInitialAuth();
   }, [navigate]);
 
   return (

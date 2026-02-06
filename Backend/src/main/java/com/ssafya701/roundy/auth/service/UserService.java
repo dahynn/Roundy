@@ -41,7 +41,7 @@ public class UserService {
     private final PreferenceRepository preferenceRepository;
 
     @Transactional
-    public String kakaoLogin(String code) {
+    public TokenPair kakaoLogin(String code) {
         String kakaoToken = kakaoService.getAccessToken(code);
         KakaoUserInfoResponse userInfo = kakaoService.getUserInfo(kakaoToken);
 
@@ -77,8 +77,7 @@ public class UserService {
                         .status(UserStatus.JOINED)
                         .build()));
 
-        TokenPair tokenPair = issueTokens(user);
-        return tokenPair.getAccessToken();
+        return issueTokens(user);
     }
 
     @Transactional

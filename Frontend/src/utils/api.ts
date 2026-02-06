@@ -12,8 +12,6 @@ export const api = axios.create({
   withCredentials: true, // 쿠키 전송 활성화
 });
 
-// [제거] 더 이상 프론트에서 Authorization 헤더를 수동으로 넣지 않음
-/*
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -24,7 +22,6 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error),
 );
-*/
 
 // 3. 응답 인터셉터: 모든 응답 "직후"에 공통 처리를 수행합니다.
 api.interceptors.response.use(
