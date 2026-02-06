@@ -4,7 +4,7 @@ import axios from 'axios';
  * 1. Axios 인스턴스 생성
  */
 const client = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api`,
+    baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
     headers: { 'Content-Type': 'application/json' },
 });
 
@@ -44,7 +44,7 @@ client.interceptors.response.use(
                 try {
                     // 토큰 재발급 요청 (헤더에 refreshToken 포함)
                     const { data } = await axios.post(
-                        `${import.meta.env.VITE_API_URL}/api/auth/re-issue`,
+                        `${import.meta.env.VITE_API_URL || ''}/api/auth/re-issue`,
                         {},
                         {
                             headers: {

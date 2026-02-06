@@ -3,7 +3,7 @@ import axios from 'axios';
 // 1. Axios 인스턴스 생성
 export const api = axios.create({
   // Vite 환경에서는 import.meta.env를 사용합니다.
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
   headers: { 'Content-Type': 'application/json' },
 });
 

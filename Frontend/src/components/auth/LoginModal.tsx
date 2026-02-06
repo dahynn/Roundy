@@ -8,7 +8,7 @@ interface Props {
 
 
 export default function LoginModal({ onClose }: Props) {
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = import.meta.env.VITE_API_URL || '';
   const handleKakaoLogin = () => {
     // console.log("전체 환경변수:", import.meta.env);
     // console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
