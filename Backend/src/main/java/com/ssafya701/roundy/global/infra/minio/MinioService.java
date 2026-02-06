@@ -189,6 +189,21 @@ public class MinioService {
                 }
             }
 
+            // [Fail-Safe] 내부망 주소(minio-svc)가 포함되어 있다면 무조건 외부 도메인으로 교체
+            String publicDomain = (externalUrl != null && !externalUrl.isEmpty())
+                    ? externalUrl
+                    : "https://i14a701.p.ssafy.io/minio-api";
+
+            // internalUrl 이 "http://minio-svc:8887" 처럼 되어 있을 경우 브라우저 에러가 나므로 강제 교체
+            if (url.contains("minio-svc")) {
+                log.info("Internal URL leakage detected in Presigned URL. Applying Force-Fix: {}", url);
+                java.net.URI currentUri = new java.net.URI(url);
+                java.net.URI externalUri = new java.net.URI(publicDomain);
+
+                // host와 port 부분을 외부 도메인으로 교체
+                url = url.replace(currentUri.getScheme() + "://" + currentUri.getAuthority(), publicDomain);
+            }
+
             log.info("Final Presigned URL: {}", url);
             return url;
         } catch (Exception e) {
