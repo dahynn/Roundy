@@ -35,6 +35,7 @@ import { useUser } from '@/context/UserContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function MeetingPage() {
+
     // --------------------------------------------------------------------------------
     // 1. 초기 설정 및 상태 관리
     // --------------------------------------------------------------------------------
