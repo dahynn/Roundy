@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import com.ssafya701.roundy.global.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -30,6 +33,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -54,7 +58,20 @@ public class UserController {
     @GetMapping("/kakao/callback")
     public void kakaoCallback(@RequestParam String code, HttpServletResponse response) throws IOException {
         String token = userService.kakaoLogin(code);
-        response.sendRedirect(frontendUrl + "/auth/callback?token=" + token);
+
+        // Access Token 쿠키 생성
+        ResponseCookie cookie = ResponseCookie.from("accessToken", token)
+                .httpOnly(true)
+                .secure(true) // HTTPS 필수
+                .path("/")
+                .maxAge(jwtTokenProvider.getExpirationTime() / 1000) // 초 단위 설정
+                .sameSite("Lax") // 동일 도메인이므로 Lax 권장
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // 프론트엔드 콜백 페이지로 리다이렉트 (URL에 토큰 없음!)
+        response.sendRedirect(frontendUrl + "/auth/callback");
     }
 
     // 회원가입 전, 카카오에서 받은 정보 불러오기
@@ -173,14 +190,26 @@ public class UserController {
     }
 
     // 로그아웃
-    @Operation(summary = "로그아웃", description = "Redis에서 Refresh Token을 삭제하여 로그아웃 처리합니다.")
+    @Operation(summary = "로그아웃", description = "Redis에서 Refresh Token을 삭제하고 쿠키를 제거하여 로그아웃 처리합니다.")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
-            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal) {
+            @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principal,
+            HttpServletResponse response) {
         if (principal == null) {
             return ResponseEntity.status(401).body(CommonResponse.ofFailure("인증 정보가 없습니다. 다시 로그인해주세요."));
         }
         userService.logout(principal.getUser().getId());
+
+        // 쿠키 삭제 (만료 시간을 0으로 설정)
+        ResponseCookie cookie = ResponseCookie.from("accessToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         return ResponseEntity.ok(CommonResponse.ofSuccess());
     }
 
