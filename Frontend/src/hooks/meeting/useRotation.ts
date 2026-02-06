@@ -340,7 +340,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
             return;
         }
 
-        const WS_URL = `${baseUrl}?token=${token}`;
+        const WS_URL = `${baseUrl}`;
         console.log(`[WS] Connecting to ${WS_URL}`);
 
         const socket = new WebSocket(WS_URL);
