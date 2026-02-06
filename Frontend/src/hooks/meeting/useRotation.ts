@@ -43,6 +43,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         currentRound: 0,
         totalRounds: 0,
         remainingTime: 0,
+        totalTime: 0, // [NEW]
+        isBreak: false, // [NEW]
         participants: [],
         currentSpeaker: null,
         currentGame: null,
@@ -130,6 +132,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                             ...prev,
                             currentStage: payload.stage,
                             remainingTime: payload.durationSeconds,
+                            totalTime: payload.durationSeconds, // [NEW] 전체 시간 설정
+                            isBreak: false, // [NEW] 스테이지 시작 시 휴식 해제
                             currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
                             currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
                             currentGame: null, // 이미지 게임 정보 초기화
@@ -162,7 +166,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     const payload = data as MatchResultPayload;
                     setState(prev => ({
                         ...prev,
-                        lastMessage: payload.isMatched
+                        matchResult: payload, // [NEW] 최종 결과 저장 (UI 표시용)
+                        lastMessage: payload.matched
                             ? `🎉 최종 커플: ${payload.partnerNickname}`
                             : '최종 매칭 실패 ㅠㅠ'
                     }));
@@ -245,16 +250,20 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     break;
 
                 case 'BREAK': {
+                    console.log('🛑 [WS] BREAK Received:', data);
                     const payload = data as any; // BreakPayload
                     setState(prev => ({
                         ...prev,
                         remainingTime: payload.durationSeconds,
+                        // totalTime: payload.durationSeconds, // 휴식 시간도 게이지로 보여줄지 여부 -> 일단은 유지 or 업데이트? 보통 휴식은 짧아서 업데이트 권장
+                        isBreak: true, // [NEW] 휴식 상태 진입
                         lastMessage: '잠시 후 다음 단계로 이동합니다...'
                     }));
                     break;
                 }
 
                 case 'FIRST_VOTE_RESULT': {
+                    console.log('📊 [WS] FIRST_VOTE_RESULT Received:', data);
                     const payload = data as any; // FirstVoteResultPayload
                     setState(prev => ({
                         ...prev,
@@ -400,6 +409,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
     const submitVote = (targetUserId: number | null) => sendMessage('SUBMIT_VOTE', { targetUserId });
     const submitGameAnswer = (answer: string) => sendMessage('SUBMIT_GAME_ANSWER', { answer });
     const leaveRoom = () => sendMessage('LEAVE_ROOM', { roomId });
+    const sendFaceRevealPermission = (accepted: boolean) => sendMessage('FACE_REVEAL_PERMISSION', { accepted });
 
-    return { state, submitVote, submitGameAnswer, leaveRoom };
+    return { state, submitVote, submitGameAnswer, leaveRoom, sendFaceRevealPermission };
 };
