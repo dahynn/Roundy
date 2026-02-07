@@ -20,7 +20,9 @@ const MOCK_PARTICIPANTS: Participant[] = [
 
 interface VoteResultItem {
     voterId: number;
+    voterNickname?: string; // [NEW] Payload fallbacks
     targetId: number | null;
+    targetNickname?: string; // [NEW] Payload fallbacks
 }
 
 interface Step2_ResultProps {
@@ -39,11 +41,24 @@ export const Step2_Result: React.FC<Step2_ResultProps> = ({ participants, result
     const cardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
     const [, setTick] = useState(0);
 
-    // ID 순서로 정렬
-    const maleParticipants = participants
+    // [FIX] 결과 Payload에 있는 닉네임을 우선 사용하도록 데이터 보정
+    // participants 목록에 있는 정보가 최신이 아니거나 비동기 이슈가 있을 수 있음
+    const displayParticipants = React.useMemo(() => {
+        if (!results) return participants;
+        return participants.map(p => {
+            const vote = results.find(r => r.voterId === p.id);
+            if (vote && vote.voterNickname) {
+                return { ...p, name: vote.voterNickname };
+            }
+            return p;
+        });
+    }, [participants, results]);
+
+    // ID 순서로 정렬 (보정된 데이터 사용)
+    const maleParticipants = displayParticipants
         .filter(p => p.gender === 'MALE')
         .sort((a, b) => a.id - b.id);
-    const femaleParticipants = participants
+    const femaleParticipants = displayParticipants
         .filter(p => p.gender === 'FEMALE')
         .sort((a, b) => a.id - b.id);
 

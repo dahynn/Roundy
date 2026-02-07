@@ -6,6 +6,7 @@ import com.ssafya701.roundy.webrtc.message.inbound.JoinRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.SubmitVoteMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.SubmitGameVoteMessage;
+import com.ssafya701.roundy.webrtc.message.inbound.RenderCompleteMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.ErrorMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.JoinOkMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.RoomStateMessage;
@@ -98,6 +99,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                 case LEAVE_ROOM -> handleLeaveRoom(session, (LeaveRoomMessage) wsMessage);
                 case SUBMIT_VOTE -> handleSubmitVote(session, (SubmitVoteMessage) wsMessage);
                 case SUBMIT_GAME_VOTE -> handleSubmitGameVote(session, (SubmitGameVoteMessage) wsMessage);
+                case RENDER_COMPLETE -> handleRenderComplete(session, (RenderCompleteMessage) wsMessage);
                 default -> {
                     log.warn("⚠️ [WebSocket] Unknown Event: {}, Client: {} (userId: {})", 
                             wsMessage.getType(), username, userId);
@@ -571,6 +573,32 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             .map(ParticipantState::getNickname)
             .orElse("Unknown");
         eventLogger.logGameAnswerSubmitted(voterId, targetNickname, "Q" + questionNumber);
+    }
+    
+    /**
+     * RENDER_COMPLETE 메시지 처리 (클라이언트 렌더링 완료)
+     */
+    private void handleRenderComplete(WebSocketSession session, RenderCompleteMessage message) {
+        Long userId = (Long) session.getAttributes().get("userId");
+        String stageName = message.getStage();
+        
+        // 세션 ID로 방 찾기
+        RoomState room = roomRegistry.findRoomBySessionId(session.getId())
+                .orElse(null);
+        
+        if (room == null) {
+            return; // 조용히 무시 (또는 에러 로그)
+        }
+        
+        // 현재 스테이지와 일치하는지 확인 (선택적 검증)
+        // if (!room.getCurrentStage().name().equals(stageName)) { ... }
+        
+        boolean allReady = room.markUserReady(userId);
+        log.info("🖥️ 렌더링 완료 수신: userId={}, stage={}, allReady={}", userId, stageName, allReady);
+        
+        if (allReady) {
+            stageScheduler.completeSynchronization(room);
+        }
     }
     
     // ==================================================================

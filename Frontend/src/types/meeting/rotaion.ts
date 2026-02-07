@@ -17,6 +17,8 @@ export type WsMessageType =
     | 'LEAVE_ROOM'
     | 'SUBMIT_VOTE'
     | 'SUBMIT_GAME_ANSWER'
+    | 'FACE_REVEAL_PERMISSION' // [NEW] 최종 매칭 후 얼굴 공개 동의 여부 전송
+    | 'RENDER_COMPLETE' // [NEW] 렌더링 완료 신호 전송
     // Server -> Client
     | 'JOIN_OK'
     | 'ROOM_STATE'
@@ -102,7 +104,7 @@ export interface PairAssignedPayload {
 
 // MATCH_RESULT: 최종 매칭 결과
 export interface MatchResultPayload {
-    isMatched: boolean;
+    matched: boolean;
     partnerId: number | null;
     partnerNickname: string | null;
 }
@@ -171,7 +173,9 @@ export interface BreakPayload {
 // [NEW] FIRST_VOTE_RESULT: 첫인상 투표 결과
 export interface VoteResultItem {
     voterId: number;
+    voterNickname: string; // [NEW]
     targetId: number | null; // null이면 기권
+    targetNickname: string | null; // [NEW]
 }
 
 export interface FirstVoteResultPayload {
@@ -228,6 +232,11 @@ export interface RotationState {
 
     // [NEW] 첫인상 투표 결과
     firstVoteResults?: VoteResultItem[] | null;
+
+    // [NEW] 최종 매칭 결과 (추가)
+    matchResult?: MatchResultPayload | null;
+    totalTime: number; // [NEW] 스테이지 전체 시간 (게이지 바 용)
+    isBreak: boolean; // [NEW] 휴식/전환 상태 여부
 }
 
 // KICK: 강제 퇴장

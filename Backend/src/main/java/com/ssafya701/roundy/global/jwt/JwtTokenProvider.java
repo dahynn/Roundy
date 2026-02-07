@@ -27,8 +27,8 @@ public class JwtTokenProvider {
     private final long refreshTokenValidTime = 14 * 24 * 60 * 60 * 1000L; // 14일
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,
-                            @Value("${jwt.expiration-time}") long accessTokenValidTime,
-                            UserDetailsService userDetailsService) {
+            @Value("${jwt.expiration-time}") long accessTokenValidTime,
+            UserDetailsService userDetailsService) {
         byte[] keyBytes = Decoders.BASE64URL.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenValidTime = accessTokenValidTime;
@@ -87,5 +87,10 @@ public class JwtTokenProvider {
         } catch (IllegalArgumentException e) {
             throw new CustomException(ErrorEnum.FALSE_TOKEN);
         }
+    }
+
+    // 만료 시간 조회
+    public long getExpirationTime() {
+        return accessTokenValidTime;
     }
 }

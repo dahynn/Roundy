@@ -37,7 +37,7 @@ public class SessionController {
 
                 // Request Body가 없이 올 경우 빈 객체로 처리
                 if (request == null) {
-                    request = new SessionEnterRequest();
+                        request = new SessionEnterRequest();
                 }
 
                 // 1. JWT 검증 및 userId 추출
@@ -50,16 +50,17 @@ public class SessionController {
                 // 2. Redis에서 검증 상태 확인 + 삭제 (원자적 처리, Race Condition 방지)
                 // [테스트용 수정] 무조건 통과하도록 주석 처리
                 /*
-                if (!verificationService.verifyAndDelete(request.getRequestId())) {
-                        log.warn("Verification failed or already used: userId={}, requestId={}",
-                                        userId, request.getRequestId());
-                        return ResponseEntity.ok(
-                                        CommonResponse.ofSuccess(
-                                                        new SessionEnterResponse(false, "검증이 완료되지 않았거나 이미 사용되었습니다.",
-                                                                        null)));
-                }
-                */
-                // log.info("📢 [TEST MODE] Verification Skipped for requestId={}", request.getRequestId());
+                 * if (!verificationService.verifyAndDelete(request.getRequestId())) {
+                 * log.warn("Verification failed or already used: userId={}, requestId={}",
+                 * userId, request.getRequestId());
+                 * return ResponseEntity.ok(
+                 * CommonResponse.ofSuccess(
+                 * new SessionEnterResponse(false, "검증이 완료되지 않았거나 이미 사용되었습니다.",
+                 * null)));
+                 * }
+                 */
+                // log.info("📢 [TEST MODE] Verification Skipped for requestId={}",
+                // request.getRequestId());
                 log.info("📢 [TEST MODE] Verification Skipped");
 
                 // 3. User 정보 조회 (성별 확인)
@@ -76,22 +77,23 @@ public class SessionController {
                 // 4. [수정] 이미 매칭된 방이 있는지 먼저 확인 (Polling 로직 개선)
                 String existingRoomId = sessionService.getUserCurrentRoom(userId);
                 if (existingRoomId != null) {
-                    // 이미 매칭된 상태라면 즉시 방 정보 반환
-                    RoomMemberInfo memberInfo = sessionService.getRoomMemberInfo(userId, existingRoomId);
-                    
-                    if (memberInfo != null) {
-                        SessionEnterResponse response = SessionEnterResponse.matched(
-                                        memberInfo.getRoomId(),
-                                        memberInfo.getGender());
-        
-                        log.info("User already matched (polling catch): userId={}, roomId={}", 
-                                        userId, memberInfo.getRoomId());
-                        return ResponseEntity.ok(CommonResponse.ofSuccess(response));
-                    } else {
-                        // 정보가 없으면 키 삭제 후 재시도 유도 (Self-Repair)
-                        log.warn("User has room key but no member info: userId={}, roomId={}", userId, existingRoomId);
-                        sessionService.removeUserCurrentRoomKey(userId);
-                    }
+                        // 이미 매칭된 상태라면 즉시 방 정보 반환
+                        RoomMemberInfo memberInfo = sessionService.getRoomMemberInfo(userId, existingRoomId);
+
+                        if (memberInfo != null) {
+                                SessionEnterResponse response = SessionEnterResponse.matched(
+                                                memberInfo.getRoomId(),
+                                                memberInfo.getGender());
+
+                                log.info("User already matched (polling catch): userId={}, roomId={}",
+                                                userId, memberInfo.getRoomId());
+                                return ResponseEntity.ok(CommonResponse.ofSuccess(response));
+                        } else {
+                                // 정보가 없으면 키 삭제 후 재시도 유도 (Self-Repair)
+                                log.warn("User has room key but no member info: userId={}, roomId={}", userId,
+                                                existingRoomId);
+                                sessionService.removeUserCurrentRoomKey(userId);
+                        }
                 }
 
                 // 5. 세션 큐에 그제서야 추가 + 매칭 시도
