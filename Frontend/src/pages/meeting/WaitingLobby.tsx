@@ -5,12 +5,6 @@ import { enterSession } from '@/api/session';
 import type { SessionEnterResponse } from '@/api/session';
 import { TEST_TOKENS } from '@/constants/testUsers';
 
-// ------------------------------------------------------------------
-// [TEST CONFIG]
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
-// [TEST CONFIG]
-// ------------------------------------------------------------------
 
 const LOADING_MESSAGES = [
   "매력적인 참가자를 찾는 중...",
