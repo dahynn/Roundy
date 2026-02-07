@@ -298,6 +298,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         const baseUrl = import.meta.env.VITE_WS_URL;
         if (!baseUrl || baseUrl === 'undefined') {
             console.error('[WS] VITE_WS_URL 환경변수가 설정되지 않았습니다.');
+            console.log("baseUrl : " + baseUrl);
+            console.log("VITE_WS_URL : " + import.meta.env.VITE_WS_URL);
             return;
         }
 
