@@ -66,7 +66,8 @@ public class SecurityConfig {
                                                         "/api/webrtc/test/**",
                                                         "/test/**",
                                                         "/api/test/**",
-                                                        "/ws/**").permitAll();
+                                                        "/ws/**",
+                                                        "/api/ws/**").permitAll();
 
                                         // 개발 환경 로그
                                         if (isDevelopment) {
