@@ -62,8 +62,9 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    # [FIX] http → https로 변경하여 OpenVidu가 wss:// 토큰 생성하도록 함
-    traefik.ingress.kubernetes.io/service.serversscheme: https
+    # [FIX] Traefik → OpenVidu 내부 통신은 HTTP로 (Traefik이 TLS 종료)
+    # 토큰의 wss:// 변환은 백엔드 OpenViduService에서 처리됨
+    traefik.ingress.kubernetes.io/service.serversscheme: http
 spec:
   selector:
     app: openvidu
