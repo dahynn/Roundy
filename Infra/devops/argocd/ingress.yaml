@@ -7,7 +7,8 @@ metadata:
     kubernetes.io/ingress.class: "traefik"
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip@kubernetescrd, roundy-app-openvidu-strip@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip@kubernetescrd, roundy-app-openvidu-strip@kubernetescrd, roundy-app-res-browser-cache@kubernetescrd
+spec:
 spec:
   tls:
     - hosts:
