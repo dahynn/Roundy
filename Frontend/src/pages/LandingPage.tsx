@@ -157,14 +157,15 @@ function DevLoginButtons() {
 
   const handleDevLogin = (index: number) => {
     const token = TEST_TOKENS[index];
-    if (!token || token.includes('YOUR_VALID_TOKEN')) {
-      alert(`[설정 필요] src/constants/testUsers.ts 파일에 유효한 토큰을 입력해주세요.`);
+    if (!token || token.startsWith("YOUR_")) {
+      alert(`[오류] TEST_TOKENS[${index}]에 유효한 토큰을 입력해주세요.`);
       return;
     }
 
     // 하드코딩 토큰 바로 사용
     localStorage.setItem('accessToken', token);
-    navigate(`/loading?user=${index}&auto=true`);
+    navigate('/loading?auto=true');
+    // location.reload(); // 필요 시 리로드
   };
 
   return (

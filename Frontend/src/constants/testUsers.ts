@@ -1,0 +1,21 @@
+// TODO : 환경별 트콘 변경 필요
+
+export const TEST_TOKENS = [
+    // M1 (userId: 2)
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzNDkyODUsImV4cCI6MTc3MDUyMjA4NX0.5JpTaksRxwlkJjez0Vy2P5jmnFyKdX5owbXqaxN5OSw",
+
+    // M2 (userId: 3)
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzNDkyOTEsImV4cCI6MTc3MDUyMjA5MX0.0K7Dff2g-m4XDPJhFlAtP7XNA9K2NeJGRMax2XyiRQY",
+
+    // M3 (userId: 4)
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzNDkyOTcsImV4cCI6MTc3MDUyMjA5N30.LHBc9JRQi3z9k8_4OCALAz3vMAVUVxA-CWXrzqecuco",
+
+    // F1 (userId: 5)
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzNDkzMDMsImV4cCI6MTc3MDUyMjEwM30.X3cq3JBKOR-d9jqmLVpPxyLqwjoTk_lHnxEwDyVu-BA",
+
+    // F2 (userId: 6)
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzNDkzMjQsImV4cCI6MTc3MDUyMjEyNH0.lz99PPFpa7IgFJ0fLcGGF0f1FgByGDRlJGxkXWZlze0",
+
+    // F3 (userId: 7)
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzNDkzMzAsImV4cCI6MTc3MDUyMjEzMH0.6Zq-zspWzpNxOYJnN2SJQFRW21ARpjOpz7Z3h1QiTOs"
+];
