@@ -58,7 +58,7 @@ pipeline {
                             string(credentialsId: 'VITE_WS_URL', variable: 'VITE_WS_URL')
                         ]) {
                             sh "npm install"
-                            sh "VITE_WS_URL=${VITE_WS_URL} npm run build"
+                            sh 'VITE_WS_URL=$VITE_WS_URL npm run build'
                         }
                     }
                 }
