@@ -153,9 +153,13 @@ export const useOpenVidu = () => {
         }
 
         // [FIX] Mixed Content 방지: ws:// -> wss:// 강제 변환
-        if (token.startsWith('ws://')) {
+        console.log('[useOpenVidu] 원본 토큰:', token);
+        if (token.includes('ws://')) {
             console.warn('⚠️ [useOpenVidu] Insecure WS token detected. Upgrading to WSS...');
             token = token.replace('ws://', 'wss://');
+            console.log('[useOpenVidu] 변환된 토큰:', token);
+        } else {
+            console.log('[useOpenVidu] 토큰 변환 없음 (이미 Secure하거나 ws:// 없음)');
         }
 
         console.log(`🔄 [joinSession] 세션 접속 시도: ${sessionId}`);
