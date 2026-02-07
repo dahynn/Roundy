@@ -8,12 +8,12 @@ import type { SessionEnterResponse } from '@/api/session';
 // [TEST CONFIG]
 // ------------------------------------------------------------------
 const TEST_TOKENS = [
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MjUsImV4cCI6MTc3MDQyODcyNX0.Vb38pTtoqaBT54PQfeWk_qKJVLiwjqvsX3vCK30veZI",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MzgsImV4cCI6MTc3MDQyODczOH0.LrEW-B7wlz0cWuskTCqTVFgpSRR1OmbKCu4lg6M30A4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NTAsImV4cCI6MTc3MDQyODc1MH0.65KkNu2oTMCH6Df345_Xyq-dVZmRvluBU1I7me677ig",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NjIsImV4cCI6MTc3MDQyODc2Mn0.PnVyVyou5c3RnxD-Z3unRZm1nFSgnRKQfBZr3u8Vc4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NzQsImV4cCI6MTc3MDQyODc3NH0.xkBiR5IPpC2mpPmYSfgMm9dR2VIVEQ75jR7OijUiyFI",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZCI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5ODUsImV4cCI6MTc3MDQyODc4NX0.ZA0C5P5MeCld1YwKhwcBybsdcHPXbxUWeq5NWhbngOI"
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk0ODQsImV4cCI6MTc3MDYxMjI4NH0.Y64GT7MlTJjsxNLuQRhmwmxJtxO-TYplVaoeWB6gXIQ",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NDQsImV4cCI6MTc3MDYxMjM0NH0.z6GHpwFUKvPuWYEDY4YQ5s-3F1jC9sDiSbUXv7Nf1Lw",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NTAsImV4cCI6MTc3MDYxMjM1MH0.49pswd0TNHOIpAqOZmX4Zy43AA8Lo2qaOhhQgU94pWU",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NTgsImV4cCI6MTc3MDYxMjM1OH0.nUVKcOMGmldCUAXik4PP4Zo-Sfjl2jLny_pteviH4Hk",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NjcsImV4cCI6MTc3MDYxMjM2N30.DCRTJVNof5wmUx0jdHkZXmZxojBmrUq_cxo6ppReL3w",
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk4MTQsImV4cCI6MTc3MDYxMjYxNH0.nMAC593j7SgP2rYmyklivYkI3Ofizo2yHx8P15m0LKc"
 ];
 
 const LOADING_MESSAGES = [
@@ -61,7 +61,23 @@ export default function WaitingLobby() {
     }
 
     if (tokenToSet) {
+      console.log('[Lobby] Setting new token from params:', tokenToSet.substring(0, 20) + '...');
       localStorage.setItem('accessToken', tokenToSet);
+    } else {
+      // [DEV HELP] 만약 로컬스토리지에 토큰이 없거나, 있는데 테스트 토큰 목록에 없는(오래된) 경우 -> 1번 유저로 강제 설정
+      const currentToken = localStorage.getItem('accessToken');
+      const isKnownToken = TEST_TOKENS.includes(currentToken || '');
+
+      if (!currentToken || !isKnownToken) {
+        console.warn('[Lobby] No valid token found (or unknown). Auto-setting User 1 token.');
+        console.warn('Current Token:', currentToken ? currentToken.substring(0, 10) + '...' : 'NULL');
+        localStorage.setItem('accessToken', TEST_TOKENS[0]);
+        // 화면 새로고침하여 적용 (필요 시)
+        // window.location.reload(); 
+      } else {
+        const matchedIdx = TEST_TOKENS.indexOf(currentToken);
+        console.log(`[Lobby] Valid test token found. Index: ${matchedIdx} (User ${matchedIdx + 1})`);
+      }
     }
 
     // Auto start check
