@@ -39,7 +39,7 @@ const RotationTest: React.FC = () => {
     const [hasVoted, setHasVoted] = useState(false);
     const [wsLogs, setWsLogs] = useState<string[]>([]);
 
-    const { state: wsState, submitVote, submitGameAnswer, leaveRoom } = useRotationSystem(activeRoomId || "", userProfile);
+    const { state: wsState, submitVote, submitGameAnswer, leaveRoom } = useRotationSystem(activeRoomId || "", "", userProfile);
     const { session, publisher, subscribers, joinSession, leaveSession, initSelfCamera } = useOpenVidu();
 
     // [ADD] AI Magic Mirror Hook - isStreamReady 추가!
