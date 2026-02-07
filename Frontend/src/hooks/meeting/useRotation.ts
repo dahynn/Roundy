@@ -296,11 +296,16 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
         // 사용자 요청: ws://localhost:8080/ws/webrtc?token=
         const baseUrl = import.meta.env.VITE_WS_URL;
-        console.log('baseUrl : ' + baseUrl);
-        console.log('VITE_WS_URL : ' + import.meta.env.VITE_WS_URL);
         if (!baseUrl || baseUrl === 'undefined') {
+          console.error('baseUrl : ' + baseUrl);
+          console.error('baseUrl');
+          console.error(baseUrl);
+          console.error('VITE_WS_URL : ' + import.meta.env.VITE_WS_URL);
+          console.error('VITE_WS_URL');
+          console.error(import.meta.env.VITE_WS_URL);
           console.error('[WS] VITE_WS_URL 환경변수가 설정되지 않았습니다.');
-            return;
+          console.error('[WS] VITE_WS_URL 환경변수가 설정되지 않았습니다.' + baseUrl);
+          return;
         }
 
         const WS_URL = `${baseUrl}?token=${token}`;
