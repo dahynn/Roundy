@@ -59,10 +59,27 @@ const UserVideo: React.FC<Props> = ({ streamManager, isLocal = false }) => {
     }, [streamManager, isLocal]);
 
     const getNickname = () => {
+        // [FIX] stream.connection이 없을 수 있음 (Local Publisher 초기 상태 등)
+        if (!streamManager?.stream?.connection) {
+            return isLocal ? '나' : 'Unknown';
+        }
+
         const rawData = streamManager.stream.connection.data;
         try {
-            const parsed = JSON.parse(rawData);
-            return parsed.clientData || parsed;
+            const firstParse = JSON.parse(rawData);
+
+            // OpenVidu 구조: { clientData: "..." }
+            if (firstParse.clientData) {
+                try {
+                    // 내부 데이터가 JSON 스트링인 경우 (우리가 보낸 포맷)
+                    const innerData = JSON.parse(firstParse.clientData);
+                    return innerData.nickname || innerData.clientData || firstParse.clientData;
+                } catch {
+                    // 내부 데이터가 그냥 문자열인 경우
+                    return firstParse.clientData;
+                }
+            }
+            return firstParse.clientData || firstParse; // 혹시비 다른 구조일 경우
         } catch {
             return rawData || 'Unknown';
         }

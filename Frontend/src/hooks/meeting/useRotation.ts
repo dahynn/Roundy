@@ -56,6 +56,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
     const sendMessage = useCallback((type: WsMessageType, payload: any = {}) => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
+            console.log(`[WS-SEND] ${type}:`, payload);
             const message = { type, ...payload };
             socketRef.current.send(JSON.stringify(message));
         }

@@ -3,18 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Bell, LogOut, Sparkles, Loader2 } from 'lucide-react';
 import { enterSession } from '@/api/session';
 import type { SessionEnterResponse } from '@/api/session';
+import { TEST_TOKENS } from '@/constants/testUsers';
 
 // ------------------------------------------------------------------
 // [TEST CONFIG]
 // ------------------------------------------------------------------
-const TEST_TOKENS = [
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MjUsImV4cCI6MTc3MDQyODcyNX0.Vb38pTtoqaBT54PQfeWk_qKJVLiwjqvsX3vCK30veZI",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MzgsImV4cCI6MTc3MDQyODczOH0.LrEW-B7wlz0cWuskTCqTVFgpSRR1OmbKCu4lg6M30A4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NTAsImV4cCI6MTc3MDQyODc1MH0.65KkNu2oTMCH6Df345_Xyq-dVZmRvluBU1I7me677ig",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NjIsImV4cCI6MTc3MDQyODc2Mn0.PnVyVyou5c3RnxD-Z3unRZm1nFSgnRKQfBZr3u8Vc4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NzQsImV4cCI6MTc3MDQyODc3NH0.xkBiR5IPpC2mpPmYSfgMm9dR2VIVEQ75jR7OijUiyFI",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZCI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5ODUsImV4cCI6MTc3MDQyODc4NX0.ZA0C5P5MeCld1YwKhwcBybsdcHPXbxUWeq5NWhbngOI"
-];
+// ------------------------------------------------------------------
+// [TEST CONFIG]
+// ------------------------------------------------------------------
 
 const LOADING_MESSAGES = [
   "매력적인 참가자를 찾는 중...",
@@ -51,26 +47,36 @@ export default function WaitingLobby() {
   useEffect(() => {
     const queryUser = searchParams.get('user');
     const queryToken = searchParams.get('token');
-    let tokenToSet = '';
 
-    if (queryUser) {
-      const idx = parseInt(queryUser, 10);
-      if (TEST_TOKENS[idx]) tokenToSet = TEST_TOKENS[idx];
-    } else if (queryToken) {
-      tokenToSet = queryToken;
-    }
+    const handleAutoLogin = () => {
+      // 1. user 인덱스로 토큰 조회
+      if (queryUser) {
+        const idx = parseInt(queryUser, 10);
+        const token = TEST_TOKENS[idx];
+        console.log(`[Lobby Debug] queryUser=${queryUser}, idx=${idx}, tokenFound=${!!token}`);
 
-    if (tokenToSet) {
-      localStorage.setItem('accessToken', tokenToSet);
-    }
-
-    // Auto start check
-    if (searchParams.get('auto') === 'true') {
-      const token = localStorage.getItem('accessToken') || tokenToSet;
-      if (token) {
-        setIsMatching(true);
+        if (token) {
+          localStorage.setItem('accessToken', token);
+        } else {
+          console.warn("[Lobby Debug] Token not found! Clearing localStorage.");
+          localStorage.removeItem('accessToken'); // 기존 토큰 삭제 (오로그인 방지)
+        }
       }
-    }
+      // 2. 직접 토큰 입력
+      else if (queryToken) {
+        localStorage.setItem('accessToken', queryToken);
+      }
+
+      // 3. Auto Start 체크
+      if (searchParams.get('auto') === 'true') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          setIsMatching(true);
+        }
+      }
+    };
+
+    handleAutoLogin();
   }, [searchParams]);
 
   // --- 매칭 로직 ---
@@ -118,6 +124,7 @@ export default function WaitingLobby() {
         retryCount++;
 
       } catch (error) {
+        console.error("[pollMatch Error]", error); // 자세한 에러 내용을 콘솔에 출력
         timer = window.setTimeout(pollMatch, 3000);
         retryCount++;
       }

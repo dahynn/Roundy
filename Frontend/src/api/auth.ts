@@ -25,3 +25,11 @@ export const uploadVerifyPhoto = (formData: FormData) =>
     client.post('/auth/verify', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
+
+/**
+ * [TEST] 개발용 간편 로그인 (토큰 발급)
+ */
+export const devLogin = (userId: number) =>
+    client.post(`/test/ws-message/dev-login`, null, {
+        params: { userId }
+    });

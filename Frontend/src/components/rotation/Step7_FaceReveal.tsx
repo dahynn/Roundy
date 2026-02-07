@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Timer, Video, Mic, MicOff, VideoOff, MessageCircle } from 'lucide-react';
 
+import { StreamManager } from 'openvidu-browser';
+import UserVideo from '../meeting/UserVideo';
+
 interface Step7_FaceRevealProps {
     onComplete: () => void;
+    myStream?: StreamManager;
+    partnerStream?: StreamManager;
 }
 
-export const Step7_FaceReveal: React.FC<Step7_FaceRevealProps> = ({ onComplete }) => {
+export const Step7_FaceReveal: React.FC<Step7_FaceRevealProps> = ({ onComplete, myStream, partnerStream }) => {
     const [status, setStatus] = useState<'COUNTDOWN' | 'VIDEO_CHAT'>('COUNTDOWN');
     const [count, setCount] = useState(10);
     const [chatTime, setChatTime] = useState(60); // 1분
@@ -68,10 +73,10 @@ export const Step7_FaceReveal: React.FC<Step7_FaceRevealProps> = ({ onComplete }
                 <div className="flex-1 grid grid-cols-2 gap-4 p-4 md:p-8 max-w-7xl mx-auto w-full h-full items-center">
 
                     {/* 내 화면 */}
-                    <VideoCard name="나 (User)" isMe={true} />
+                    <VideoCard name="나 (User)" isMe={true} streamManager={myStream} />
 
                     {/* 상대방 화면 */}
-                    <VideoCard name="여자 1호" isMe={false} />
+                    <VideoCard name="파트너" isMe={false} streamManager={partnerStream} />
 
                 </div>
             </div>
@@ -79,14 +84,18 @@ export const Step7_FaceReveal: React.FC<Step7_FaceRevealProps> = ({ onComplete }
     );
 };
 
-const VideoCard = ({ name, isMe }: { name: string, isMe: boolean }) => {
+const VideoCard = ({ name, isMe, streamManager }: { name: string, isMe: boolean, streamManager?: StreamManager }) => {
     return (
         <div className="relative w-full aspect-[4/3] md:aspect-video bg-zinc-800 rounded-3xl overflow-hidden shadow-2xl border border-white/5 group">
-            {/* 가짜 비디오 피드 (placeholder) */}
+            {/* 비디오 피드 */}
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-900">
-                <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center backdrop-blur-sm">
-                    <Video size={48} className="text-white/20" />
-                </div>
+                {streamManager ? (
+                    <UserVideo streamManager={streamManager} isLocal={isMe} />
+                ) : (
+                    <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center backdrop-blur-sm">
+                        <Video size={48} className="text-white/20" />
+                    </div>
+                )}
             </div>
 
             {/* 오버레이 정보 */}

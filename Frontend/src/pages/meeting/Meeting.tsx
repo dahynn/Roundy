@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Settings, Mic, Video, LogOut, FastForward } from 'lucide-react';
+import { Settings, Mic, Video, LogOut } from 'lucide-react';
 
 // --- Hooks ---
 import { useRotationSystem } from '../../hooks/meeting/useRotation';
 import { useOpenVidu } from '../../hooks/meeting/useOpenVidu';
+import { useMagicMirror } from '../../hooks/meeting/useMagicMirror';
 
 // --- Components ---
 // Step 컴포넌트들을 components/rotation 폴더에서 불러옵니다.
@@ -13,11 +14,9 @@ import { Step2_Result } from '../../components/rotation/Step2_Result';
 import { Step3_Talk } from '../../components/rotation/Step3_Talk';
 import { Step4_Talk } from '../../components/rotation/Step4_Talk';
 import { Step5_FinalVote } from '../../components/rotation/Step5_FinalVote';
-import { Step5_FinalResult } from '../../components/rotation/Step5_FinalResult';
 import { Step6_MatchSuccess } from '../../components/rotation/Step6_MatchSuccess';
 import { Step6_NoMatch } from '../../components/rotation/Step6_NoMatch';
 import { Step7_FaceReveal } from '../../components/rotation/Step7_FaceReveal';
-import { Step7_MessageRoom } from '../../components/rotation/Step7_MessageRoom';
 
 // 로딩 화면 UI
 const StepWaiting = ({ count }: { count: number }) => (
@@ -40,7 +39,7 @@ export default function MeetingPage() {
     // --------------------------------------------------------------------------------
     const { userInfo, isLoading: isUserLoading } = useUser();
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
+    // const navigate = useNavigate(); // Unused
 
     // URL 파라미터 확인 (roomId만) -> 토큰은 localStorage에서
     const roomId = searchParams.get('room') || searchParams.get('roomId');
@@ -63,7 +62,10 @@ export default function MeetingPage() {
     // useRotationSystem에서 nickname을 username으로 사용하는지 확인 필요
     // 현재 hook 정의: interface UserProfile { userId, username, ... }
     const { state: wsState, submitVote, submitGameAnswer, leaveRoom, sendFaceRevealPermission } = useRotationSystem(roomId, token, userProfile);
-    const { publisher, subscribers, joinSession, leaveSession } = useOpenVidu();
+    const { publisher, subscribers, joinSession, initSelfCamera } = useOpenVidu();
+
+    // [AI Masking] Magic Mirror Hook
+    const { canvasRef, maskedStream, isStreamReady, setMode, isLoaded: isAiLoaded } = useMagicMirror();
 
     // 초기 진입 검증
     useEffect(() => {
@@ -73,16 +75,7 @@ export default function MeetingPage() {
         }
     }, [isUserLoading, userInfo]);
 
-    if (!userProfile || !roomId || !token) {
-        return (
-            <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-white/20 border-t-[#FF4D94] rounded-full animate-spin" />
-                    <p>미팅 접속 중... {isUserLoading ? '(유저 정보 로딩)' : ''}</p>
-                </div>
-            </div>
-        );
-    }
+
 
 
     // Local UI State
@@ -95,11 +88,11 @@ export default function MeetingPage() {
     const [currentNotice, setCurrentNotice] = useState<string | null>(null);
     const [displayText, setDisplayText] = useState('');
 
-    // --- Line Drawing State for Result ---
-    const [lines, setLines] = useState<any[]>([]);
-    const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
-    const svgRef = useRef<SVGSVGElement>(null);
-    const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
+    // --- Line Drawing State for Result (Unused but kept for reference if needed, commented out to fix lint) ---
+    // const [lines, setLines] = useState<any[]>([]);
+    // const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
+    // const svgRef = useRef<SVGSVGElement>(null);
+    // const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
 
     // [NEW] Persist First Vote Results
     const [localVoteResults, setLocalVoteResults] = useState<any[] | null>(null);
@@ -108,69 +101,150 @@ export default function MeetingPage() {
     // 2. 데이터 변환 및 Memoization
     // --------------------------------------------------------------------------------
 
-    // UI용 참가자 데이터 매핑
+    // UI용 참가자 데이터 매핑 (Fallback Logic Applied)
     const uiParticipants = useMemo(() => {
-        return wsState.participants.map(p => {
-            // Debugging Logs
-            // console.log(`[UI] Mapping participant: ${p.nickname} (ID: ${p.userId})`);
+        if (!userProfile) return [];
 
-            // Stream 매핑
-            let streamManager = null;
-            let isLocal = false;
+        // 1. 가용 Subscriber 목록 복사 (매칭되면 제거하기 위해)
+        let availableSubs = [...subscribers];
 
+        // 2. 1차 패스: 본인 및 정확한 닉네임 매칭
+        const partiallyMapped = wsState.participants.map(p => {
+            // 본인 매핑
             if (p.userId === userProfile.userId) {
-                streamManager = publisher;
-                isLocal = true;
-            } else {
-                // 구독자 스트림 찾기
-                const sub = subscribers.find(s => {
-                    try {
-                        const data = JSON.parse(s.stream.connection.data);
-                        // console.log(`  - Sub: ${data.clientData} vs Target: ${p.nickname}`);
-                        if (data.clientData === p.nickname) return true;
-
-                        // Fallback: serverData or other fields?
-                        return false;
-                    } catch (e) {
-                        console.warn("Stream data parse error:", s.stream.connection.data);
-                        return false;
-                    }
-                });
-                if (sub) {
-                    streamManager = sub;
-                }
+                return {
+                    id: p.userId,
+                    name: p.nickname,
+                    gender: p.gender,
+                    streamManager: publisher,
+                    isLocal: true,
+                    isMapped: true
+                };
             }
 
+            // 구독자 스트림 찾기 (정확한 매칭: userId > nickname)
+            const matchIndex = availableSubs.findIndex(s => {
+                const rawData = s.stream.connection.data;
+                let parsedData: any = {};
+
+                // Parse Logic: Handle potentially nested JSON
+                try {
+                    const firstParse = JSON.parse(rawData);
+                    // Standard OpenVidu format: { clientData: "..." }
+                    if (firstParse.clientData) {
+                        try {
+                            // Try to parse the inner clientData if it's a JSON string
+                            const innerData = JSON.parse(firstParse.clientData);
+                            parsedData = innerData;
+                        } catch {
+                            // If not JSON, use it as string nickname
+                            parsedData = { clientData: firstParse.clientData };
+                        }
+                    } else {
+                        parsedData = firstParse;
+                    }
+                } catch {
+                    // Not JSON, treat rawData as (potential) nickname string
+                }
+
+                // 1. userId 매칭 (가장 정확함)
+                if (parsedData.userId && parsedData.userId === p.userId) {
+                    console.log(`✅ [Mapping] UserId Match! ${p.userId} (${p.nickname})`);
+                    return true;
+                }
+
+                // 2. 닉네임 매칭 (ClientData or raw string)
+                const targetName = parsedData.clientData || parsedData.nickname;
+                if (targetName === p.nickname) return true;
+
+                // Fallback 1: Direct comparison
+                if (rawData === p.nickname) return true;
+                // Fallback 2: Embedded check
+                if (rawData.includes(`"clientData":"${p.nickname}"`) || rawData.includes(`clientData=${p.nickname}`)) return true;
+
+                return false;
+            });
+
+            if (matchIndex !== -1) {
+                const sub = availableSubs[matchIndex];
+                availableSubs.splice(matchIndex, 1); // 사용된 것 제거
+                return {
+                    id: p.userId,
+                    name: p.nickname,
+                    gender: p.gender,
+                    streamManager: sub,
+                    isLocal: false,
+                    isMapped: true
+                };
+            }
+
+            // 매핑 실패 상태로 리턴
             return {
                 id: p.userId,
                 name: p.nickname,
                 gender: p.gender,
-                voteTo: 0, // 백엔드에서 공개 안하면 알 수 없음
-                keywords: [],
-                badges: [],
-                streamManager,
-                isLocal
+                streamManager: null, // 나중에 채움
+                isLocal: false,
+                isMapped: false
+            };
+        });
+
+        // 3. 2차 패스: 매칭되지 않은 참가자는 스트림 없음 (Fallback 제거)
+        return partiallyMapped.map(p => {
+            if (p.isMapped) {
+                const { isMapped, ...rest } = p;
+                return { ...rest, voteTo: 0, keywords: [], badges: [] };
+            }
+
+            // [DEBUG] Fallback 제거됨 - 매칭 안 되면 화면 안 나옴
+            return {
+                id: p.id,
+                name: p.name,
+                gender: p.gender,
+                streamManager: null,
+                isLocal: false,
+                voteTo: 0, keywords: [], badges: []
             };
         });
     }, [wsState.participants, subscribers, publisher, userProfile]);
 
     // UI용 상대방 파트너 데이터 매핑
     const uiPartner = useMemo(() => {
-        if (!wsState.currentPartner) return null;
+        if (!wsState.currentPartner || !userProfile) return null;
 
         let partnerStream = undefined;
-        // 파트너 스트림 찾기
+        // 파트너 스트림 찾기 (정확한 매칭: userId > nickname)
         const sub = subscribers.find(s => {
             const rawData = s.stream.connection.data;
-            let clientData = rawData;
+            let parsedData: any = {};
             try {
-                const parsed = JSON.parse(rawData);
-                if (parsed && parsed.clientData) clientData = parsed.clientData;
+                const firstParse = JSON.parse(rawData);
+                if (firstParse.clientData) {
+                    try {
+                        const innerData = JSON.parse(firstParse.clientData);
+                        parsedData = innerData;
+                    } catch {
+                        parsedData = { clientData: firstParse.clientData };
+                    }
+                } else {
+                    parsedData = firstParse;
+                }
             } catch { }
 
-            return clientData === wsState.currentPartner?.nickname;
+            // 1. userId 매칭
+            if (parsedData.userId && parsedData.userId === wsState.currentPartner!.id) return true;
+
+            // 2. 닉네임 매칭
+            const targetName = parsedData.clientData || parsedData.nickname;
+            if (targetName === wsState.currentPartner!.nickname) return true;
+
+            return false;
         });
-        if (!partnerStream && subscribers.length > 0) partnerStream = subscribers[0];
+
+        // [DEBUG] Fallback 제거됨
+        if (sub) {
+            partnerStream = sub;
+        }
 
         return {
             id: wsState.currentPartner.id || 0,
@@ -222,13 +296,78 @@ export default function MeetingPage() {
     // 3. Side Effects (로직 처리)
     // --------------------------------------------------------------------------------
 
-    // 세션 자동 접속
+    // [AI Masking] AI 스트림 준비 완료 시 Publisher 생성
+    useEffect(() => {
+        if (!isStreamReady || !maskedStream) {
+            console.log('⏳ [Meeting] AI 스트림 준비 대기 중...', { isStreamReady, hasMaskedStream: !!maskedStream });
+            return;
+        }
+        if (!maskedStream.active) {
+            console.warn('⚠️ [Meeting] maskedStream is not active');
+            return;
+        }
+
+        const videoTrack = maskedStream.getVideoTracks()[0];
+        if (!videoTrack || videoTrack.readyState !== 'live') {
+            console.warn('⚠️ [Meeting] videoTrack is not live');
+            return;
+        }
+
+        console.log('🎭 [Meeting] AI 스트림 준비 완료! Publisher 생성 시작...');
+        initSelfCamera(videoTrack, true)
+            .then(() => console.log('✅ [Meeting] Publisher created with AI track'))
+            .catch(err => console.error('❌ [Meeting] Publisher creation failed:', err));
+    }, [isStreamReady, maskedStream, initSelfCamera]);
+
+    // [AI Masking] Stage에 따른 마스킹 모드 설정
+    useEffect(() => {
+        const stage = wsState.currentStage;
+        switch (stage) {
+            case 'WAITING':
+                setMode('BLACK');
+                break;
+            case 'SELF_INTRO':
+            case 'ROTATION_SHORT':
+                setMode('SILHOUETTE');
+                break;
+            case 'ROTATION_LONG':
+                setMode('NOSE_MASK');
+                break;
+            case 'FACE_REVEAL':
+                setMode('NORMAL');
+                break;
+            case 'IMAGE_GAME':
+            case 'VOTE_FIRST':
+            case 'VOTE_FINAL':
+            case 'MATCHING_RESULT':
+                setMode('BLACK');
+                break;
+            default:
+                setMode('BLACK');
+        }
+    }, [wsState.currentStage, setMode]);
+
+    // 세션 자동 접속 (AI 마스킹 트랙 전달)
     useEffect(() => {
         const partnerInfo = wsState.currentPartner;
-        if (partnerInfo?.sessionId && partnerInfo?.token) {
-            joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username);
+        if (partnerInfo?.sessionId && partnerInfo?.token && userProfile) {
+            const videoTrack = maskedStream?.getVideoTracks()[0];
+            console.log('🔍 [Meeting] 세션 접속 전 maskedStream 상태:', {
+                hasMaskedStream: !!maskedStream,
+                isActive: maskedStream?.active,
+                hasVideoTrack: !!videoTrack,
+                trackState: videoTrack?.readyState
+            });
+            // [FIX] 닉네임뿐만 아니라 userId도 함께 전송하여 매핑 정확도 향상
+            const connectionData = JSON.stringify({
+                clientData: userProfile.username, // 기존 호환성 유지
+                nickname: userProfile.username,
+                userId: userProfile.userId,
+                gender: userProfile.gender
+            });
+            joinSession(partnerInfo.sessionId, partnerInfo.token, connectionData, videoTrack);
         }
-    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile.username]);
+    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile?.username, maskedStream]);
 
     // 마이크/카메라 토글 반영
     useEffect(() => {
@@ -332,8 +471,38 @@ export default function MeetingPage() {
     // 5. 렌더링
     // --------------------------------------------------------------------------------
 
+    // --------------------------------------------------------------------------------
+    // 5. 렌더링
+    // --------------------------------------------------------------------------------
+
+    if (!userProfile || !roomId || !token || !isAiLoaded) {
+        return (
+            <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">
+                {/* [AI Masking] Canvas는 로딩 중에도 유지해야 AI 모델이 로드됨 */}
+                <canvas
+                    ref={canvasRef}
+                    width="640"
+                    height="480"
+                    style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}
+                />
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-white/20 border-t-[#FF4D94] rounded-full animate-spin" />
+                    <p>미팅 접속 중... {isUserLoading ? '(유저 정보 로딩)' : !isAiLoaded ? '(AI 모델 로딩)' : ''}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="h-screen w-full bg-[#0F0F0F] text-white flex flex-col font-['Pretendard'] overflow-hidden selection:bg-[#FF4D94] selection:text-white">
+
+            {/* [AI Masking] Magic Mirror Canvas - 항상 최상위에서 유지 (언마운트 방지) */}
+            <canvas
+                ref={canvasRef}
+                width="640"
+                height="480"
+                style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}
+            />
 
             {/* Header ... */}
             <header className="flex items-center justify-between px-8 py-6 z-30">
@@ -416,7 +585,7 @@ export default function MeetingPage() {
                         {wsState.currentStage === 'VOTE_FIRST' && (
                             <Step2_Vote
                                 participants={uiParticipants}
-                                currentUserGender={userProfile.gender}
+                                currentUserGender={userProfile?.gender}
                                 selectedCard={selectedCard}
                                 onSelect={handleChoice}
                             />
@@ -447,7 +616,7 @@ export default function MeetingPage() {
                         {wsState.currentStage === 'VOTE_FINAL' && (
                             <Step5_FinalVote
                                 participants={uiParticipants}
-                                currentUserGender={userProfile.gender}
+                                currentUserGender={userProfile?.gender}
                                 selectedCard={selectedCard}
                                 onSelect={handleChoice}
                             />
@@ -462,22 +631,22 @@ export default function MeetingPage() {
                                         <Step2_Result
                                             participants={uiParticipants}
                                             results={[
-                                                { voterId: userProfile.userId, targetId: wsState.matchResult.partnerId }, // 나의 선택
-                                                { voterId: wsState.matchResult.partnerId || 0, targetId: userProfile.userId } // 상대의 선택 (매칭되었으므로)
+                                                { voterId: userProfile?.userId, targetId: wsState.matchResult.partnerId }, // 나의 선택
+                                                { voterId: wsState.matchResult.partnerId || 0, targetId: userProfile?.userId } // 상대의 선택 (매칭되었으므로)
                                             ]}
                                         />
                                         {/* 매칭 성공 시 추가 액션 (Step6_MatchSuccess로 전환 버튼 등) */}
                                         <div className="absolute bottom-10 z-50 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-3000 fill-mode-forwards opacity-0" style={{ animationDelay: '3s' }}>
                                             <Step6_MatchSuccess
                                                 currentUser={{
-                                                    id: userProfile.userId,
-                                                    name: userProfile.username,
-                                                    gender: userProfile.gender
+                                                    id: userProfile?.userId || 0,
+                                                    name: userProfile?.username || 'Unknown',
+                                                    gender: userProfile?.gender || 'MALE'
                                                 }}
                                                 matchedUser={{
                                                     id: wsState.matchResult.partnerId || 0,
                                                     name: wsState.matchResult.partnerNickname || 'Unknown',
-                                                    gender: userProfile.gender === 'MALE' ? 'FEMALE' : 'MALE'
+                                                    gender: userProfile?.gender === 'MALE' ? 'FEMALE' : 'MALE'
                                                 }}
                                                 onFaceRevealResponse={handleFaceRevealResponse}
                                             />
@@ -493,6 +662,8 @@ export default function MeetingPage() {
                         {wsState.currentStage === 'FACE_REVEAL' && uiPartner && (
                             <Step7_FaceReveal
                                 onComplete={() => handleGoHome()}
+                                myStream={publisher || undefined}
+                                partnerStream={uiPartner.stream}
                             />
                         )}
 
@@ -524,7 +695,7 @@ export default function MeetingPage() {
 
                     <div className="flex flex-col items-start min-w-[120px]">
                         <span className="text-[10px] font-bold text-[#FF4D94] uppercase tracking-widest mb-0.5">My Profile</span>
-                        <span className="text-lg font-black text-white uppercase tracking-tight">{userProfile.username}</span>
+                        <span className="text-lg font-black text-white uppercase tracking-tight">{userProfile?.username}</span>
                     </div>
                 </div>
             </footer>
