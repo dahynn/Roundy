@@ -14,9 +14,11 @@ import { Step2_Result } from '../../components/rotation/Step2_Result';
 import { Step3_Talk } from '../../components/rotation/Step3_Talk';
 import { Step4_Talk } from '../../components/rotation/Step4_Talk';
 import { Step5_FinalVote } from '../../components/rotation/Step5_FinalVote';
+import { Step5_FinalResult } from '../../components/rotation/Step5_FinalResult';
 import { Step6_MatchSuccess } from '../../components/rotation/Step6_MatchSuccess';
 import { Step6_NoMatch } from '../../components/rotation/Step6_NoMatch';
 import { Step7_FaceReveal } from '../../components/rotation/Step7_FaceReveal';
+import { Step7_MessageRoom } from '../../components/rotation/Step7_MessageRoom';
 
 // 로딩 화면 UI
 const StepWaiting = ({ count }: { count: number }) => (
@@ -39,7 +41,7 @@ export default function MeetingPage() {
     // --------------------------------------------------------------------------------
     const { userInfo, isLoading: isUserLoading } = useUser();
     const [searchParams] = useSearchParams();
-    // const navigate = useNavigate(); // Unused
+    const navigate = useNavigate();
 
     // URL 파라미터 확인 (roomId만) -> 토큰은 localStorage에서
     const roomId = searchParams.get('room') || searchParams.get('roomId');
@@ -61,8 +63,8 @@ export default function MeetingPage() {
     // Custom Hooks
     // useRotationSystem에서 nickname을 username으로 사용하는지 확인 필요
     // 현재 hook 정의: interface UserProfile { userId, username, ... }
-    const { state: wsState, submitVote, submitGameAnswer, leaveRoom, sendFaceRevealPermission } = useRotationSystem(roomId, token, userProfile);
-    const { publisher, subscribers, joinSession, initSelfCamera } = useOpenVidu();
+    const { state: wsState, submitVote, submitGameAnswer, leaveRoom, sendFaceRevealPermission, sendRenderComplete } = useRotationSystem(roomId, token, userProfile);
+    const { publisher, subscribers, joinSession, initSelfCamera, leaveSession } = useOpenVidu();
 
     // [AI Masking] Magic Mirror Hook
     const { canvasRef, maskedStream, isStreamReady, setMode, isLoaded: isAiLoaded } = useMagicMirror();
@@ -75,7 +77,16 @@ export default function MeetingPage() {
         }
     }, [isUserLoading, userInfo]);
 
-
+    if (!userProfile || !roomId || !token) {
+        return (
+            <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-white/20 border-t-[#FF4D94] rounded-full animate-spin" />
+                    <p>미팅 접속 중... {isUserLoading ? '(유저 정보 로딩)' : ''}</p>
+                </div>
+            </div>
+        );
+    }
 
 
     // Local UI State
@@ -88,14 +99,16 @@ export default function MeetingPage() {
     const [currentNotice, setCurrentNotice] = useState<string | null>(null);
     const [displayText, setDisplayText] = useState('');
 
-    // --- Line Drawing State for Result (Unused but kept for reference if needed, commented out to fix lint) ---
-    // const [lines, setLines] = useState<any[]>([]);
-    // const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
-    // const svgRef = useRef<SVGSVGElement>(null);
-    // const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
+    // --- Line Drawing State for Result ---
+    const [lines, setLines] = useState<any[]>([]);
+    const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const svgRef = useRef<SVGSVGElement>(null);
+    const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
 
     // [NEW] Persist First Vote Results
     const [localVoteResults, setLocalVoteResults] = useState<any[] | null>(null);
+    const [selfIntroReady, setSelfIntroReady] = useState(false); // [NEW] 자기소개 준비 상태 관리
+    const sentStageRef = useRef<string | null>(null); // [NEW] 중복 전송 방지를 위한 Ref Guard
 
     // --------------------------------------------------------------------------------
     // 2. 데이터 변환 및 Memoization
@@ -369,6 +382,34 @@ export default function MeetingPage() {
         }
     }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile?.username, maskedStream]);
 
+    // [NEW] 스테이지 변경 및 렌더링 완료 시 자동 신호 전송
+    // 컴포넌트가 마운트되고 스테이지가 결정되면 즉시 서버에 완료 신호를 보냅니다.
+    // 이를 통해 모든 참가자가 준비되었을 때 다음 단계(타이머 시작 등)로 진행할 수 있습니다.
+    useEffect(() => {
+        if (wsState.connected && wsState.currentStage) {
+            // [FIX] Duplicate Guard: 이미 신호를 보낸 스테이지라면 스킵
+            if (sentStageRef.current === wsState.currentStage) return;
+
+            // WAITING 단계에서도 보낼 수 있지만, 보통 게임/대화 스테이지에서 중요함
+            // console.log(`[Meeting] 렌더링 완료 신호 전송: ${wsState.currentStage}`);
+
+            // [LOGIC] SELF_INTRO: Intro 멘트 보여주는 시간 동안은 완료 신호 보류 -> 멘트 끝나면 전송
+            if (wsState.currentStage === 'SELF_INTRO' && !selfIntroReady) {
+                return;
+            }
+
+            // [LOGIC] FIRST_VOTE_RESULT: 결과 보여주는 시간 동안은 완료 신호 보류 -> 결과 표시 끝나면 전송
+            if (wsState.firstVoteResults && !localVoteResults) {
+                // localVoteResults가 null이 되었다는 것은 결과 표시가 끝났다는 의미
+                // 하지만 여기서는 useEffect 흐름상 localVoteResults가 null이 될 때 이 effect가 다시 트리거되지 않을 수 있음
+                // 따라서 별도 effect에서 처리하거나 여기서 조건부 처리 필요
+            }
+
+            sendRenderComplete(wsState.currentStage);
+            sentStageRef.current = wsState.currentStage;
+        }
+    }, [wsState.currentStage, wsState.connected, sendRenderComplete, selfIntroReady]); // selfIntroReady 의존성 추가
+
     // 마이크/카메라 토글 반영
     useEffect(() => {
         if (publisher) {
@@ -383,13 +424,26 @@ export default function MeetingPage() {
         setSelectedCard(null);
 
         const stage = wsState.currentStage;
+
+        // [Logic] SELF_INTRO 진입 시 준비 상태 초기화 및 멘트 표시
+        if (stage === 'SELF_INTRO') {
+            setSelfIntroReady(false);
+            setCurrentNotice('이제 자기소개를 시작합니다');
+
+            // 3초 후 멘트 종료 -> selfIntroReady=true -> RENDER_COMPLETE 전송 트리거
+            setTimeout(() => {
+                setCurrentNotice(null);
+                setSelfIntroReady(true);
+            }, 3000);
+            return;
+        }
+
         if (stage === 'VOTE_FIRST') setCurrentNotice('당신의 마음은 사로잡은 사람은?');
         else if (stage === 'VOTE_FINAL') setCurrentNotice('운명의 상대를 선택해주세요');
-        else if (stage === 'SELF_INTRO') setCurrentNotice('이제 자기소개를 시작합니다');
         else setCurrentNotice(null);
 
         // 3초 후 노티스 자동 숨김 (화면 렌더링을 위해)
-        if (['VOTE_FIRST', 'VOTE_FINAL', 'SELF_INTRO'].includes(stage)) {
+        if (['VOTE_FIRST', 'VOTE_FINAL'].includes(stage)) { // SELF_INTRO 제거 (위에서 별도 처리)
             const timer = setTimeout(() => {
                 setCurrentNotice(null);
             }, 3000);
@@ -443,34 +497,34 @@ export default function MeetingPage() {
         return () => clearInterval(interval);
     }, [currentNotice]);
 
-    // Persist First Vote Results Logic
+    // Persist First Vote Results Logic & Auto Transition
     useEffect(() => {
         if (wsState.firstVoteResults) {
             console.log("Showing First Vote Results locally");
             setLocalVoteResults(wsState.firstVoteResults);
 
-            // 결과 화면 15초 유지 후 숨김 (애니메이션 시간 고려)
+            // [Logic] 결과 화면 일정 시간(10초) 유지 후 자동 전환 시도
             const timer = setTimeout(() => {
                 setLocalVoteResults(null);
+
+                // 결과 표시가 끝났으므로 다음 단계(ROTATION_SHORT)로 넘어가기 위한 신호 전송
+                // 주의: RENDER_COMPLETE를 'FIRST_VOTE_RESULT'라는 가상의 스테이지 이름으로 보내거나,
+                // 현재 stage가 VOTE_FIRST이므로 이를 다시 보내서 서버가 트리거하게 함.
+                // 하지만 sentStageRef 때문에 막힐 수 있으므로, 여기서 직접 호출하거나 ref를 초기화해야 함.
+                // 여기서는 명시적으로 'FIRST_VOTE_RESULT_DONE' 이라는 신호를 보내 서버가 ROTATION_SHORT로 넘기도록 유도하거나,
+                // 단순히 RENDER_COMPLETE를 다시 호출.
+
+                // sentStageRef를 잠시 속여서(?) 다시 보내도록 함
+                sentStageRef.current = null;
+                sendRenderComplete('FIRST_VOTE_RESULT_DONE'); // 서버가 이 값을 받으면 ROTATION_SHORT로 넘기도록 약속됨(가정)
+                // 혹은 sendMessage('RENDER_COMPLETE', { stage: 'ROTATION_SHORT' }) 처럼 다음 스테이지를 요구할 수도 있음
+
             }, 10000);
             return () => clearTimeout(timer);
         }
-    }, [wsState.firstVoteResults]);
+    }, [wsState.firstVoteResults, sendRenderComplete]);
 
-    // ... (Auto Vote Logic skipped) ...
-
-    // ... (Line Drawing skipped) ...
-    // Note: Line drawing logic was for MATCHING_RESULT but we might not need it if we switch to Step6
-
-    // --------------------------------------------------------------------------------
-    // 4. 핸들러 함수
-    // --------------------------------------------------------------------------------
-    // ...
-
-    // --------------------------------------------------------------------------------
-    // 5. 렌더링
-    // --------------------------------------------------------------------------------
-
+]
     // --------------------------------------------------------------------------------
     // 5. 렌더링
     // --------------------------------------------------------------------------------
@@ -575,6 +629,8 @@ export default function MeetingPage() {
 
                         {/* STEP 0: INTRO */}
                         {wsState.currentStage === 'SELF_INTRO' && (
+                            // [Logic] 멘트가 표시되는 동안(selfIntroReady=false)에는 스피커 화면을 가리거나 흐리게 처리할 수 있음
+                            // 여기서는 그대로 두되, 상단 Notice가 덮는 형태
                             <Step1_Intro
                                 participants={uiParticipants}
                                 activeSpeakerIdx={activeSpeakerIdx}
@@ -585,7 +641,7 @@ export default function MeetingPage() {
                         {wsState.currentStage === 'VOTE_FIRST' && (
                             <Step2_Vote
                                 participants={uiParticipants}
-                                currentUserGender={userProfile?.gender}
+                                currentUserGender={userProfile.gender}
                                 selectedCard={selectedCard}
                                 onSelect={handleChoice}
                             />
@@ -616,7 +672,7 @@ export default function MeetingPage() {
                         {wsState.currentStage === 'VOTE_FINAL' && (
                             <Step5_FinalVote
                                 participants={uiParticipants}
-                                currentUserGender={userProfile?.gender}
+                                currentUserGender={userProfile.gender}
                                 selectedCard={selectedCard}
                                 onSelect={handleChoice}
                             />
@@ -631,22 +687,22 @@ export default function MeetingPage() {
                                         <Step2_Result
                                             participants={uiParticipants}
                                             results={[
-                                                { voterId: userProfile?.userId, targetId: wsState.matchResult.partnerId }, // 나의 선택
-                                                { voterId: wsState.matchResult.partnerId || 0, targetId: userProfile?.userId } // 상대의 선택 (매칭되었으므로)
+                                                { voterId: userProfile.userId, targetId: wsState.matchResult.partnerId }, // 나의 선택
+                                                { voterId: wsState.matchResult.partnerId || 0, targetId: userProfile.userId } // 상대의 선택 (매칭되었으므로)
                                             ]}
                                         />
                                         {/* 매칭 성공 시 추가 액션 (Step6_MatchSuccess로 전환 버튼 등) */}
                                         <div className="absolute bottom-10 z-50 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-3000 fill-mode-forwards opacity-0" style={{ animationDelay: '3s' }}>
                                             <Step6_MatchSuccess
                                                 currentUser={{
-                                                    id: userProfile?.userId || 0,
-                                                    name: userProfile?.username || 'Unknown',
-                                                    gender: userProfile?.gender || 'MALE'
+                                                    id: userProfile.userId,
+                                                    name: userProfile.username,
+                                                    gender: userProfile.gender
                                                 }}
                                                 matchedUser={{
                                                     id: wsState.matchResult.partnerId || 0,
                                                     name: wsState.matchResult.partnerNickname || 'Unknown',
-                                                    gender: userProfile?.gender === 'MALE' ? 'FEMALE' : 'MALE'
+                                                    gender: userProfile.gender === 'MALE' ? 'FEMALE' : 'MALE'
                                                 }}
                                                 onFaceRevealResponse={handleFaceRevealResponse}
                                             />
@@ -695,7 +751,7 @@ export default function MeetingPage() {
 
                     <div className="flex flex-col items-start min-w-[120px]">
                         <span className="text-[10px] font-bold text-[#FF4D94] uppercase tracking-widest mb-0.5">My Profile</span>
-                        <span className="text-lg font-black text-white uppercase tracking-tight">{userProfile?.username}</span>
+                        <span className="text-lg font-black text-white uppercase tracking-tight">{userProfile.username}</span>
                     </div>
                 </div>
             </footer>

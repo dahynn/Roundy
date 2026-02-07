@@ -9,14 +9,13 @@ export const api = axios.create({
   // Vite 환경에서는 import.meta.env를 사용합니다.
   baseURL: `${apiBaseUrl}/api`,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // 쿠키 전송 활성화
 });
 
-// 2. 요청 인터셉터: 모든 요청 "직전"에 토큰을 자동으로 삽입합니다.
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      // Bearer 뒤에 반드시 공백 한 칸이 있어야 백엔드가 인식합니다.
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

@@ -11,8 +11,6 @@ import type {
     ErrorPayload,
     FaceRevealStartPayload, // Import FaceRevealStartPayload
     SpeakerChangePayload, // Import SpeakerChangePayload
-    GameQuestionPayload, // Import GameQuestionPayload
-    GameResultPayload, // Import GameResultPayload
     RotationStage // Import Stage Type
 } from '../../types/meeting/rotaion';
 
@@ -47,7 +45,6 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         isBreak: false, // [NEW]
         participants: [],
         currentSpeaker: null,
-        currentGame: null,
         redirectInfo: null,
         currentPartner: null,
         lastMessage: null,
@@ -137,9 +134,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                             isBreak: false, // [NEW] 스테이지 시작 시 휴식 해제
                             currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
                             currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
-                            currentGame: null, // 이미지 게임 정보 초기화
-                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`,
-                            firstVoteResults: null // [NEW] 스테이지 변경 시 투표 결과 초기화 (화면 숨김)
+                            lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`
+                            // firstVoteResults: null // [FIX] React Batching 문제로 삭제 (Meeting.tsx에서 자동 숨김 처리)
                         };
                     });
                     break;
@@ -208,43 +204,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     break;
                 }
 
-                case 'GAME_QUESTION': {
-                    const payload = data as GameQuestionPayload;
-                    setState(prev => ({
-                        ...prev,
-                        currentGame: {
-                            state: 'QUESTION',
-                            question: payload.question,
-                            questionNumber: payload.questionNumber,
-                            totalQuestions: payload.totalQuestions,
-                            data: payload
-                        },
-                        remainingTime: payload.timeLimitSeconds, // 5초 타이머 설정
-                        lastMessage: `Q${payload.questionNumber}. ${payload.question}`
-                    }));
-                    break;
-                }
 
-                case 'GAME_RESULT': {
-                    const payload = data as GameResultPayload;
-                    setState(prev => ({
-                        ...prev,
-                        currentGame: {
-                            state: 'RESULT',
-                            question: payload.question,
-                            questionNumber: payload.questionNumber,
-                            data: payload
-                        },
-                        // 결과 보여주는 시간 (약 5초) 동안은 remainingTime이 별도로 주어지지 않으므로 0 혹은 유지
-                        // 하지만 일반적인 흐름상 다음 문제가 오기 전까지 대기이므로 0으로 처리하거나 유지
-                        // 여기서는 명시적으로 0 혹은 UI 제어용으로 둡니다.
-                        remainingTime: 0,
-                        lastMessage: payload.winners.length > 0
-                            ? `정답: ${payload.winners.map(w => w.nickname).join(', ')}`
-                            : '결과 발표'
-                    }));
-                    break;
-                }
 
                 case 'VOTE_SUBMITTED':
                     setState(prev => ({ ...prev, lastMessage: '투표 완료!' }));
@@ -408,9 +368,13 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
     }, [state.redirectInfo]);
 
     const submitVote = (targetUserId: number | null) => sendMessage('SUBMIT_VOTE', { targetUserId });
-    const submitGameAnswer = (answer: string) => sendMessage('SUBMIT_GAME_ANSWER', { answer });
     const leaveRoom = () => sendMessage('LEAVE_ROOM', { roomId });
     const sendFaceRevealPermission = (accepted: boolean) => sendMessage('FACE_REVEAL_PERMISSION', { accepted });
 
-    return { state, submitVote, submitGameAnswer, leaveRoom, sendFaceRevealPermission };
+    // [NEW] 렌더링 완료 상태를 서버에 전달 (자동 동기화 위함)
+    const sendRenderComplete = useCallback((stage: string) => {
+        sendMessage('RENDER_COMPLETE', { stage });
+    }, [sendMessage]);
+
+    return { state, submitVote, leaveRoom, sendFaceRevealPermission, sendRenderComplete };
 };

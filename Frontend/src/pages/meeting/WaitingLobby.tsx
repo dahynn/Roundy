@@ -47,7 +47,6 @@ export default function WaitingLobby() {
   useEffect(() => {
     const queryUser = searchParams.get('user');
     const queryToken = searchParams.get('token');
-
     const handleAutoLogin = () => {
       // 1. user 인덱스로 토큰 조회
       if (queryUser) {
