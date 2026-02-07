@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import kakaoLoginBtn from '@/assets/kakao_login_medium_wide.png';
+import roundyLogo from '@/assets/roundy_logo.svg';
 
 interface Props {
   onClose: () => void;
@@ -37,7 +38,7 @@ export default function LoginModal({ onClose }: Props) {
         {/* 1. 로고 */}
         <div className="mb-10 p-2">
           <img
-            src="/roundy_logo.svg"
+            src={roundyLogo}  // ▼ 변경 2: 경로 문자열 대신 import한 변수를 넣습니다.
             alt="Roundy Logo"
             className="w-24 h-24 object-contain drop-shadow-xl animate-float"
           />
