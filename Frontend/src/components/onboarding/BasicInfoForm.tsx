@@ -205,11 +205,13 @@ export default function BasicInfoForm({ initialData, onNext, hideHeader }: Basic
                   onValueChange={(v) => updateField('birth', { ...formData.birth, year: v })}
                 >
                   <SelectTrigger className="h-20 border-none bg-transparent font-bold text-lg focus:ring-0 rounded-none flex-1 shadow-none pr-4">
-                    <SelectValue placeholder="년" />
+                    <SelectValue placeholder={<span>년</span>} />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-[999] shadow-2xl border-pink-50 rounded-3xl">
                     {years.map((y) => (
-                      <SelectItem key={y} value={y} className="py-3 focus:bg-pink-50 focus:text-[#FF4D94]">{y}년</SelectItem>
+                      <SelectItem key={y} value={y} className="py-3 focus:bg-pink-50 focus:text-[#FF4D94]">
+                        <span>{y}년</span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -221,11 +223,13 @@ export default function BasicInfoForm({ initialData, onNext, hideHeader }: Basic
                   onValueChange={(v) => updateField('birth', { ...formData.birth, month: v })}
                 >
                   <SelectTrigger className="h-20 border-none bg-transparent font-bold text-lg focus:ring-0 rounded-none flex-1 shadow-none px-4">
-                    <SelectValue placeholder="월" />
+                    <SelectValue placeholder={<span>월</span>} />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-[999] shadow-2xl border-pink-50 rounded-3xl">
                     {months.map((m) => (
-                      <SelectItem key={m} value={m} className="py-3 focus:bg-pink-50 focus:text-[#FF4D94]">{m}월</SelectItem>
+                      <SelectItem key={m} value={m} className="py-3 focus:bg-pink-50 focus:text-[#FF4D94]">
+                        <span>{m}월</span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -237,11 +241,13 @@ export default function BasicInfoForm({ initialData, onNext, hideHeader }: Basic
                   onValueChange={(v) => updateField('birth', { ...formData.birth, day: v })}
                 >
                   <SelectTrigger className="h-20 border-none bg-transparent font-bold text-lg focus:ring-0 rounded-none flex-1 shadow-none px-4">
-                    <SelectValue placeholder="일" />
+                    <SelectValue placeholder={<span>일</span>} />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-[999] shadow-2xl border-pink-50 rounded-3xl">
                     {days.map((d) => (
-                      <SelectItem key={d} value={d} className="py-3 focus:bg-pink-50 focus:text-[#FF4D94]">{d}일</SelectItem>
+                      <SelectItem key={d} value={d} className="py-3 focus:bg-pink-50 focus:text-[#FF4D94]">
+                        <span>{d}일</span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

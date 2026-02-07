@@ -64,6 +64,7 @@ client.interceptors.response.use(
                     }
                 } catch (refreshError) {
                     console.error('토큰 재발급 실패:', refreshError);
+                    localStorage.removeItem('accessToken');
                     window.location.href = '/';
                     return Promise.reject(refreshError);
                 }
