@@ -88,6 +88,12 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
+            // [FIX] Mixed Content 방지: HTTPS 환경에서는 ws:// 연결이 차단되므로 wss://로 강제 변환
+            if (token != null && token.startsWith("ws://")) {
+                token = token.replace("ws://", "wss://"); 
+                log.info("OpenVidu 토큰 URL 보안 변환 완료: ws:// -> wss://");
+            }
+
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                 roomId, userId, response.getId());
             eventLogger.logOpenViduTokenGenerated(roomId, userId, response.getId());
