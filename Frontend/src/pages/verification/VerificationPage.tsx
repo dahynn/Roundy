@@ -7,7 +7,7 @@ import { RefreshCcw } from 'lucide-react';
 import * as verificationApi from '@/api/verification.ts';
 import { useToast } from '@/components/ui/toast-context';
 
-import faceMatchImg from '@/assets/face-verification.png';
+import faceMatchImg from '@/assets/face-verification.webp';
 
 interface VerificationImageResponse {
   verificationImgUrl: string;
@@ -38,8 +38,16 @@ export default function VerificationPage() {
 
   const webcamRef = useRef<Webcam>(null);
 
-  // 컴포넌트 마운트 시 인증용 원본 사진 조회
+  // 컴포넌트 마운트 시 인증용 원본 사진 조회 및 에셋 프리로딩
   useEffect(() => {
+    // 1. 에셋 이미지 프리로딩
+    const preloadAsset = () => {
+      const img = new Image();
+      img.src = faceMatchImg;
+    };
+    preloadAsset();
+
+    // 2. 서버 데이터 및 이미지 조회
     const fetchVerificationImage = async () => {
       try {
         const responseData: any = await verificationApi.getVerificationImage();
@@ -47,7 +55,13 @@ export default function VerificationPage() {
 
         if (responseData && responseData.verificationImgUrl) {
           console.log('🖼️ [VerifyPage] 이미지 URL:', responseData.verificationImgUrl);
-          setPreviewRep(responseData.verificationImgUrl);
+
+          // 데이터가 오면 이미지를 먼저 프리로드한 후 상태 반영
+          const img = new Image();
+          img.src = responseData.verificationImgUrl;
+          img.onload = () => {
+            setPreviewRep(responseData.verificationImgUrl);
+          };
         }
       } catch (error: any) {
         console.error('인증 이미지 조회 실패:', error);
@@ -185,6 +199,9 @@ export default function VerificationPage() {
                     style={{ transform: `translate(${imgPos.x}px, ${imgPos.y}px) scale(${scale})` }}
                     className="w-full h-full object-cover pointer-events-none"
                     alt="대표"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full">
@@ -238,6 +255,9 @@ export default function VerificationPage() {
                         alt="Face Wireframe"
                         className="w-[85%] h-[85%] object-contain opacity-60 animate-float-breathing"
                         style={{ mixBlendMode: 'screen' }}
+                        loading="eager"
+                        fetchPriority="low"
+                        decoding="async"
                       />
                     </div>
                     <div className="absolute top-0 left-[-10%] w-[120%] h-[2px] bg-[#FF4D94] shadow-[0_0_20px_#FF4D94] animate-scan-slow z-20 opacity-80" />

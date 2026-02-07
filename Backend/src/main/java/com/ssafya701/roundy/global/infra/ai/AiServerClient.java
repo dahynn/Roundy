@@ -41,16 +41,15 @@ public class AiServerClient {
         try {
             // InputStream을 byte[]로 변환하여 Content-Length 제공 (Chunked Encoding 방지)
             byte[] originalImageBytes = originalImage.readAllBytes();
-            
+
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
             builder.part("realtimeImage", realtimeImage.getResource());
             builder.part("originalImage", new org.springframework.core.io.ByteArrayResource(originalImageBytes) {
                 @Override
                 public String getFilename() {
-                    return "original_image.jpg";
+                    return "original_image.webp";
                 }
             });
-
 
             log.info("Calling AI server verification via WebClient...");
 
@@ -59,10 +58,10 @@ public class AiServerClient {
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(builder.build()))
                     .retrieve()
-                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {
+                    })
                     .timeout(Duration.ofSeconds(30)) // 타임아웃 30초 (GPU 초기화 고려)
                     .block();
-
 
             if (response == null) {
                 log.error("AI server response is null");
@@ -79,9 +78,9 @@ public class AiServerClient {
             // verified 필드 확인 (success가 아님!)
             boolean verified = Boolean.TRUE.equals(response.get("verified"));
             Object distance = response.get("distance");
-            
+
             log.info("AI verification result: verified={}, distance={}", verified, distance);
-            
+
             return AiVerificationResult.success(verified);
 
         } catch (Exception e) {
