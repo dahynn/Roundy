@@ -376,5 +376,15 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         sendMessage('RENDER_COMPLETE', { stage });
     }, [sendMessage]);
 
-    return { state, submitVote, leaveRoom, sendFaceRevealPermission, sendRenderComplete };
+    // [TODO] RotationTest.tsx에서 JSON.stringify로 보내고 있어서 임시로 parsing 처리함. 추후 object로 변경 필요.
+    const submitGameAnswer = useCallback((answer: string) => {
+        try {
+            const payload = JSON.parse(answer);
+            sendMessage('SUBMIT_GAME_ANSWER', payload);
+        } catch (e) {
+            console.error('submitGameAnswer parsing error:', e);
+        }
+    }, [sendMessage]);
+
+    return { state, submitVote, leaveRoom, sendFaceRevealPermission, sendRenderComplete, submitGameAnswer };
 };
