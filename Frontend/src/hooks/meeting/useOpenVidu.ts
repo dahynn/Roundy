@@ -152,6 +152,12 @@ export const useOpenVidu = () => {
             return;
         }
 
+        // [FIX] Mixed Content 방지: ws:// -> wss:// 강제 변환
+        if (token.startsWith('ws://')) {
+            console.warn('⚠️ [useOpenVidu] Insecure WS token detected. Upgrading to WSS...');
+            token = token.replace('ws://', 'wss://');
+        }
+
         console.log(`🔄 [joinSession] 세션 접속 시도: ${sessionId}`);
 
         // 1. 기존 세션이 있다면 확실히 끊기
