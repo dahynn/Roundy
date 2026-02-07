@@ -9,7 +9,6 @@ metadata:
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.middlewares: roundy-app-minio-strip@kubernetescrd, roundy-app-openvidu-strip@kubernetescrd, roundy-app-res-browser-cache@kubernetescrd
 spec:
-spec:
   tls:
     - hosts:
       - i14a701.p.ssafy.io
@@ -46,7 +45,7 @@ spec:
             name: minio-svc
             port:
               number: 8886
-      - path: /openvidu
+      - path: /ws
         pathType: Prefix
         backend:
           service:
