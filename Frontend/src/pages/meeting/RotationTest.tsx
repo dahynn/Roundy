@@ -1,99 +1,113 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useRotationSystem } from '../../hooks/meeting/useRotation';
 import { useOpenVidu } from '../../hooks/meeting/useOpenVidu';
 import UserVideo from '../../components/meeting/UserVideo';
+import { useMagicMirror } from '../../hooks/meeting/useMagicMirror'; // [ADD]
 import type { GameAnswerPayload } from '../../types/meeting/rotaion';
-
-/**
- * ------------------------------------------------------------------
- * [TEST CONFIG] 6인 테스트용 하드코딩 토큰 (User 1 ~ 6)
- * ------------------------------------------------------------------
- */
-const TEST_TOKENS = [
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MjUsImV4cCI6MTc3MDQyODcyNX0.Vb38pTtoqaBT54PQfeWk_qKJVLiwjqvsX3vCK30veZI",
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5MzgsImV4cCI6MTc3MDQyODczOH0.LrEW-B7wlz0cWuskTCqTVFgpSRR1OmbKCu4lg6M30A4",
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NTAsImV4cCI6MTc3MDQyODc1MH0.65KkNu2oTMCH6Df345_Xyq-dVZmRvluBU1I7me677ig",
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NjIsImV4cCI6MTc3MDQyODc2Mn0.PnVyVyou5c3RnxD-Z3unRZm1nFSgnRKzQfBZr3u8Vc4",
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5NzQsImV4cCI6MTc3MDQyODc3NH0.xkBiR5IPpC2mpPmYSfgMm9dR2VIVEQ75jR7OijUiyFI",
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAyNTU5ODUsImV4cCI6MTc3MDQyODc4NX0.ZA0C5P5MeCld1YwKhwcBybsdcHPXbxUWeq5NWhbngOI"
-];
 
 // 이미지 게임용 더미 질문 데이터
 const DUMMY_QUESTIONS = [
-    "Q1. 무인도에 같이 가고 싶은 사람은?",
-    "Q2. 연락을 가장 잘 받아줄 것 같은 사람은?",
-    "Q3. 첫눈에 반할 것 같은 스타일은?"
+    "상대방과 함께 가고 싶은 여행지는?",
+    "가장 좋아하는 음식 종류는?",
+    "주말에 주로 하는 취미는?"
 ];
 
-// 테스트 유저 데이터 (토큰의 sub 값과 매칭: 1~6)
+// 테스트 유저 데이터
 const testUsers = [
-    { userId: 1, username: "User1(남)", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 2, username: "User2(남)", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 3, username: "User3(남)", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 4, username: "User4(여)", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 5, username: "User5(여)", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
-    { userId: 6, username: "User6(여)", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
+    { userId: 101, username: "강병호", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
+    { userId: 102, username: "정승일", gender: 'MALE' as const, mode: 'PAIR_ONLY' as const },
+    { userId: 201, username: "윤서현", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
+    { userId: 202, username: "임유경", gender: 'FEMALE' as const, mode: 'PAIR_ONLY' as const },
 ];
 
-const RotationTestPage: React.FC = () => {
-    const targetRoomId = "001";
-
-    // 1. URL 파라미터 및 토큰기반 내 정보 설정
-    const [{ userProfile, token }] = useState(() => {
+const RotationTest: React.FC = () => {
+    // 1. URL 파라미터로 내 정보 설정 (Vanilla Logic)
+    const [userProfile] = useState(() => {
         const params = new URLSearchParams(window.location.search);
-
-        // 토큰 우선순위: URL > localStorage
-        let selectedToken = params.get('token');
-        if (!selectedToken) {
-            selectedToken = localStorage.getItem('accessToken') || '';
-        }
-
-        // 유저 식별 로직: 토큰이 TEST_TOKENS에 있는지 확인 -> 있으면 그 인덱스 사용
-        let userIdx = -1;
-        if (selectedToken) {
-            userIdx = TEST_TOKENS.indexOf(selectedToken);
-        }
-
-        // 토큰 매칭 실패 시, URL user 파라미터 확인 (백업)
-        if (userIdx === -1) {
-            const paramVal = params.get('user') || params.get('userId') || '0';
-            userIdx = parseInt(paramVal, 10);
-
-            // 만약 여기서 userIdx로 찾은 토큰이 있다면 그걸 사용 (토큰이 없을 경우)
-            if (!selectedToken && TEST_TOKENS[userIdx]) {
-                selectedToken = TEST_TOKENS[userIdx];
-            }
-        }
-
-        // 유효한 인덱스 범위 확인 (기본값 0)
-        const safeIdx = (userIdx >= 0 && userIdx < testUsers.length) ? userIdx : 0;
-
-        return {
-            userProfile: testUsers[safeIdx],
-            token: selectedToken
-        };
+        // user 또는 userId 파라미터를 인덱스로 사용
+        const paramVal = params.get('user') || params.get('userId') || '0';
+        const userIdx = parseInt(paramVal, 10);
+        return testUsers[userIdx] || testUsers[0];
     });
 
-    // 2. Room ID 초기화 (URL param 우선)
-    const [activeRoomId, setActiveRoomId] = useState<string | null>(() => {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('room') || null;
-    });
+    const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
     // 게임/투표 로직 State
     const [gameRound, setGameRound] = useState(0);
     const [hasVoted, setHasVoted] = useState(false);
     const [wsLogs, setWsLogs] = useState<string[]>([]);
 
-    // [FIX] 토큰 전달 추가 (useRotationSystem은 roomId, token, userProfile 순서 혹은 구조 확인 필요)
-    // 기존 Meeting.tsx: useRotationSystem(roomId, token, userProfile)
-    const { state: wsState, submitVote, submitGameAnswer, leaveRoom } = useRotationSystem(
-        activeRoomId || "",
-        token,
-        userProfile
-    );
+    const { state: wsState, submitVote, submitGameAnswer, leaveRoom } = useRotationSystem(activeRoomId || "", userProfile);
+    const { session, publisher, subscribers, joinSession, leaveSession, initSelfCamera } = useOpenVidu();
 
-    const { publisher, subscribers, joinSession, leaveSession } = useOpenVidu();
+    // [ADD] AI Magic Mirror Hook - isStreamReady 추가!
+    const { canvasRef, maskedStream, isStreamReady, setMode, isLoaded: isAiLoaded } = useMagicMirror();
+
+    // ---------------------------------------------------------
+    // [NEW ARCHITECTURE] AI-First Publisher
+    // 1. maskedStream 준비 대기 (isStreamReady)
+    // 2. AI 트랙으로 바로 Publisher 생성
+    // 3. replaceTrack 불필요!
+    // ---------------------------------------------------------
+
+    // 1. AI 스트림 준비 후 Publisher 생성
+    useEffect(() => {
+        if (!isStreamReady || !maskedStream) {
+            console.log('⏳ [RotationTest] AI 스트림 준비 대기 중...', { isStreamReady, hasMaskedStream: !!maskedStream });
+            return;
+        }
+
+        // 2. MediaStream 활성 상태 검증
+        if (!maskedStream.active) {
+            console.warn('⚠️ [RotationTest] maskedStream is not active');
+            return;
+        }
+
+        const videoTrack = maskedStream.getVideoTracks()[0];
+        if (!videoTrack || videoTrack.readyState !== 'live') {
+            console.warn('⚠️ [RotationTest] videoTrack is not live');
+            return;
+        }
+
+        // 3. Publisher 생성 (AI 트랙으로)
+        console.log('🎭 [RotationTest] AI 스트림 준비 완료! Publisher 생성 시작...');
+        initSelfCamera(videoTrack, true) // forceNew: true로 새로 생성
+            .then(() => console.log('✅ [RotationTest] Publisher created with AI track'))
+            .catch(err => console.error('❌ [RotationTest] Publisher creation failed:', err));
+
+    }, [isStreamReady, maskedStream, initSelfCamera]);
+
+    // replaceTrack useEffect 완전 제거!
+
+    // [ADD] Stage에 따른 마스킹 모드 설정
+    useEffect(() => {
+        const stage = wsState.currentStage;
+        switch (stage) {
+            case 'WAITING':
+                setMode('BLACK'); // 대기 중엔 검은 화면
+                break;
+            case 'SELF_INTRO':
+            case 'ROTATION_SHORT': // 실루엣
+                setMode('SILHOUETTE');
+                break;
+            case 'ROTATION_LONG': // 코 마스크
+                setMode('NOSE_MASK');
+                break;
+            case 'FACE_REVEAL': // 얼굴 공개
+                setMode('NORMAL');
+                break;
+            case 'IMAGE_GAME':
+            case 'VOTE_FIRST':
+            case 'VOTE_FINAL':
+                setMode('BLACK');
+                break;
+            default:
+                setMode('BLACK');
+                break;
+        }
+    }, [wsState.currentStage, setMode]);
 
     // 로그 출력 헬퍼
     const addLog = (msg: string) => {
@@ -102,34 +116,15 @@ const RotationTestPage: React.FC = () => {
     };
 
     // ---------------------------------------------------------
-    // [NEW] 백엔드 데이터 확인용 로그 (참가자 목록 변경 시 실행)
-    // ---------------------------------------------------------
-    useEffect(() => {
-        if (wsState.participants.length > 0) {
-            // 1. 화면 로그에 알림
-            addLog(`📥 참가자 목록 수신: ${wsState.participants.length}명`);
-
-            // 2. 브라우저 콘솔에 상세 데이터 출력 (F12 확인용)
-            console.group('👥 [Backend Data] 참가자 목록 업데이트');
-            console.table(wsState.participants); // 표 형태로 깔끔하게 출력
-            console.log('Raw Data:', JSON.stringify(wsState.participants, null, 2)); // 복사하기 좋은 형태
-            console.groupEnd();
-        }
-    }, [wsState.participants]);
-
-    // ---------------------------------------------------------
     // 후보군 필터링 (나를 제외한 '이성'만 추출)
     // ---------------------------------------------------------
     const candidates = useMemo(() => {
         return wsState.participants.filter(p => {
             if (p.userId === userProfile.userId) return false;
-            if (!p.gender) return false; // 성별 없으면 제외
+            if (!p.gender) return false;
 
             const myGender = String(userProfile.gender).toUpperCase();
             const targetGender = String(p.gender).toUpperCase();
-
-            // 성별 비교 로그 (필터링 동작 확인용)
-            // console.log(`비교: 나(${myGender}) vs 상대(${p.nickname}/${targetGender}) -> ${myGender !== targetGender ? '포함' : '제외'}`);
 
             return myGender !== targetGender;
         });
@@ -149,10 +144,31 @@ const RotationTestPage: React.FC = () => {
     useEffect(() => {
         const partnerInfo = wsState.currentPartner;
         if (partnerInfo?.sessionId && partnerInfo?.token) {
-            // [FIX] username 전달
-            joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username);
+            // 🆕 세션 전환 시 maskedStream의 트랙을 전달하여 트랙 검증에 활용
+            const videoTrack = maskedStream?.getVideoTracks()[0];
+
+            // 🔍 디버깅: maskedStream 상태 확인
+            console.log('🔍 [RotationTest] 세션 접속 전 maskedStream 상태:', {
+                hasMaskedStream: !!maskedStream,
+                isActive: maskedStream?.active,
+                hasVideoTrack: !!videoTrack,
+                trackState: videoTrack?.readyState
+            });
+
+            joinSession(partnerInfo.sessionId, partnerInfo.token, userProfile.username, videoTrack);
         }
-    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile.username]);
+    }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile.username, maskedStream]);
+
+    // ---------------------------------------------------------
+    // 컴포넌트 언마운트 시 정리
+    // ---------------------------------------------------------
+    useEffect(() => {
+        // [FIX] initSelfCamera() 제거 - AI 스트림 준비 후 위의 useEffect에서 호출됨
+        return () => {
+            leaveSession();
+            leaveRoom();
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ---------------------------------------------------------
     // 선택 핸들러
@@ -165,7 +181,7 @@ const RotationTestPage: React.FC = () => {
         const logPrefix = isAutoRandom ? '[자동선택]' : '[선택]';
 
         if (wsState.currentStage === 'VOTE_FIRST' || wsState.currentStage === 'VOTE_FINAL') {
-            submitVote(targetId);
+            submitVote(targetId); // useRotation.ts가 any payload를 받으므로 number도 OK (서버가 처리)
             addLog(`📤 ${logPrefix} 투표 전송: ${targetName}`);
             setHasVoted(true);
         }
@@ -198,43 +214,24 @@ const RotationTestPage: React.FC = () => {
         }
     }, [wsState.remainingTime, hasVoted, candidates, wsState.currentStage]);
 
-    // 방 입장 핸들러 (수동 진입용 - 현재 거의 사용 안함)
+    // 방 입장 핸들러
     const handleEnterRoom = async () => {
-        if (!token) {
-            alert("토큰이 없습니다. 테스트를 진행할 수 없습니다.");
-            return;
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+            const targetRoomId = "001"; // Default room ID
+            // [FIX] 백엔드 API 경로 수정: VITE_API_URL에 이미 /api가 포함되어 있으므로 중복 제거
+            const response = await fetch(
+                `${API_URL}/test/room/create?roomId=${targetRoomId}&mode=PAIR_ONLY`,
+                { method: 'GET' }
+            );
+            if (response.ok) addLog('방 생성/접속 성공');
+            else console.log('방 접속 시도...');
+            setActiveRoomId(targetRoomId);
+        } catch (error) {
+            console.error(error);
+            alert('서버 연결 실패');
         }
-        // ... (필요 시 기존 로직 유지하거나 제거. 여기선 activeRoomId 없을 때만 노출되므로 유지)
-        const targetRoomId = "001"; // fallback
-        // ... fetch 로직 ...
-        // (생략: 자동매칭이 메인이므로 단순화)
-        setActiveRoomId(targetRoomId);
     };
-
-    // ---------------------------------------------------------
-    // [NEW] 자기소개 단계 자동 마이크 제어
-    // ---------------------------------------------------------
-    useEffect(() => {
-        if (!publisher) return;
-
-        if (wsState.currentStage === 'SELF_INTRO') {
-            const speakerId = wsState.currentSpeaker?.id;
-            const isMyTurn = speakerId === userProfile.userId;
-
-            if (isMyTurn) {
-                console.log('🎤 내 차례! 마이크 ON');
-                publisher.publishAudio(true);
-            } else {
-                console.log('🤫 경청 모드. 마이크 OFF');
-                publisher.publishAudio(false);
-            }
-        } else {
-            // 다른 단계에서는 기본적으로 마이크 켜기 (또는 사용자 설정 따름)
-            if (activeRoomId) { // 방에 입장한 상태라면
-                publisher.publishAudio(true);
-            }
-        }
-    }, [wsState.currentStage, wsState.currentSpeaker?.id, publisher, userProfile.userId, activeRoomId]);
 
     // ---------------------------------------------------------
     // 화면 렌더링
@@ -291,11 +288,6 @@ const RotationTestPage: React.FC = () => {
             const speaker = wsState.currentSpeaker;
             const isMyTurn = speaker?.id === userProfile.userId;
 
-            console.log("====================");
-            console.log('speaker: ', speaker);
-            console.log('isMyTurn:', isMyTurn);
-            console.log("====================");
-
             return (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <div style={{
@@ -312,7 +304,7 @@ const RotationTestPage: React.FC = () => {
                     </div>
 
                     <div style={gridStyle}>
-                        {/* 내 비디오 (발언자일 때 강조) */}
+                        {/* 내 비디오 */}
                         <div style={{
                             border: isMyTurn ? '5px solid #ff9800' : '2px solid transparent',
                             borderRadius: '8px', overflow: 'hidden', position: 'relative'
@@ -321,12 +313,8 @@ const RotationTestPage: React.FC = () => {
                             {isMyTurn && <span style={{ position: 'absolute', top: 10, left: 10, background: '#ff9800', color: 'white', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}>ME</span>}
                         </div>
 
-                        {/* 다른 참가자 비디오 (발언자일 때 강조) */}
+                        {/* 다른 참가자 비디오 */}
                         {subscribers.map(sub => {
-                            const isSpeaker = sub.stream.connection.data.includes(`"clientData":"${speaker?.speakerNickname}"`); // OpenVidu 데이터 포맷에 따라 조정 필요
-                            // 혹은 userId를 clientData에 넣었다면 그것으로 비교. 현재 닉네임 비교는 부정확할 수 있으나 UI용으로 시도.
-                            // 더 정확하게는 stream.connection.data를 파싱해야 함. 여기서는 심플하게 테두리 효과만 주는 로직을 구현하기 어려우므로(sub 객체에 userId 정보 매핑 필요) 
-                            // 우선 전체 리스트를 보여주되, 상단 헤더로 발언자를 인지시킴.
                             return <UserVideo key={sub.stream.streamId} streamManager={sub} isLocal={false} />;
                         })}
                     </div>
@@ -336,12 +324,11 @@ const RotationTestPage: React.FC = () => {
 
         switch (stage) {
             case 'WAITING':
-                // ... (이 부분은 동일하게 렌더링)
                 return (
                     <div style={gridStyle}>
                         {publisher && <div style={{ border: '2px solid gold' }}><UserVideo streamManager={publisher} isLocal={true} /></div>}
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#fff', borderRadius: '8px' }}>
-                            <h3>⏳ 대기 중 ({wsState.participants.length}/6)</h3>
+                            <h3>⏳ 대기 중 ({wsState.participants.length}/4)</h3>
                         </div>
                     </div>
                 );
@@ -353,13 +340,7 @@ const RotationTestPage: React.FC = () => {
                 return (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                         <h1>결과 발표</h1>
-                        <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '40px' }}>{wsState.lastMessage}</p>
-                        <button
-                            onClick={() => window.location.href = '/'}
-                            style={{ padding: '15px 40px', background: '#7C3AED', color: 'white', fontWeight: 'bold', borderRadius: '30px', fontSize: '18px', border: 'none', cursor: 'pointer' }}
-                        >
-                            🏠 홈으로 이동
-                        </button>
+                        <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{wsState.lastMessage}</p>
                     </div>
                 );
             default:
@@ -372,66 +353,97 @@ const RotationTestPage: React.FC = () => {
         }
     };
 
-    if (!activeRoomId) {
-        // activeRoomId가 없을 때 렌더링 (원래 코드 그대로 둬도 됨, 다만 사용자가 수동 진입할 일은 거의 없음)
-        return (
-            <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f8f9fa' }}>
-                <div style={{ padding: '40px', background: 'white', borderRadius: '16px', textAlign: 'center' }}>
-                    <h1>💘 Roundy Meeting (6 Test)</h1>
-                    <p>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</p>
-                    <p style={{ fontSize: '0.8rem', color: '#666' }}>ID: {userProfile.userId}, Token: {token ? 'Loaded' : 'Missing'}</p>
-                    <button onClick={handleEnterRoom} style={{ padding: '15px 30px', background: '#ff4081', color: 'white', border: 'none', borderRadius: '50px', fontSize: '18px', cursor: 'pointer' }}>
-                        수동 방 생성/참여 (fallback)
-                    </button>
-                    {!token && <p style={{ color: 'red' }}>⚠️ 토큰이 없습니다. URL 파라미터나 TEST_TOKENS를 확인하세요.</p>}
-                </div>
-            </div>
-        );
-    }
+    // [FIX] Canvas 지속성 유지: 조건부 렌더링 밖으로 이동
+    // 이렇게 해야 방 입장 시 Canvas가 언마운트되지 않고 스트림이 유지됨
+    const hiddenCanvas = (
+        <canvas
+            ref={canvasRef}
+            width="640"
+            height="480"
+            style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}
+        />
+    );
 
+    // [FIX] 렌더링 구조 최적화: Canvas는 항상 최상위에 유지 (Unmount 방지)
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
-                <div>
-                    <h2>🎥 Rotation System Test (6 Users)</h2>
-                    <span>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</span>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#d9534f' }}>
-                        {wsState.currentStage} ({wsState.remainingTime}s)
+        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {/* 1. Magic Mirror Canvas (절대 숨김 & 유지) */}
+            {hiddenCanvas}
+
+            {/* 2. 조건부 컨텐츠 렌더링 */}
+            {!activeRoomId ? (
+                // 대기 화면 (로그인)
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <div style={{ padding: '40px', background: 'white', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: '#333' }}>💘 Roundy Meeting</h1>
+                        <p style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</p>
+                        <p style={{ fontSize: '14px', color: isAiLoaded ? '#10b981' : '#f59e0b', marginBottom: '15px', fontWeight: 'bold' }}>
+                            {isAiLoaded ? '✅ AI 모델 로드 완료' : '⏳ AI 모델 로딩 중...'}
+                        </p>
+                        <button
+                            onClick={handleEnterRoom}
+                            disabled={!isAiLoaded}
+                            style={{
+                                padding: '15px 40px',
+                                background: isAiLoaded ? '#ff4081' : '#ccc',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '50px',
+                                fontSize: '18px',
+                                cursor: isAiLoaded ? 'pointer' : 'not-allowed',
+                                transition: 'transform 0.1s'
+                            }}
+                        >
+                            {isAiLoaded ? '참여하기' : '로딩 중...'}
+                        </button>
                     </div>
-                    <small>{wsState.connected ? '🟢 연결됨' : '🔴 끊김'}</small>
                 </div>
-            </header>
+            ) : (
+                // 메인 룸 화면
+                <>
+                    <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
+                        <div>
+                            <h2>🎥 Rotation System Test (AI Enabled)</h2>
+                            <span>User: <strong>{userProfile.username}</strong> ({userProfile.gender})</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#d9534f' }}>
+                                {wsState.currentStage} ({wsState.remainingTime}s)
+                            </div>
+                            <small>{wsState.connected ? '🟢 연결됨' : '🔴 끊김'}</small>
+                        </div>
+                    </header>
 
-            <div style={{ display: 'flex', gap: '20px' }}>
-                {/* 메인 화면 */}
-                <div style={{ flex: 3, background: '#f0f0f0', padding: '20px', borderRadius: '12px', minHeight: '500px' }}>
-                    {renderMainContent()}
-                </div>
+                    <div style={{ display: 'flex', gap: '20px', flex: 1 }}>
+                        {/* 메인 화면 */}
+                        <div style={{ flex: 3, background: '#f0f0f0', padding: '20px', borderRadius: '12px', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+                            {renderMainContent()}
+                        </div>
 
-                {/* 사이드바 */}
-                <div style={{ flex: 1, background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
-                    <h4>참가자 ({wsState.participants.length})</h4>
-                    <ul>
-                        {wsState.participants.map(p => (
-                            <li key={p.userId} style={{ color: p.userId === userProfile.userId ? 'blue' : 'black' }}>
-                                {p.nickname} <span style={{ fontSize: '0.8em', color: '#888' }}>({p.gender})</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid #eee' }} />
+                        {/* 사이드바 */}
+                        <div style={{ flex: 1, background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
+                            <h4>참가자 ({wsState.participants.length})</h4>
+                            <ul>
+                                {wsState.participants.map(p => (
+                                    <li key={p.userId} style={{ color: p.userId === userProfile.userId ? 'blue' : 'black' }}>
+                                        {p.nickname} <span style={{ fontSize: '0.8em', color: '#888' }}>({p.gender})</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid #eee' }} />
 
-                    <h4>📡 Logs</h4>
-                    <div style={{ flex: 1, maxHeight: '250px', overflowY: 'auto', background: '#222', color: '#0f0', padding: '10px', fontSize: '12px', fontFamily: 'monospace' }}>
-                        {wsLogs.map((log, i) => <div key={i}>{log}</div>)}
+                            <h4>📡 Logs</h4>
+                            <div style={{ flex: 1, maxHeight: '250px', overflowY: 'auto', background: '#222', color: '#0f0', padding: '10px', fontSize: '12px', fontFamily: 'monospace', borderRadius: '4px' }}>
+                                {wsLogs.map((log, i) => <div key={i}>{log}</div>)}
+                            </div>
+
+                            <button onClick={leaveRoom} style={{ marginTop: '10px', padding: '10px', width: '100%', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>나가기</button>
+                        </div>
                     </div>
-
-                    <button onClick={leaveRoom} style={{ marginTop: '10px', padding: '10px', width: '100%' }}>나가기</button>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 };
 
-export default RotationTestPage;
+export default RotationTest;

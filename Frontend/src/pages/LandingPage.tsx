@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, ChevronRight, Zap, Sparkles, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoginModal from '@/components/auth/LoginModal';
+import { TEST_TOKENS } from '@/constants/testUsers';
 
 // 숫자 카운팅 훅 (동일)
 const useCountUp = (end: number, duration: number = 2000) => {
@@ -151,31 +152,19 @@ function StatCard({
   );
 }
 
-// ----------------------------------------------------------------------
-// [DEV] 테스트용 토큰 목록 (여기에 실제 서버 발급 토큰을 넣어주세요)
-// ----------------------------------------------------------------------
-const TEST_TOKENS = [
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMiIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTEyLCJleHAiOjE3NzA0Nzk3MTJ9.KtBhGZVHQFBBhpnGUIZ8EGd1dfL7CW8in4W2f7EO6X4",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMSIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTY1LCJleHAiOjE3NzA0Nzk3NjV9.ryWDOcwSPl434fkQ4_r8FjzqYG2Q54zRqKHgjQAGYCk",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMCIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzcwMzA2OTgzLCJleHAiOjE3NzA0Nzk3ODN9.mQmlA7FY6GKPbUUBUiqmNRY0DZ9qXZ71A5g7RlmCg1s",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDY5OTYsImV4cCI6MTc3MDQ3OTc5Nn0.ra2UGst4Yx64Zizu4TlvIRlQfq0hG0TulUIrUI-KlwY",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDcwMTAsImV4cCI6MTc3MDQ3OTgxMH0.meVj4TYM7oxCON5j9jXKP8y44Zpl-htsiR5iHc-XcCY",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzAzMDcwMjcsImV4cCI6MTc3MDQ3OTgyN30.HamjmotD7mUX9EQ6lERZG7-a6HDRmj9TxPF33snBxmI",
-
-];
-
 function DevLoginButtons() {
   const navigate = useNavigate();
 
   const handleDevLogin = (index: number) => {
     const token = TEST_TOKENS[index];
-    if (!token || token.startsWith("YOUR_")) {
-      alert(`[오류] TEST_TOKENS[${index}]에 유효한 토큰을 입력해주세요.`);
+    if (!token || token.includes('YOUR_VALID_TOKEN')) {
+      alert(`[설정 필요] src/constants/testUsers.ts 파일에 유효한 토큰을 입력해주세요.`);
       return;
     }
+
+    // 하드코딩 토큰 바로 사용
     localStorage.setItem('accessToken', token);
-    navigate('/loading?auto=true');
-    // location.reload(); // 필요 시 리로드
+    navigate(`/loading?user=${index}&auto=true`);
   };
 
   return (

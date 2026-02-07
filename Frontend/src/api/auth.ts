@@ -29,3 +29,11 @@ export const uploadVerifyPhoto = (formData: FormData) =>
  * 토큰 재발급 (Refresh Token 쿠키 사용)
  */
 export const reissueToken = () => client.post('/auth/re-issue');
+
+/**
+ * [TEST] 개발용 간편 로그인 (토큰 발급)
+ */
+export const devLogin = (userId: number) =>
+    client.post(`/test/ws-message/dev-login`, null, {
+        params: { userId }
+    });

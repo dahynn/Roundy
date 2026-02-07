@@ -1,39 +1,68 @@
-services:
-  backend:
-    profiles: ["full-test"]
-    build:
-      context: ../../
-      dockerfile: ./Infra/local_dev/backend.Dockerfile
-    volumes:
-      # 1. 소스 코드는 공유 (수정 시 컨테이너에 즉시 반영)
-      - ../../Backend:/app
-      # 2. 빌드 결과물 및 캐시 격리 (충돌 방지 핵심 - 익명 볼륨)
-      - /app/build
-      - /app/.gradle
-    ports:
-      - "8080:8080"
-      - "5005:5005"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=redis
-    depends_on:
-      - mysql
-      - redis
-  
-  frontend:
-    build:
-      context: ../../
-      dockerfile: ./Infra/local_dev/frontend.Dockerfile
-    volumes:
-      - ../../Frontend:/app
-      - frontend_node_modules:/app/node_modules
-    ports:
-      - "5173:5173"
+version: '3.1'
 
+services:
+  # -----------------------------------------------------------
+  # 1. OpenVidu Server (WebRTC Engine)
+  # -----------------------------------------------------------
+  openvidu-server-kms:
+    image: openvidu/openvidu-dev:2.30.0
+    container_name: openvidu-server-kms
+    restart: always
+    # network_mode: host # [FIX] host 모드 제거하여 ports 설정이 적용되도록 수정
+    # host 모드 사용 시 ports 섹션이 무시되므로, 명시적 포트 매핑을 위해 bridge 모드(기본값) 사용
+    ports:
+      - "4443:4443"
+      - "40000-40100:40000-40100/udp"
+      - "40000-40100:40000-40100/tcp"
+    environment:
+      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+      - OPENVIDU_PUBLICURL=https://${DOMAIN_OR_PUBLIC_IP}:4443/
+      - DOMAIN_OR_PUBLIC_IP=${DOMAIN_OR_PUBLIC_IP}
+      - CERTIFICATE_TYPE=selfsigned
+      - OPENVIDU_RECORDING=false
+      - OPENVIDU_WEBHOOK=false
+      - KMS_MIN_PORT=40000
+      - KMS_MAX_PORT=40100 # 포트 범위 축소 (테스트용)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - openvidu_recordings:/opt/openvidu/recordings
+
+  # -----------------------------------------------------------
+  # 2. MinIO (S3 Compatible Storage)
+  # -----------------------------------------------------------
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001" 
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  # -----------------------------------------------------------
+  # 3. Redis (Cache & Session Store)
+  # -----------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # -----------------------------------------------------------
+  # 4. MySQL (Main Database)
+  # -----------------------------------------------------------
   mysql:
     image: mysql:8.0
+    container_name: mysql
+    restart: always
     ports:
       - "3306:3306"
     environment:
@@ -42,14 +71,8 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  redis:
-    image: redis:7.2-alpine
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-
 volumes:
-  mysql_data:
-  frontend_node_modules:
+  openvidu_recordings:
+  minio_data:
   redis_data:
+  mysql_data:

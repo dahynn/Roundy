@@ -3,18 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Bell, LogOut, Sparkles, Loader2 } from 'lucide-react';
 import { enterSession } from '@/api/session';
 import type { SessionEnterResponse } from '@/api/session';
+import { TEST_TOKENS } from '@/constants/testUsers';
 
-// ------------------------------------------------------------------
-// [TEST CONFIG]
-// ------------------------------------------------------------------
-const TEST_TOKENS = [
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk0ODQsImV4cCI6MTc3MDYxMjI4NH0.Y64GT7MlTJjsxNLuQRhmwmxJtxO-TYplVaoeWB6gXIQ",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NDQsImV4cCI6MTc3MDYxMjM0NH0.z6GHpwFUKvPuWYEDY4YQ5s-3F1jC9sDiSbUXv7Nf1Lw",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NTAsImV4cCI6MTc3MDYxMjM1MH0.49pswd0TNHOIpAqOZmX4Zy43AA8Lo2qaOhhQgU94pWU",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NTgsImV4cCI6MTc3MDYxMjM1OH0.nUVKcOMGmldCUAXik4PP4Zo-Sfjl2jLny_pteviH4Hk",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk1NjcsImV4cCI6MTc3MDYxMjM2N30.DCRTJVNof5wmUx0jdHkZXmZxojBmrUq_cxo6ppReL3w",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzA0Mzk4MTQsImV4cCI6MTc3MDYxMjYxNH0.nMAC593j7SgP2rYmyklivYkI3Ofizo2yHx8P15m0LKc"
-];
 
 const LOADING_MESSAGES = [
   "매력적인 참가자를 찾는 중...",
@@ -51,42 +41,35 @@ export default function WaitingLobby() {
   useEffect(() => {
     const queryUser = searchParams.get('user');
     const queryToken = searchParams.get('token');
-    let tokenToSet = '';
+    const handleAutoLogin = () => {
+      // 1. user 인덱스로 토큰 조회
+      if (queryUser) {
+        const idx = parseInt(queryUser, 10);
+        const token = TEST_TOKENS[idx];
+        console.log(`[Lobby Debug] queryUser=${queryUser}, idx=${idx}, tokenFound=${!!token}`);
 
-    if (queryUser) {
-      const idx = parseInt(queryUser, 10);
-      if (TEST_TOKENS[idx]) tokenToSet = TEST_TOKENS[idx];
-    } else if (queryToken) {
-      tokenToSet = queryToken;
-    }
-
-    if (tokenToSet) {
-      console.log('[Lobby] Setting new token from params:', tokenToSet.substring(0, 20) + '...');
-      localStorage.setItem('accessToken', tokenToSet);
-    } else {
-      // [DEV HELP] 만약 로컬스토리지에 토큰이 없거나, 있는데 테스트 토큰 목록에 없는(오래된) 경우 -> 1번 유저로 강제 설정
-      const currentToken = localStorage.getItem('accessToken');
-      const isKnownToken = TEST_TOKENS.includes(currentToken || '');
-
-      if (!currentToken || !isKnownToken) {
-        console.warn('[Lobby] No valid token found (or unknown). Auto-setting User 1 token.');
-        console.warn('Current Token:', currentToken ? currentToken.substring(0, 10) + '...' : 'NULL');
-        localStorage.setItem('accessToken', TEST_TOKENS[0]);
-        // 화면 새로고침하여 적용 (필요 시)
-        // window.location.reload(); 
-      } else {
-        const matchedIdx = TEST_TOKENS.indexOf(currentToken);
-        console.log(`[Lobby] Valid test token found. Index: ${matchedIdx} (User ${matchedIdx + 1})`);
+        if (token) {
+          localStorage.setItem('accessToken', token);
+        } else {
+          console.warn("[Lobby Debug] Token not found! Clearing localStorage.");
+          localStorage.removeItem('accessToken'); // 기존 토큰 삭제 (오로그인 방지)
+        }
       }
-    }
-
-    // Auto start check
-    if (searchParams.get('auto') === 'true') {
-      const token = localStorage.getItem('accessToken') || tokenToSet;
-      if (token) {
-        setIsMatching(true);
+      // 2. 직접 토큰 입력
+      else if (queryToken) {
+        localStorage.setItem('accessToken', queryToken);
       }
-    }
+
+      // 3. Auto Start 체크
+      if (searchParams.get('auto') === 'true') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          setIsMatching(true);
+        }
+      }
+    };
+
+    handleAutoLogin();
   }, [searchParams]);
 
   // --- 매칭 로직 ---
@@ -134,6 +117,7 @@ export default function WaitingLobby() {
         retryCount++;
 
       } catch (error) {
+        console.error("[pollMatch Error]", error); // 자세한 에러 내용을 콘솔에 출력
         timer = window.setTimeout(pollMatch, 3000);
         retryCount++;
       }

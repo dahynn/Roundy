@@ -1,6 +1,7 @@
 package com.ssafya701.roundy.webrtc.controller;
 
 import com.ssafya701.roundy.global.common.CommonResponse;
+import com.ssafya701.roundy.webrtc.openvidu.OpenViduService;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class RoomTestController {
 
     private final RoomRegistry roomRegistry;
+    private final OpenViduService openViduService;
 
     /**
      * 방 생성 테스트
@@ -37,7 +39,11 @@ public class RoomTestController {
         
         try {
             RotationMode rotationMode = RotationMode.valueOf(mode);
-            RoomState room = roomRegistry.getOrCreateRoom(roomId, rotationMode, "openvidu-" + roomId);
+            
+            // [Fix] OpenViduService를 통해 세션 생성 및 캐시 등록 (필수)
+            String openViduSessionId = openViduService.ensureSession(roomId);
+            
+            RoomState room = roomRegistry.getOrCreateRoom(roomId, rotationMode, openViduSessionId);
             
             return CommonResponse.ofSuccess(Map.of(
                 "roomId", room.getRoomId(),
