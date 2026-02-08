@@ -29,6 +29,9 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "1000m"
+        env:
+        - name: OPENVIDU_URL
+          value: "https://openvidu-service" # Internal Service URL (Port 443)
         envFrom:
         - secretRef:
             name: roundy-backend-secrets

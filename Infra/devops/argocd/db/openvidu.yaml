@@ -18,35 +18,74 @@ spec:
       labels:
         app: openvidu
     spec:
-      hostNetwork: true
+      # hostNetwork: false (default)
       containers:
       - name: openvidu-container
-        image: openvidu/openvidu-dev:2.31.0
+        image: openvidu/openvidu-dev:latest
         ports:
-        - containerPort: 8443
+        - containerPort: 443
           name: https
         - containerPort: 3478
           protocol: UDP
+          hostPort: 3478 # STUN/TURN용 hostPort 매핑
           name: stun-udp
         - containerPort: 5443
           protocol: TCP
           name: turn-tcp
+        # UDP Media Ports (테스트용 40000~40010 범위 매핑)
+        - containerPort: 40000
+          protocol: UDP
+          hostPort: 40000
+        - containerPort: 40001
+          protocol: UDP
+          hostPort: 40001
+        - containerPort: 40002
+          protocol: UDP
+          hostPort: 40002
+        - containerPort: 40003
+          protocol: UDP
+          hostPort: 40003
+        - containerPort: 40004
+          protocol: UDP
+          hostPort: 40004
+        - containerPort: 40005
+          protocol: UDP
+          hostPort: 40005
+        - containerPort: 40006
+          protocol: UDP
+          hostPort: 40006
+        - containerPort: 40007
+          protocol: UDP
+          hostPort: 40007
+        - containerPort: 40008
+          protocol: UDP
+          hostPort: 40008
+        - containerPort: 40009
+          protocol: UDP
+          hostPort: 40009
+        - containerPort: 40010
+          protocol: UDP
+          hostPort: 40010
         envFrom:
         - secretRef:
             name: openvidu-secret
         env:
         - name: OPENVIDU_PORT
-          value: "8443"
+          value: "443"
         - name: SERVER_PORT
-          value: "8443"
+          value: "443"
         - name: HTTPS_PORT
-          value: "8443"
+          value: "443"
         - name: HTTP_PORT
           value: "80"
         - name: MIN_PORT
           value: "16384"
         - name: MAX_PORT
           value: "32768"
+        - name: KMS_MIN_PORT
+          value: "40000"
+        - name: KMS_MAX_PORT
+          value: "40010"
         - name: DOMAIN_OR_PUBLIC_IP
           value: "i14a701.p.ssafy.io"
         - name: CERTIFICATE_TYPE
@@ -62,15 +101,15 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: http
+    traefik.ingress.kubernetes.io/service.serversscheme: https # 내부 443은 HTTPS
 spec:
   selector:
     app: openvidu
   ports:
-    - name: https # http로 동작
+    - name: https
       protocol: TCP
-      port: 8443
-      targetPort: 8443
+      port: 443
+      targetPort: 443
     - name: stun-udp
       protocol: UDP
       port: 3478
@@ -80,5 +119,3 @@ spec:
       port: 5443
       targetPort: 5443
   type: ClusterIP
-
-
