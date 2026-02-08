@@ -349,8 +349,21 @@ export default function MeetingPage() {
   // 세션 자동 접속 (AI 마스킹 트랙 전달)
   useEffect(() => {
     const partnerInfo = wsState.currentPartner;
+
+    // [DEBUG] 조건문 체크 로그
+    console.log('🔍 [Meeting] OpenVidu 연결 useEffect 실행:', {
+      hasPartnerInfo: !!partnerInfo,
+      sessionId: partnerInfo?.sessionId,
+      token: partnerInfo?.token ? partnerInfo.token.substring(0, 50) + '...' : null,
+      hasUserProfile: !!userProfile,
+      hasMaskedStream: !!maskedStream,
+      isStreamActive: maskedStream?.active
+    });
+
     if (partnerInfo?.sessionId && partnerInfo?.token && userProfile) {
       const videoTrack = maskedStream?.getVideoTracks()[0];
+      console.log('✅ [Meeting] joinSession 호출 조건 충족! 연결 시도...');
+
       console.log('🔍 [Meeting] 세션 접속 전 maskedStream 상태:', {
         hasMaskedStream: !!maskedStream,
         isActive: maskedStream?.active,
@@ -365,8 +378,14 @@ export default function MeetingPage() {
         gender: userProfile.gender
       });
       joinSession(partnerInfo.sessionId, partnerInfo.token, connectionData, videoTrack);
+    } else {
+      console.log('⏳ [Meeting] joinSession 호출 조건 미충족:', {
+        hasSessionId: !!partnerInfo?.sessionId,
+        hasToken: !!partnerInfo?.token,
+        hasUserProfile: !!userProfile
+      });
     }
-  }, [wsState.currentPartner?.sessionId, wsState.currentPartner?.token, joinSession, userProfile?.username, maskedStream]);
+  }, [wsState.currentPartner, userProfile, maskedStream, joinSession]);
 
   // [NEW] 스테이지 변경 및 렌더링 완료 시 자동 신호 전송
   // 컴포넌트가 마운트되고 스테이지가 결정되면 즉시 서버에 완료 신호를 보냅니다.
@@ -404,11 +423,11 @@ export default function MeetingPage() {
     }
   }, [isMicOn, isCamOn, publisher]);
 
-    // 스테이지 변경 시 상태 초기화 및 Notice 설정
-    useEffect(() => {
-        setHasVoted(false);
-        setSelectedCard(null);
-        setLocalVoteResults(null); // [SAFETY] 스테이지 변경 시 결과 화면 강제 종료
+  // 스테이지 변경 시 상태 초기화 및 Notice 설정
+  useEffect(() => {
+    setHasVoted(false);
+    setSelectedCard(null);
+    setLocalVoteResults(null); // [SAFETY] 스테이지 변경 시 결과 화면 강제 종료
 
     const stage = wsState.currentStage;
 
@@ -438,35 +457,35 @@ export default function MeetingPage() {
     }
   }, [wsState.currentStage]);
 
-    // Break Time Notice Update
-    useEffect(() => {
-        // [FIX] 첫인상 투표 결과 화면이 떠 있으면 Notice 강제 숨김
-        if (localVoteResults) {
-            setCurrentNotice(null);
-            return;
-        }
+  // Break Time Notice Update
+  useEffect(() => {
+    // [FIX] 첫인상 투표 결과 화면이 떠 있으면 Notice 강제 숨김
+    if (localVoteResults) {
+      setCurrentNotice(null);
+      return;
+    }
 
-        // [FIX] isBreak 상태이거나 BREAK 관련 메시지일 때 Notice 유지
-        if (wsState.isBreak || wsState.lastMessage?.includes('다음 단계로') || wsState.lastMessage?.includes('파트너가 변경됩니다')) {
-            let nextMsg = "잠시 후 다음 단계가 시작됩니다";
-            if (wsState.currentStage === 'SELF_INTRO') nextMsg = "곧 첫인상 투표가 진행됩니다";
-            else if (wsState.currentStage === 'VOTE_FIRST') nextMsg = "곧 1:1 로테이션 대화가 시작됩니다";
-            else if (wsState.currentStage === 'ROTATION_SHORT') nextMsg = "파트너가 변경됩니다";
-            else if (wsState.currentStage === 'ROTATION_LONG') nextMsg = "파트너가 변경됩니다";
+    // [FIX] isBreak 상태이거나 BREAK 관련 메시지일 때 Notice 유지
+    if (wsState.isBreak || wsState.lastMessage?.includes('다음 단계로') || wsState.lastMessage?.includes('파트너가 변경됩니다')) {
+      let nextMsg = "잠시 후 다음 단계가 시작됩니다";
+      if (wsState.currentStage === 'SELF_INTRO') nextMsg = "곧 첫인상 투표가 진행됩니다";
+      else if (wsState.currentStage === 'VOTE_FIRST') nextMsg = "곧 1:1 로테이션 대화가 시작됩니다";
+      else if (wsState.currentStage === 'ROTATION_SHORT') nextMsg = "파트너가 변경됩니다";
+      else if (wsState.currentStage === 'ROTATION_LONG') nextMsg = "파트너가 변경됩니다";
 
       setCurrentNotice(nextMsg);
 
-            // [FIX] isBreak가 true일 때는 자동 숨김 하지 않음 (전환 완료될 때까지 유지)
-            if (!wsState.isBreak) {
-                const timer = setTimeout(() => {
-                    setCurrentNotice(null);
-                }, 3000);
-                return () => clearTimeout(timer);
-            }
-            // isBreak가 해제되면 Notice도 해제 (단, 다른 로직에 의해 설정된 경우 제외)
-            // 여기서는 명시적으로 끄지 않아도 됨. STAGE_CHANGE 훅에서 처리됨.
-        }
-    }, [wsState.isBreak, wsState.lastMessage, wsState.currentStage, localVoteResults]);
+      // [FIX] isBreak가 true일 때는 자동 숨김 하지 않음 (전환 완료될 때까지 유지)
+      if (!wsState.isBreak) {
+        const timer = setTimeout(() => {
+          setCurrentNotice(null);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+      // isBreak가 해제되면 Notice도 해제 (단, 다른 로직에 의해 설정된 경우 제외)
+      // 여기서는 명시적으로 끄지 않아도 됨. STAGE_CHANGE 훅에서 처리됨.
+    }
+  }, [wsState.isBreak, wsState.lastMessage, wsState.currentStage, localVoteResults]);
 
   // Typing Animation Effect
   useEffect(() => {
@@ -506,19 +525,19 @@ export default function MeetingPage() {
         // 여기서는 명시적으로 'FIRST_VOTE_RESULT_DONE' 이라는 신호를 보내 서버가 ROTATION_SHORT로 넘기도록 유도하거나,
         // 단순히 RENDER_COMPLETE를 다시 호출.
 
-                // sentStageRef를 잠시 속여서(?) 다시 보내도록 함
-                sentStageRef.current = null;
-                sendRenderComplete('FIRST_VOTE_RESULT_DONE');
-                // [SYNC] 이제 여기서 setLocalVoteResults(null)을 하지 않음.
-                // 서버가 RENDER_COMPLETE를 모두 받고 스테이지를 변경(STAGE_CHANGE)하면,
-                // 위쪽 useEffect의 'stage' 변경 감지 로직에서 setLocalVoteResults(null)이 실행됨.
+        // sentStageRef를 잠시 속여서(?) 다시 보내도록 함
+        sentStageRef.current = null;
+        sendRenderComplete('FIRST_VOTE_RESULT_DONE');
+        // [SYNC] 이제 여기서 setLocalVoteResults(null)을 하지 않음.
+        // 서버가 RENDER_COMPLETE를 모두 받고 스테이지를 변경(STAGE_CHANGE)하면,
+        // 위쪽 useEffect의 'stage' 변경 감지 로직에서 setLocalVoteResults(null)이 실행됨.
 
-            }, 13000); // [SYNC] 애니메이션(8초) + 감상(5초) 후 준비 완료 신호 전송
-            return () => clearTimeout(timer);
-        }
-    }, [wsState.firstVoteResults, sendRenderComplete]);
+      }, 13000); // [SYNC] 애니메이션(8초) + 감상(5초) 후 준비 완료 신호 전송
+      return () => clearTimeout(timer);
+    }
+  }, [wsState.firstVoteResults, sendRenderComplete]);
 
-    // ... (Auto Vote Logic skipped) ...
+  // ... (Auto Vote Logic skipped) ...
 
   // --------------------------------------------------------------------------------
   // 5. 렌더링
