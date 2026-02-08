@@ -47,7 +47,8 @@ public class OpenViduService {
         }
 
         // Session 생성
-        // String customSessionId = "room-" + roomId; // 중복 prefix 방지: 호출자가 이미 고유 ID를 관리함
+        // String customSessionId = "room-" + roomId; // 중복 prefix 방지: 호출자가 이미 고유 ID를
+        // 관리함
         String customSessionId = roomId;
         try {
             OpenViduSessionResponse response = openViduClient.createSession(customSessionId);
@@ -88,22 +89,14 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
-            // [FIX] Mixed Content 방지: HTTPS 페이지에서 ws:// 연결 불가
-            // OpenVidu Dev 이미지는 설정과 무관하게 ws:// 토큰을 생성하므로 백엔드에서 변환
-            if (token != null && token.contains("ws://")) {
-                token = token.replace("ws://", "wss://");
-                log.info("OpenVidu 토큰 URL 변환: ws:// → wss://");
-            }
-            
-            // [FIX] 포트 번호 제거: OpenVidu가 DOMAIN_OR_PUBLIC_IP:PORT 형식으로 생성
-            // 외부 접속은 Traefik(443)을 통해야 하므로 :8443 제거 필요
-            if (token != null && token.contains(":8443")) {
-                token = token.replace(":8443", "");
-                log.info("OpenVidu 토큰 포트 제거: :8443 → (없음)");
-            }
+            // [CHANGED] OpenVidu 2.30+ Port 443 + hostNetwork:false 전략으로 변경됨에 따라
+            // 서버가 생성하는 토큰 URL이 올바르므로 추가 변환 로직 제거
+
+            // if (token != null && token.contains("ws://")) { ... }
+            // if (token != null && token.contains(":8443")) { ... }
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
-                roomId, userId, response.getId());
+                    roomId, userId, response.getId());
             eventLogger.logOpenViduTokenGenerated(roomId, userId, response.getId());
 
             return token;
