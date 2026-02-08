@@ -89,11 +89,19 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
-            // [FIX] Mixed Content 방지: HTTPS 페이지에서 ws:// 연결 불가
-            // OpenVidu 서버가 HTTP로 동작하므로 ws:// 토큰을 생성하지만, 실제 접속은 Ingress(HTTPS)를 통함
+            // [FIX] Mixed Content 방지 & 경로 보정
+            // 1. ws:// -> wss://
             if (token != null && token.contains("ws://")) {
                 token = token.replace("ws://", "wss://");
-                log.info("OpenVidu 토큰 URL 변환: ws:// → wss:// (For Mixed Content Fix)");
+                log.info("OpenVidu 토큰 URL 변환: ws:// → wss://");
+            }
+
+            // 2. 경로 누락 보정: 토큰에 /openvidu 경로가 없으면 추가 (Ingress 라우팅용)
+            // 예: wss://i14a701.p.ssafy.io?sessionId=... ->
+            // wss://i14a701.p.ssafy.io/openvidu?sessionId=...
+            if (token != null && !token.contains("/openvidu")) {
+                token = token.replace("wss://i14a701.p.ssafy.io", "wss://i14a701.p.ssafy.io/openvidu");
+                log.info("OpenVidu 토큰 경로 보정: /openvidu 추가");
             }
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
