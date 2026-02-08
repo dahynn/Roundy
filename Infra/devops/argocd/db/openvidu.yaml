@@ -38,7 +38,7 @@ spec:
         - name: SERVER_PORT
           value: "8443"
         - name: HTTPS_PORT
-          value: "443"
+          value: "8443"
         - name: HTTP_PORT
           value: "80"
         - name: MIN_PORT
@@ -62,7 +62,7 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: http
+    traefik.ingress.kubernetes.io/service.serversscheme: https
 spec:
   selector:
     app: openvidu
