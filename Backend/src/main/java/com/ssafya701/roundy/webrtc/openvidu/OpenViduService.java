@@ -88,13 +88,12 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
-            // [FIX] Mixed Content 방지 및 토큰 URL 일치를 위해 ws:// → wss:// 변환
-            // OpenVidu는 내부 HTTP 환경에서 ws:// 토큰을 생성하지만,
-            // 클라이언트는 HTTPS 페이지에서 wss://로 연결하므로 토큰 URL도 wss://로 변환 필요
-            if (token != null && token.contains("ws://")) {
-                token = token.replace("ws://", "wss://");
-                log.info("OpenVidu 토큰 URL 보안 변환 완료: ws:// -> wss://");
-            }
+            // [CHANGED] 사용자 요청으로 토큰 변환 로직 제거 (Raw Token Test)
+            log.info("OpenVidu 원본 토큰 발급: {}", token);
+            // if (token != null && token.contains("ws://")) {
+            //     token = token.replace("ws://", "wss://");
+            //     log.info("OpenVidu 토큰 URL 보안 변환 완료: ws:// -> wss://");
+            // }
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                 roomId, userId, response.getId());
