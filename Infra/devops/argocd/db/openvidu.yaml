@@ -63,7 +63,7 @@ metadata:
   namespace: roundy-app
   annotations:
     traefik.ingress.kubernetes.io/service.serversscheme: https
-    traefik.ingress.kubernetes.io/service.serverstransport: openvidu-transport@kubernetescrd
+    traefik.ingress.kubernetes.io/service.serverstransport: roundy-app-openvidu-transport@kubernetescrd
 spec:
   selector:
     app: openvidu
