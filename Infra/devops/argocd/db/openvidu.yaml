@@ -21,7 +21,7 @@ spec:
       hostNetwork: true
       containers:
       - name: openvidu-container
-        image: openvidu/openvidu-dev:latest
+        image: openvidu/openvidu-dev:2.31.0
         ports:
         - containerPort: 8443
           name: https
