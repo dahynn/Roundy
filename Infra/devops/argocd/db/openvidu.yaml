@@ -62,7 +62,7 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serversscheme: http
 spec:
   selector:
     app: openvidu
