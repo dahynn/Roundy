@@ -4,11 +4,12 @@ metadata:
   name: openvidu-ingress
   namespace: roundy-app
   annotations:
-    kubernetes.io/ingress.class: "traefik"
+    kubernetes.io.ingress.class: "traefik"
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-openvidu-strip@kubernetescrd
-    traefik.ingress.kubernetes.io/service.serverstransport: kube-system-openvidu-transport@kubernetescrd
+    # [FIX] 전역 미들웨어 제거 -> 특정 경로에만 적용하기 위해 아래 라인 삭제
+    # traefik.ingress.kubernetes.io/router.middlewares: roundy-app-openvidu-strip@kubernetescrd
+    traefik.ingress.kubernetes.io/service.serverstransport: roundy-app-openvidu-transport@kubernetescrd
 spec:
   tls:
     - hosts:
@@ -18,7 +19,18 @@ spec:
     - host: i14a701.p.ssafy.io
       http:
         paths:
+          # 1. API & WebSocket용 (Strip 금지)
+          # OpenVidu 서버는 /openviduWithPath... 를 기대함
           - path: /openvidu
+            pathType: ImplementationSpecific # Traefik에서는 정규식 등을 쓰려면 이걸 권장하지만 여기선 Prefix로도 충분할 수 있음
+            # 하지만 우선권 문제로 인해 미들웨어가 없는 놈을 먼저 매칭시키거나 해야 함.
+            # Traefik은 룰 길이순(Longest Match) 우선.
+            
+            # [전략]
+            # 그냥 /openvidu 전체에 대해 Strip을 끄는 게 맞을 듯 합니다.
+            # Dashboard가 / 에 있다면, /openvidu/ -> Backend /openvidu/ -> 404?
+            # 만약 Dashboard가 404가 뜨더라도, "앱 작동"이 우선입니다.
+            # 일단 Strip을 끄겠습니다.
             pathType: Prefix
             backend:
               service:
