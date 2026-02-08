@@ -63,12 +63,11 @@ metadata:
   namespace: roundy-app
   annotations:
     traefik.ingress.kubernetes.io/service.serversscheme: http
-    traefik.ingress.kubernetes.io/service.serverstransport: kube-system-openvidu-transport@kubernetescrd
 spec:
   selector:
     app: openvidu
   ports:
-    - name: https
+    - name: https # http로 동작
       protocol: TCP
       port: 8443
       targetPort: 8443

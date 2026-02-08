@@ -45,10 +45,3 @@ spec:
             name: minio-svc
             port:
               number: 8886
-      - path: /openvidu
-        pathType: Prefix
-        backend:
-          service:
-            name: openvidu-service
-            port:
-              number: 8443
