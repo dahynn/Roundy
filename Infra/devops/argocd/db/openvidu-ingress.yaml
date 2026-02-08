@@ -8,7 +8,7 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-cert"
     traefik.ingress.kubernetes.io/router.tls: "true"
     # [FIX] 전역 미들웨어 제거 -> 특정 경로에만 적용하기 위해 아래 라인 삭제
-    # traefik.ingress.kubernetes.io/router.middlewares: roundy-app-openvidu-strip@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: roundy-app-openvidu-strip@kubernetescrd
     traefik.ingress.kubernetes.io/service.serverstransport: roundy-app-openvidu-transport@kubernetescrd
 spec:
   tls:
