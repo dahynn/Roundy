@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: smj100394/roundy_front:131
+        image: smj100394/roundy_front:132
         imagePullPolicy: Always
         ports:
         - containerPort: 80 
