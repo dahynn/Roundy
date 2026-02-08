@@ -88,11 +88,13 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
-            // [FIX] Mixed Content 방지: HTTPS 환경에서는 ws:// 연결이 차단되므로 wss://로 강제 변환
-            if (token != null && token.startsWith("ws://")) {
-                token = token.replace("ws://", "wss://"); 
-                log.info("OpenVidu 토큰 URL 보안 변환 완료: ws:// -> wss://");
-            }
+            // [REVERT] Mixed Content 방지 코드를 제거합니다. 토큰 유효성 검증(401 Error) 해결을 위해 원본 토큰을 반환합니다.
+            // 클라이언트(OpenVidu Browser)가 HTTPS 페이지에서는 자동으로 wss:// 연결을 시도하거나,
+            // 클라이언트 측에서 URL을 수정해서 사용해야 합니다.
+            // if (token != null && token.startsWith("ws://")) {
+            //     token = token.replace("ws://", "wss://"); 
+            //     log.info("OpenVidu 토큰 URL 보안 변환 완료: ws:// -> wss://");
+            // }
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                 roomId, userId, response.getId());
