@@ -21,7 +21,7 @@ spec:
       - name: openvidu-container
         image: openvidu/openvidu-dev:latest
         ports:
-        - containerPort: 8443
+        - containerPort: 443
           name: https
         - containerPort: 3478
           protocol: UDP
@@ -34,11 +34,11 @@ spec:
             name: openvidu-secret
         env:
         - name: OPENVIDU_PORT
-          value: "8443"
+          value: "443"
         - name: SERVER_PORT
-          value: "8443"
+          value: "443"
         - name: HTTPS_PORT
-          value: "8443"
+          value: "443"
         - name: HTTP_PORT
           value: "80"
         - name: MIN_PORT
@@ -47,8 +47,6 @@ spec:
           value: "32768"
         - name: DOMAIN_OR_PUBLIC_IP
           value: "i14a701.p.ssafy.io"
-        - name: OPENVIDU_PUBLICURL
-          value: "https://i14a701.p.ssafy.io:443/openvidu/"
         - name: CERTIFICATE_TYPE
           value: "selfsigned"
         - name: TURN_PORT_TCP
@@ -62,15 +60,15 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: http
+    traefik.ingress.kubernetes.io/service.serversscheme: https
 spec:
   selector:
     app: openvidu
   ports:
     - name: https # http로 동작
       protocol: TCP
-      port: 8443
-      targetPort: 8443
+      port: 443
+      targetPort: 443
     - name: stun-udp
       protocol: UDP
       port: 3478
