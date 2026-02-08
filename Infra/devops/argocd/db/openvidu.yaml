@@ -62,9 +62,8 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    # [FIX] Traefik → OpenVidu 내부 통신은 HTTP로 (Traefik이 TLS 종료)
-    # 토큰의 wss:// 변환은 백엔드 OpenViduService에서 처리됨
-    traefik.ingress.kubernetes.io/service.serversscheme: http
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serverstransport: openvidu-transport@kubernetescrd
 spec:
   selector:
     app: openvidu
@@ -82,4 +81,5 @@ spec:
       port: 5443
       targetPort: 5443
   type: ClusterIP
+
 
