@@ -101,7 +101,7 @@ metadata:
   name: openvidu-service
   namespace: roundy-app
   annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: https # 내부 443은 HTTPS
+    traefik.ingress.kubernetes.io/service.serversscheme: http # 내부 443은 HTTP (SSL Offload)
 spec:
   selector:
     app: openvidu

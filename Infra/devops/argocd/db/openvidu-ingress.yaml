@@ -9,6 +9,10 @@ metadata:
     traefik.ingress.kubernetes.io/router.tls: "true"
 
     traefik.ingress.kubernetes.io/service.serverstransport: roundy-app-openvidu-transport@kubernetescrd
+    
+    # [핵심] Traefik 라우팅 규칙: WebSocket(화상회의) 또는 특정 경로(/dashboard, /openvidu)는 OpenVidu로 보냄
+    # Frontend(/)와 충돌 방지
+    traefik.ingress.kubernetes.io/router.rule: "Host(`i14a701.p.ssafy.io`) && (Headers(`Upgrade`, `websocket`) || PathPrefix(`/dashboard`) || PathPrefix(`/openvidu`))"
 spec:
   tls:
     - hosts:
