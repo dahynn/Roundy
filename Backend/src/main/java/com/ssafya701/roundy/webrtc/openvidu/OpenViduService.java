@@ -89,11 +89,12 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
-            // [CHANGED] OpenVidu 2.30+ Port 443 + hostNetwork:false 전략으로 변경됨에 따라
-            // 서버가 생성하는 토큰 URL이 올바르므로 추가 변환 로직 제거
-
-            // if (token != null && token.contains("ws://")) { ... }
-            // if (token != null && token.contains(":8443")) { ... }
+            // [FIX] Mixed Content 방지: HTTPS 페이지에서 ws:// 연결 불가
+            // OpenVidu 서버가 HTTP로 동작하므로 ws:// 토큰을 생성하지만, 실제 접속은 Ingress(HTTPS)를 통함
+            if (token != null && token.contains("ws://")) {
+                token = token.replace("ws://", "wss://");
+                log.info("OpenVidu 토큰 URL 변환: ws:// → wss:// (For Mixed Content Fix)");
+            }
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                     roomId, userId, response.getId());
