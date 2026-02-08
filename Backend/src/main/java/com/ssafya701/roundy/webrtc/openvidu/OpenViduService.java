@@ -94,6 +94,13 @@ public class OpenViduService {
                 token = token.replace("ws://", "wss://");
                 log.info("OpenVidu 토큰 URL 변환: ws:// → wss://");
             }
+            
+            // [FIX] 포트 번호 제거: OpenVidu가 DOMAIN_OR_PUBLIC_IP:PORT 형식으로 생성
+            // 외부 접속은 Traefik(443)을 통해야 하므로 :8443 제거 필요
+            if (token != null && token.contains(":8443")) {
+                token = token.replace(":8443", "");
+                log.info("OpenVidu 토큰 포트 제거: :8443 → (없음)");
+            }
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                 roomId, userId, response.getId());
