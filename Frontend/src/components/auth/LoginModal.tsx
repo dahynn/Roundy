@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import kakaoLoginBtn from '@/assets/kakao_login_medium_wide.png';
 import roundyLogo from '@/assets/roundy_logo.svg';
+import { API_ORIGIN } from '@/config/endpoints';
 
 interface Props {
   onClose: () => void;
@@ -9,15 +10,8 @@ interface Props {
 
 
 export default function LoginModal({ onClose }: Props) {
-  const apiUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== 'undefined'
-    ? import.meta.env.VITE_API_URL
-    : '';
   const handleKakaoLogin = () => {
-    // console.log("전체 환경변수:", import.meta.env);
-    console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-    window.location.href = `${apiUrl}/api/auth/login`;
-    // const tempUrl = "https://i14a701.p.ssafy.io";
-    // window.location.href = `${tempUrl}/api/auth/login`;
+    window.location.href = `${API_ORIGIN}/api/auth/login`;
   };
 
   return (

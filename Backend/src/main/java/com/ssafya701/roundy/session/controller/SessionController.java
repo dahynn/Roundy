@@ -47,23 +47,7 @@ public class SessionController {
 
                 log.info("Session enter request: userId={}", userId);
 
-                // 2. Redis에서 검증 상태 확인 + 삭제 (원자적 처리, Race Condition 방지)
-                // [테스트용 수정] 무조건 통과하도록 주석 처리
-                /*
-                 * if (!verificationService.verifyAndDelete(request.getRequestId())) {
-                 * log.warn("Verification failed or already used: userId={}, requestId={}",
-                 * userId, request.getRequestId());
-                 * return ResponseEntity.ok(
-                 * CommonResponse.ofSuccess(
-                 * new SessionEnterResponse(false, "검증이 완료되지 않았거나 이미 사용되었습니다.",
-                 * null)));
-                 * }
-                 */
-                // log.info("📢 [TEST MODE] Verification Skipped for requestId={}",
-                // request.getRequestId());
-                log.info("📢 [TEST MODE] Verification Skipped");
-
-                // 3. User 정보 조회 (성별 확인)
+                // 2. User 정보 조회 (성별 확인)
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -74,7 +58,7 @@ public class SessionController {
                                                         new SessionEnterResponse(false, "성별 정보가 없습니다.", null)));
                 }
 
-                // 4. [수정] 이미 매칭된 방이 있는지 먼저 확인 (Polling 로직 개선)
+                // 3. 이미 매칭된 방이 있는지 먼저 확인 (폴링 요청은 검증 토큰을 재사용하지 않음)
                 String existingRoomId = sessionService.getUserCurrentRoom(userId);
                 if (existingRoomId != null) {
                         // 이미 매칭된 상태라면 즉시 방 정보 반환
@@ -96,7 +80,20 @@ public class SessionController {
                         }
                 }
 
-                // 5. 세션 큐에 그제서야 추가 + 매칭 시도
+                // 4. 최초 대기열 입장에만 얼굴 검증 결과를 원자적으로 소비한다.
+                // 이후 폴링은 Redis 대기열 상태로 식별하므로 requestId 재사용이 필요 없다.
+                boolean alreadyInQueue = sessionService.isInQueue(userId, gender);
+                if (!alreadyInQueue && !verificationService.verifyAndDelete(request.getRequestId())) {
+                        log.warn("Verification failed or already used: userId={}, requestId={}",
+                                        userId, request.getRequestId());
+                        return ResponseEntity.ok(
+                                        CommonResponse.ofSuccess(
+                                                        new SessionEnterResponse(false,
+                                                                        "본인 인증이 완료되지 않았거나 만료되었습니다.",
+                                                                        null)));
+                }
+
+                // 5. 세션 큐에 추가 + 매칭 시도
                 RoomMatchResult matchResult = sessionService.addToQueueAndMatch(userId, gender);
 
                 // 6. 매칭 결과에 따른 응답

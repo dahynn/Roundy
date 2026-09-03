@@ -1,13 +1,10 @@
 import axios from 'axios';
-
-const apiBaseUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== 'undefined'
-  ? import.meta.env.VITE_API_URL
-  : '';
+import { API_ORIGIN } from '@/config/endpoints';
 
 // 1. Axios 인스턴스 생성
 export const api = axios.create({
   // Vite 환경에서는 import.meta.env를 사용합니다.
-  baseURL: `${apiBaseUrl}/api`,
+  baseURL: `${API_ORIGIN}/api`,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // 쿠키 전송 활성화
 });

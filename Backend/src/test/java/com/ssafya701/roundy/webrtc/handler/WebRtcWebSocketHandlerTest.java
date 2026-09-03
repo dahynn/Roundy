@@ -1,6 +1,9 @@
 package com.ssafya701.roundy.webrtc.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafya701.roundy.auth.entity.User;
+import com.ssafya701.roundy.auth.enums.GenderType;
+import com.ssafya701.roundy.auth.repository.UserRepository;
 import com.ssafya701.roundy.webrtc.message.WsMessageType;
 import com.ssafya701.roundy.webrtc.message.inbound.JoinRoomMessage;
 import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
@@ -8,25 +11,39 @@ import com.ssafya701.roundy.webrtc.message.outbound.ErrorMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.JoinOkMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.RoomStateMessage;
 import com.ssafya701.roundy.webrtc.openvidu.OpenViduClient;
-import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduSessionResponse;
-import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduTokenResponse;
 import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.util.TestJwtGenerator;
 import com.ssafya701.roundy.webrtc.util.WebSocketTestClient;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * WebRtcWebSocketHandler 통합 테스트
@@ -35,6 +52,51 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class WebRtcWebSocketHandlerTest {
+
+    private static MockWebServer mockOpenViduServer;
+    private static final Queue<String> mockTokens = new ConcurrentLinkedQueue<>();
+
+    @DynamicPropertySource
+    static void registerOpenViduUrl(DynamicPropertyRegistry registry) throws IOException {
+        mockOpenViduServer = new MockWebServer();
+        mockOpenViduServer.setDispatcher(new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest request) {
+                String path = request.getPath();
+                if ("/openvidu/api/sessions".equals(path)) {
+                    String sessionId = extractRequestedSessionId(request);
+                    return jsonResponse("{\"id\":\"" + sessionId
+                            + "\",\"object\":\"session\",\"createdAt\":1234567890}");
+                }
+                if (path != null && path.endsWith("/connection")) {
+                    String token = Optional.ofNullable(mockTokens.poll()).orElse("mock-token");
+                    return jsonResponse("{\"id\":\"con_mock\",\"object\":\"connection\",\"token\":\""
+                            + token + "\",\"createdAt\":1234567890}");
+                }
+                return new MockResponse().setResponseCode(404);
+            }
+        });
+        mockOpenViduServer.start();
+        registry.add("openvidu.url", () -> "http://127.0.0.1:" + mockOpenViduServer.getPort());
+    }
+
+    private static MockResponse jsonResponse(String body) {
+        return new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(body);
+    }
+
+    private static String extractRequestedSessionId(RecordedRequest request) {
+        try {
+            return new ObjectMapper()
+                    .readTree(request.getBody().readUtf8())
+                    .path("customSessionId")
+                    .asText("mock-session");
+        } catch (Exception e) {
+            return "mock-session";
+        }
+    }
 
     @LocalServerPort
     private int port;
@@ -45,18 +107,43 @@ class WebRtcWebSocketHandlerTest {
     @Autowired
     private RoomRegistry roomRegistry;
 
-    private MockWebServer mockOpenViduServer;
+    @MockitoBean
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private RedisTemplate<String, String> redisTemplate;
+
+    @MockitoBean
+    private StringRedisTemplate stringRedisTemplate;
+
     private TestJwtGenerator jwtGenerator;
     private String wsUrl;
+    private String assignedRoomId;
 
     @BeforeEach
     void setUp() throws IOException {
-        // MockWebServer 시작
-        mockOpenViduServer = new MockWebServer();
-        mockOpenViduServer.start(8080);
-
         // JWT 생성기 초기화
         jwtGenerator = new TestJwtGenerator();
+        assignedRoomId = "auth-room";
+        mockTokens.clear();
+
+        ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(anyString())).thenAnswer(invocation -> assignedRoomId);
+        when(redisTemplate.hasKey(anyString())).thenReturn(true);
+        SetOperations<String, String> setOperations = mock(SetOperations.class);
+        when(stringRedisTemplate.opsForSet()).thenReturn(setOperations);
+        when(setOperations.size(anyString())).thenReturn(6L);
+        when(userRepository.findById(anyLong())).thenAnswer(invocation -> {
+            Long userId = invocation.getArgument(0);
+            GenderType gender = userId % 2 == 0 ? GenderType.MALE : GenderType.FEMALE;
+            return Optional.of(User.builder()
+                    .kakaoId(userId)
+                    .name("user" + userId)
+                    .nickName("user" + userId)
+                    .gender(gender)
+                    .build());
+        });
 
         // WebSocket URL 설정
         wsUrl = "ws://localhost:" + port + "/ws/webrtc";
@@ -65,11 +152,9 @@ class WebRtcWebSocketHandlerTest {
         roomRegistry.clear();
     }
 
-    @AfterEach
-    void tearDown() throws IOException {
-        if (mockOpenViduServer != null) {
-            mockOpenViduServer.shutdown();
-        }
+    @AfterAll
+    static void shutDownMockServer() throws IOException {
+        mockOpenViduServer.shutdown();
     }
 
     @Test
@@ -148,7 +233,7 @@ class WebRtcWebSocketHandlerTest {
         assertThat(joinOk.getType()).isEqualTo(WsMessageType.JOIN_OK);
         assertThat(joinOk.getRoomId()).isEqualTo("room-123");
         assertThat(joinOk.getToken()).isEqualTo("test-token-123");
-        assertThat(joinOk.getOpenviduUrl()).isEqualTo("http://localhost:8080");
+        assertThat(joinOk.getOpenviduUrl()).isEqualTo("http://127.0.0.1:" + mockOpenViduServer.getPort());
 
         // 방 레지스트리 검증
         assertThat(roomRegistry.hasRoom("room-123")).isTrue();
@@ -336,36 +421,10 @@ class WebRtcWebSocketHandlerTest {
     // Helper methods for mocking OpenVidu API
 
     private void mockOpenViduCreateSession(String sessionId) {
-        OpenViduSessionResponse response = new OpenViduSessionResponse();
-        response.setId(sessionId);
-        response.setObject("session");
-        response.setCreatedAt(System.currentTimeMillis());
-
-        try {
-            String json = objectMapper.writeValueAsString(response);
-            mockOpenViduServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(json));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        assignedRoomId = sessionId;
     }
 
     private void mockOpenViduCreateToken(String token) {
-        OpenViduTokenResponse response = new OpenViduTokenResponse();
-        response.setId("con_" + System.currentTimeMillis());
-        response.setToken(token);
-        response.setCreatedAt(System.currentTimeMillis());
-
-        try {
-            String json = objectMapper.writeValueAsString(response);
-            mockOpenViduServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(json));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        mockTokens.add(token);
     }
 }

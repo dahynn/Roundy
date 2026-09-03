@@ -1,5 +1,6 @@
 package com.ssafya701.roundy.webrtc.service;
 
+import com.ssafya701.roundy.config.OpenViduProperties;
 import com.ssafya701.roundy.webrtc.openvidu.OpenViduClient;
 import com.ssafya701.roundy.webrtc.openvidu.OpenViduService;
 import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduSessionResponse;
@@ -7,8 +8,11 @@ import com.ssafya701.roundy.webrtc.room.RoomRegistry;
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import com.ssafya701.roundy.webrtc.rotation.RotationScheduler;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -27,11 +35,30 @@ import static org.assertj.core.api.Assertions.assertThat;
  * WebRtcRoomService 단위 테스트
  */
 @SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 @TestPropertySource(properties = {
-        "openvidu.url=http://localhost:8080",
         "openvidu.secret=test-secret"
 })
 class WebRtcRoomServiceTest {
+
+    private static MockWebServer mockWebServer;
+
+    @DynamicPropertySource
+    static void registerOpenViduUrl(DynamicPropertyRegistry registry) throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.setDispatcher(new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest request) {
+                return new MockResponse()
+                        .setResponseCode(200)
+                        .setHeader("Content-Type", "application/json")
+                        .setBody("{\"id\":\"mock-session\",\"object\":\"session\",\"createdAt\":1234567890}");
+            }
+        });
+        mockWebServer.start();
+        registry.add("openvidu.url", () -> "http://127.0.0.1:" + mockWebServer.getPort());
+    }
 
     @Autowired
     private WebRtcRoomService roomService;
@@ -42,27 +69,26 @@ class WebRtcRoomServiceTest {
     @Autowired
     private RotationScheduler rotationScheduler;
 
-    private MockWebServer mockWebServer;
+    @Autowired
+    private OpenViduProperties openViduProperties;
 
     @BeforeEach
     void setUp() throws IOException {
-        // MockWebServer 시작
-        mockWebServer = new MockWebServer();
-        mockWebServer.start(8080);
-
         // 레지스트리 초기화
         roomRegistry.clear();
+        assertThat(openViduProperties.getUrl())
+                .isEqualTo("http://127.0.0.1:" + mockWebServer.getPort());
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        // MockWebServer 종료
-        if (mockWebServer != null) {
-            mockWebServer.shutdown();
-        }
-
+    void tearDown() {
         // 레지스트리 정리
         roomRegistry.clear();
+    }
+
+    @AfterAll
+    static void shutDownMockServer() throws IOException {
+        mockWebServer.shutdown();
     }
 
     @Test
@@ -70,8 +96,6 @@ class WebRtcRoomServiceTest {
     void testGetOrCreateRoomFreeTalk() {
         // Given
         String roomId = "room-001";
-        mockOpenViduSession(roomId);
-
         // When
         RoomState room = roomService.getOrCreateRoom(roomId, RotationMode.FREE_TALK);
 
@@ -87,8 +111,6 @@ class WebRtcRoomServiceTest {
     void testGetOrCreateRoomPairOnly() {
         // Given
         String roomId = "room-002";
-        mockOpenViduSession(roomId);
-
         // When
         RoomState room = roomService.getOrCreateRoom(roomId, RotationMode.PAIR_ONLY);
 
@@ -104,7 +126,6 @@ class WebRtcRoomServiceTest {
     void testGetRoomExists() {
         // Given
         String roomId = "room-003";
-        mockOpenViduSession(roomId);
         roomService.getOrCreateRoom(roomId, RotationMode.FREE_TALK);
 
         // When
@@ -133,7 +154,6 @@ class WebRtcRoomServiceTest {
     void testRemoveRoom() {
         // Given
         String roomId = "room-004";
-        mockOpenViduSession(roomId);
         roomService.getOrCreateRoom(roomId, RotationMode.FREE_TALK);
         assertThat(roomService.hasRoom(roomId)).isTrue();
 
@@ -148,10 +168,6 @@ class WebRtcRoomServiceTest {
     @DisplayName("모든 방 조회")
     void testGetAllRooms() {
         // Given
-        mockOpenViduSession("room-1");
-        mockOpenViduSession("room-2");
-        mockOpenViduSession("room-3");
-
         roomService.getOrCreateRoom("room-1", RotationMode.FREE_TALK);
         roomService.getOrCreateRoom("room-2", RotationMode.PAIR_ONLY);
         roomService.getOrCreateRoom("room-3", RotationMode.FREE_TALK);
@@ -167,9 +183,6 @@ class WebRtcRoomServiceTest {
     @DisplayName("방 개수 조회")
     void testGetRoomCount() {
         // Given
-        mockOpenViduSession("room-1");
-        mockOpenViduSession("room-2");
-
         roomService.getOrCreateRoom("room-1", RotationMode.FREE_TALK);
         roomService.getOrCreateRoom("room-2", RotationMode.PAIR_ONLY);
 
@@ -184,9 +197,6 @@ class WebRtcRoomServiceTest {
     @DisplayName("방 통계 조회")
     void testGetStatistics() {
         // Given
-        mockOpenViduSession("room-1");
-        mockOpenViduSession("room-2");
-
         roomService.getOrCreateRoom("room-1", RotationMode.FREE_TALK);
         roomService.getOrCreateRoom("room-2", RotationMode.PAIR_ONLY);
 
@@ -206,7 +216,6 @@ class WebRtcRoomServiceTest {
     void testIsRotationActive() {
         // Given
         String roomId = "room-rotation";
-        mockOpenViduSession(roomId);
         roomService.getOrCreateRoom(roomId, RotationMode.PAIR_ONLY);
 
         // When & Then
@@ -218,7 +227,6 @@ class WebRtcRoomServiceTest {
     void testStartRotationFreeTalkMode() {
         // Given
         String roomId = "room-freetalk";
-        mockOpenViduSession(roomId);
         roomService.getOrCreateRoom(roomId, RotationMode.FREE_TALK);
 
         // When
@@ -233,7 +241,6 @@ class WebRtcRoomServiceTest {
     void testGetParticipantCount() {
         // Given
         String roomId = "room-005";
-        mockOpenViduSession(roomId);
         roomService.getOrCreateRoom(roomId, RotationMode.FREE_TALK);
 
         // When
@@ -243,14 +250,4 @@ class WebRtcRoomServiceTest {
         assertThat(count).isZero();
     }
 
-    // ==================== Helper Methods ====================
-
-    /**
-     * OpenVidu Session Mock 설정
-     */
-    private void mockOpenViduSession(String roomId) {
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setBody("{\"id\":\"" + roomId + "\",\"object\":\"session\",\"createdAt\":1234567890}"));
-    }
 }

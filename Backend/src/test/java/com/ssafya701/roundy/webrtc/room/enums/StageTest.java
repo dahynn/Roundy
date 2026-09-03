@@ -31,7 +31,7 @@ class StageTest {
         assertThat(Stage.WAITING.getNextStage()).isEqualTo(Stage.SELF_INTRO);
         assertThat(Stage.SELF_INTRO.getNextStage()).isEqualTo(Stage.VOTE_FIRST);
         assertThat(Stage.VOTE_FIRST.getNextStage()).isEqualTo(Stage.ROTATION_SHORT);
-        assertThat(Stage.ROTATION_SHORT.getNextStage()).isEqualTo(Stage.IMAGE_GAME);
+        assertThat(Stage.ROTATION_SHORT.getNextStage()).isEqualTo(Stage.ROTATION_LONG);
         assertThat(Stage.IMAGE_GAME.getNextStage()).isEqualTo(Stage.ROTATION_LONG);
         assertThat(Stage.ROTATION_LONG.getNextStage()).isEqualTo(Stage.VOTE_FINAL);
         assertThat(Stage.VOTE_FINAL.getNextStage()).isEqualTo(Stage.MATCHING_RESULT);
@@ -96,13 +96,14 @@ class StageTest {
     @DisplayName("각 Stage의 duration이 올바르게 설정되어 있다")
     void testStageDuration() {
         assertThat(Stage.WAITING.getDurationSeconds()).isEqualTo(0);
-        assertThat(Stage.SELF_INTRO.getDurationSeconds()).isEqualTo(60);
-        assertThat(Stage.VOTE_FIRST.getDurationSeconds()).isEqualTo(30);
-        assertThat(Stage.ROTATION_SHORT.getDurationSeconds()).isEqualTo(180);
-        assertThat(Stage.IMAGE_GAME.getDurationSeconds()).isEqualTo(120);
-        assertThat(Stage.ROTATION_LONG.getDurationSeconds()).isEqualTo(420);
-        assertThat(Stage.VOTE_FINAL.getDurationSeconds()).isEqualTo(30);
-        assertThat(Stage.MATCHING_RESULT.getDurationSeconds()).isEqualTo(60);
-        assertThat(Stage.FACE_REVEAL.getDurationSeconds()).isEqualTo(300);
+        assertThat(Stage.BREAK.getDurationSeconds()).isEqualTo(10);
+        assertThat(Stage.SELF_INTRO.getDurationSeconds()).isEqualTo(10);
+        assertThat(Stage.VOTE_FIRST.getDurationSeconds()).isEqualTo(10);
+        assertThat(Stage.ROTATION_SHORT.getDurationSeconds()).isEqualTo(20);
+        assertThat(Stage.IMAGE_GAME.getDurationSeconds()).isEqualTo(35);
+        assertThat(Stage.ROTATION_LONG.getDurationSeconds()).isEqualTo(30);
+        assertThat(Stage.VOTE_FINAL.getDurationSeconds()).isEqualTo(10);
+        assertThat(Stage.MATCHING_RESULT.getDurationSeconds()).isEqualTo(10);
+        assertThat(Stage.FACE_REVEAL.getDurationSeconds()).isEqualTo(15);
     }
 }

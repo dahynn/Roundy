@@ -22,6 +22,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Value("${webrtc.ws.path:/ws/webrtc}")
     private String wsPath;
 
+    @Value("${webrtc.allowed-origins}")
+    private String[] allowedOrigins;
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         // TODO: [운영 환경] setAllowedOrigins("*") → 환경 변수로 도메인 제한
@@ -38,6 +41,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
         
         registry.addHandler(webRtcWebSocketHandler, wsPath)
                 .addInterceptors(jwtHandshakeInterceptor)
-                .setAllowedOrigins("*"); // 개발 환경용, 운영에서는 특정 도메인으로 제한 필요
+                .setAllowedOrigins(allowedOrigins);
     }
 }

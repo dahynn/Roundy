@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_ORIGIN } from '@/config/endpoints';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: `${API_ORIGIN}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -57,4 +58,3 @@ export const verifyFace = async (representativeImage: File, liveImage: Blob) => 
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
-

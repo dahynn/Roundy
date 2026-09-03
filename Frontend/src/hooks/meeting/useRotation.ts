@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getWebSocketUrl } from '@/config/endpoints';
 import type {
     RotationState,
     WsMessageType,
@@ -287,26 +288,14 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
     }, []);
 
     // WebSocket 연결 (가이드 준수)
-    // 1. URL: VITE_WS_URL + ?token={token}
+    // 1. URL: same-origin WebSocket (VITE_WS_URL 설정 시 해당 주소 사용) + ?token={token}
     // 2. JOIN_ROOM: 연결 후 전송
     useEffect(() => {
         // roomId는 연결 URL에 필요 없지만, JOIN_ROOM 메시지에는 필요함
         // 연결 로직은 token이 있을 때만 시도
         if (!token) return;
 
-        // 사용자 요청: ws://localhost:8080/ws/webrtc?token=
-        const baseUrl = import.meta.env.VITE_WS_URL;
-        if (!baseUrl || baseUrl === 'undefined') {
-          console.error('baseUrl : ' + baseUrl);
-          console.error('baseUrl');
-          console.error(baseUrl);
-          console.error('VITE_WS_URL : ' + import.meta.env.VITE_WS_URL);
-          console.error('VITE_WS_URL');
-          console.error(import.meta.env.VITE_WS_URL);
-          console.error('[WS] VITE_WS_URL 환경변수가 설정되지 않았습니다.');
-          console.error('[WS] VITE_WS_URL 환경변수가 설정되지 않았습니다.' + baseUrl);
-          return;
-        }
+        const baseUrl = getWebSocketUrl();
 
         const WS_URL = `${baseUrl}?token=${token}`;
         console.log(`[WS] Connecting to ${WS_URL}`);
