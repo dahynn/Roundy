@@ -19,6 +19,12 @@ public class OpenViduProperties {
      * 예: https://openvidu.example.com
      */
     private String url;
+
+    /**
+     * 브라우저가 접속할 수 있는 공개 URL.
+     * 미설정 시 단일 호스트 환경을 위해 url을 그대로 사용한다.
+     */
+    private String publicUrl;
     
     /**
      * OpenVidu 서버 시크릿 키
