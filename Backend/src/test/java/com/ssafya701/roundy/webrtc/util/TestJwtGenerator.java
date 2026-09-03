@@ -13,7 +13,8 @@ import java.util.Date;
  */
 public class TestJwtGenerator {
 
-    private static final String DEFAULT_SECRET = "test-secret-key-for-webrtc-development-minimum-32-bytes";
+    private static final String DEFAULT_SECRET =
+            "dGVzdC1zZWNyZXQta2V5LWZvci13ZWJydGMtZGV2ZWxvcG1lbnQtbWluaW11bS0zMi1ieXRlcw==";
     private final SecretKey secretKey;
 
     public TestJwtGenerator() {
@@ -21,7 +22,7 @@ public class TestJwtGenerator {
     }
 
     public TestJwtGenerator(String secret) {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        byte[] keyBytes = Decoders.BASE64URL.decode(secret);
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
