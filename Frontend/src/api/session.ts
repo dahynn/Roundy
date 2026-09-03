@@ -31,7 +31,8 @@ export const getSessionStatus = (): Promise<SessionStatusResponse> =>
  * 세션 입장 요청 (매칭 폴링)
  * POST /api/session/enter
  * 
- * @param requestId - 검증 완료 시 받은 requestId (선택)
+ * @param requestId - 첫 대기열 입장에 필요한 얼굴 검증 requestId.
+ * 이미 대기열에 들어간 사용자의 폴링 요청에서는 서버가 기존 상태를 확인한다.
  */
 export const enterSession = (requestId?: string): Promise<SessionEnterResponse> =>
     client.post('/session/enter', { requestId });

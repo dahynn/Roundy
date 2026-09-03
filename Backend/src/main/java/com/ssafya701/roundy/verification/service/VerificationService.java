@@ -43,13 +43,11 @@ public class VerificationService {
 
     /**
      * 검증 시작 (다이어그램 ⑥번)
-     * Redis에 PENDING 상태 저장 + Rate Limiting 체크
+     * Redis에 PENDING 상태 저장
+     * Rate Limiting은 요청 진입점에서 한 번만 확인한다.
      */
     public void startVerification(Long userId, String requestId) {
-        // 1. Rate Limiting 체크
-        checkRateLimit(userId);
-
-        // 2. Redis에 PENDING 상태 저장 (TTL 30초)
+        // Redis에 PENDING 상태 저장
         String key = VERIFICATION_KEY_PREFIX + requestId;
         redisTemplate.opsForValue().set(key, STATUS_PENDING, ttlSeconds, TimeUnit.SECONDS);
 
@@ -102,24 +100,19 @@ public class VerificationService {
     /**
      * 검증 상태 업데이트 (다이어그램 ⑩번)
      * AI 검증 완료 후 VERIFIED/FAILED 상태로 변경
-     * SETNX 사용으로 중복 callback 방지 (첫 번째 결과만 유효)
+     * PENDING 상태인 요청만 완료 상태로 전환한다.
      */
     public void updateVerificationStatus(String requestId, boolean success) {
         String key = VERIFICATION_KEY_PREFIX + requestId;
         String newStatus = success ? STATUS_VERIFIED : STATUS_FAILED;
 
-        // SETNX: 키가 없을 때만 설정 (중복 callback 방지)
-        Boolean wasSet = redisTemplate.opsForValue().setIfAbsent(
-                key,
-                newStatus,
-                ttlSeconds,
-                TimeUnit.SECONDS
-        );
-
-        if (Boolean.FALSE.equals(wasSet)) {
-            log.warn("Duplicate callback ignored: requestId={}", requestId);
+        String currentStatus = redisTemplate.opsForValue().get(key);
+        if (!STATUS_PENDING.equals(currentStatus)) {
+            log.warn("Verification result ignored: requestId={}, currentStatus={}", requestId, currentStatus);
             return;
         }
+
+        redisTemplate.opsForValue().set(key, newStatus, ttlSeconds, TimeUnit.SECONDS);
 
         log.info("Verification status updated: requestId={}, status={}", requestId, newStatus);
     }
@@ -159,6 +152,11 @@ public class VerificationService {
      * Redis GETDEL 사용
      */
     public boolean verifyAndDelete(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            log.warn("Verification requestId is missing");
+            return false;
+        }
+
         String key = VERIFICATION_KEY_PREFIX + requestId;
 
         // GETDEL: GET과 DELETE를 한 번에 수행

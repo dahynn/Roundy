@@ -69,6 +69,8 @@ public class VerificationController {
                                 log.warn("Face detection failed: userId={}, error={}", userId,
                                                 result.getErrorMessage());
 
+                                verificationService.updateVerificationStatus(requestId, false);
+
                                 return ResponseEntity.ok()
                                                 .body(CommonResponse.ofFailure(result.getErrorMessage()));
                         }
@@ -89,6 +91,8 @@ public class VerificationController {
                         // AI 서버 주소 미확정 시
                         log.warn("AI server not configured: {}", e.getMessage());
 
+                        verificationService.updateVerificationStatus(requestId, false);
+
                         // 임시 응답 (AI 주소 확정 전까지)
                         com.ssafya701.roundy.verification.dto.response.VerificationResponse tempResponse = new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
                                         requestId, false);
@@ -96,6 +100,8 @@ public class VerificationController {
 
                 } catch (Exception e) {
                         log.error("Verification failed: userId={}, requestId={}", userId, requestId, e);
+
+                        verificationService.updateVerificationStatus(requestId, false);
 
                         // 에러 응답
                         com.ssafya701.roundy.verification.dto.response.VerificationResponse errorResponse = new com.ssafya701.roundy.verification.dto.response.VerificationResponse(

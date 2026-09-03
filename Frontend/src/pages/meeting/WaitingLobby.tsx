@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Bell, LogOut, Sparkles, Loader2 } from 'lucide-react';
 import { enterSession } from '@/api/session';
 import type { SessionEnterResponse } from '@/api/session';
@@ -18,6 +18,8 @@ const LOADING_MESSAGES = [
 
 export default function WaitingLobby() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestId = (location.state as { requestId?: string } | null)?.requestId;
 
   // --- [상태 관리] ---
   const [currentParticipants, setCurrentParticipants] = useState(0);
@@ -96,7 +98,14 @@ export default function WaitingLobby() {
     const pollMatch = async () => {
       if (!isMounted) return;
       try {
-        const response = await enterSession() as unknown as SessionEnterResponse;
+        const response = await enterSession(requestId) as unknown as SessionEnterResponse;
+
+        if (!response.success) {
+          setIsMatching(false);
+          alert(response.message || '본인 인증을 다시 진행해주세요.');
+          navigate('/verify', { replace: true });
+          return;
+        }
 
         if (response.roomId) {
           const token = localStorage.getItem('accessToken');
@@ -128,7 +137,7 @@ export default function WaitingLobby() {
       isMounted = false;
       if (timer) clearTimeout(timer);
     };
-  }, [isMatching, navigate]);
+  }, [isMatching, navigate, requestId]);
 
 
   return (
