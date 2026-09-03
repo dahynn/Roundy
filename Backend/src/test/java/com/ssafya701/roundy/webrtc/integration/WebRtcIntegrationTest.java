@@ -136,7 +136,7 @@ class WebRtcIntegrationTest {
         RoomStateMessage roomState = findMessageByType(client3, RoomStateMessage.class);
         assertThat(roomState).isNotNull();
         assertThat(roomState.getRoomId()).isEqualTo(roomId);
-        assertThat(roomState.getTotalCount()).isEqualTo(3);
+        assertThat(roomState.getParticipantCount()).isEqualTo(3);
 
         // 방 상태 확인
         assertThat(roomRegistry.hasRoom(roomId)).isTrue();

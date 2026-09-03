@@ -2,6 +2,7 @@ package com.ssafya701.roundy.webrtc.room;
 
 import com.ssafya701.roundy.webrtc.room.enums.RotationMode;
 import com.ssafya701.roundy.webrtc.room.enums.Stage;
+import com.ssafya701.roundy.webrtc.room.enums.Gender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,9 +55,9 @@ class RoomStateTest {
     @DisplayName("쌍방 매칭이 올바르게 계산된다")
     void testCalculateMatches() {
         // Given: 참가자 추가
-        roomState.addParticipant(1L, "Alice", mockSession1);
-        roomState.addParticipant(2L, "Bob", mockSession2);
-        roomState.addParticipant(3L, "Charlie", mockSession3);
+        roomState.addParticipant(1L, "Alice", Gender.FEMALE, mockSession1);
+        roomState.addParticipant(2L, "Bob", Gender.MALE, mockSession2);
+        roomState.addParticipant(3L, "Charlie", Gender.MALE, mockSession3);
         
         // When: 쌍방 투표
         roomState.submitVote(1L, 2L, true); // Alice → Bob
@@ -76,8 +77,8 @@ class RoomStateTest {
     @DisplayName("매칭 실패 시 isMatched가 false이다")
     void testCalculateMatchesWithNoMatch() {
         // Given: 참가자 추가
-        roomState.addParticipant(1L, "Alice", mockSession1);
-        roomState.addParticipant(2L, "Bob", mockSession2);
+        roomState.addParticipant(1L, "Alice", Gender.FEMALE, mockSession1);
+        roomState.addParticipant(2L, "Bob", Gender.MALE, mockSession2);
         
         // When: 일방적 투표만 있음
         roomState.submitVote(1L, 2L, true); // Alice → Bob
@@ -93,9 +94,9 @@ class RoomStateTest {
     @DisplayName("발언자 큐가 랜덤하게 초기화된다")
     void testInitializeSpeakerQueue() {
         // Given
-        roomState.addParticipant(1L, "Alice", mockSession1);
-        roomState.addParticipant(2L, "Bob", mockSession2);
-        roomState.addParticipant(3L, "Charlie", mockSession3);
+        roomState.addParticipant(1L, "Alice", Gender.FEMALE, mockSession1);
+        roomState.addParticipant(2L, "Bob", Gender.MALE, mockSession2);
+        roomState.addParticipant(3L, "Charlie", Gender.MALE, mockSession3);
         
         // When
         roomState.initializeSpeakerQueue();
@@ -134,8 +135,8 @@ class RoomStateTest {
     @DisplayName("페어링 정보가 올바르게 저장되고 조회된다")
     void testCurrentPairing() {
         // Given
-        roomState.addParticipant(1L, "Alice", mockSession1);
-        roomState.addParticipant(2L, "Bob", mockSession2);
+        roomState.addParticipant(1L, "Alice", Gender.FEMALE, mockSession1);
+        roomState.addParticipant(2L, "Bob", Gender.MALE, mockSession2);
         
         java.util.Map<Long, Long> pairMap = new java.util.HashMap<>();
         pairMap.put(1L, 2L);
