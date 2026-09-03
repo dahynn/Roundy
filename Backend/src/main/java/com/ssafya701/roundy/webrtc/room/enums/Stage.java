@@ -100,8 +100,12 @@ public enum Stage {
      * @return 이전 스테이지, 첫 단계인 경우 null
      */
     public Stage getPreviousStage() {
+        if (this == WAITING || this == BREAK) {
+            return null;
+        }
+
         for (Stage stage : values()) {
-            if (stage.order == this.order - 1) {
+            if (stage != BREAK && stage.order == this.order - 1) {
                 return stage;
             }
         }
