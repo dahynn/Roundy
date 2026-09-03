@@ -28,13 +28,15 @@ public class OpenViduConfig {
         String auth = "OPENVIDUAPP:" + properties.getSecret();
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
 
-        // SSL 검증 무시 설정 (OpenVidu Dev 이미지는 Self-signed 인증서 사용)
-        SslContext sslContext = SslContextBuilder.forClient()
-            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-            .build();
+        HttpClient httpClient = HttpClient.create();
 
-        HttpClient httpClient = HttpClient.create()
-            .secure(t -> t.sslContext(sslContext));
+        // 인증서 검증 우회는 로컬 self-signed OpenVidu에서만 명시적으로 사용한다.
+        if (properties.getUrl().startsWith("https://") && properties.isInsecureTls()) {
+            SslContext sslContext = SslContextBuilder.forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .build();
+            httpClient = httpClient.secure(t -> t.sslContext(sslContext));
+        }
 
         return WebClient.builder()
             .baseUrl(properties.getUrl())
