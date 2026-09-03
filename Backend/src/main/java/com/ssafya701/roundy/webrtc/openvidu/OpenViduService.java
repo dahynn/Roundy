@@ -138,7 +138,10 @@ public class OpenViduService {
      * @return OpenVidu 서버 URL
      */
     public String getOpenViduUrl() {
-        return openViduProperties.getUrl();
+        String publicUrl = openViduProperties.getPublicUrl();
+        return publicUrl == null || publicUrl.isBlank()
+                ? openViduProperties.getUrl()
+                : publicUrl;
     }
 
     /**

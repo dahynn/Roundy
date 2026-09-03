@@ -61,6 +61,12 @@ public class SecurityConfig {
                                                         "/api/auth/re-issue",
                                                         "/api/preferences/**").permitAll();
 
+                                        // 컨테이너와 오케스트레이터의 liveness/readiness 확인용이다.
+                                        // 그 외 Actuator 엔드포인트는 기존 인증 정책을 유지한다.
+                                        auth.requestMatchers(
+                                                        "/actuator/health",
+                                                        "/actuator/health/**").permitAll();
+
                                         if (isDevelopment) {
                                                 auth.requestMatchers(
                                                                 "/api/webrtc/test/**",

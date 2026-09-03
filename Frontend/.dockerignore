@@ -1,0 +1,9 @@
+.git
+.idea
+dist
+node_modules
+*.iml
+
+.env
+.env.*
+!.env.example
