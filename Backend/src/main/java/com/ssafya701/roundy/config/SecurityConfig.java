@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,9 +30,7 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 // 개발 환경인지 확인 (local, dev, default 프로필일 경우 true)
-                boolean isDevelopment = Arrays.stream(environment.getActiveProfiles())
-                                .anyMatch(profile -> profile.equals("local") || profile.equals("dev")
-                                                || profile.equals("default"));
+                boolean isDevelopment = environment.acceptsProfiles(Profiles.of("local", "dev"));
 
                 log.info("🔒 Security 설정 - 개발 모드: {}, 활성 프로필: {}",
                                 isDevelopment, Arrays.toString(environment.getActiveProfiles()));
@@ -62,24 +61,29 @@ public class SecurityConfig {
                                                         "/api/auth/re-issue",
                                                         "/api/preferences/**").permitAll();
 
-                                        auth.requestMatchers(
-                                                        "/api/webrtc/test/**",
-                                                        "/test/**",
-                                                        "/api/test/**",
-                                                        "/ws/**",
-                                                        "/api/ws/**").permitAll();
-
-                                        // 개발 환경 로그
                                         if (isDevelopment) {
+                                                auth.requestMatchers(
+                                                                "/api/webrtc/test/**",
+                                                                "/test/**",
+                                                                "/api/test/**").permitAll();
+                                                auth.requestMatchers(
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html").permitAll();
                                                 log.info("✅ 개발 모드: 추가적인 테스트 페이지 접근 허용");
                                         } else {
+                                                auth.requestMatchers(
+                                                                "/api/webrtc/test/**",
+                                                                "/test/**",
+                                                                "/api/test/**",
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html").denyAll();
                                                 log.info("🔒 프로덕션 모드: 테스트 페이지 접근 차단");
                                         }
 
-                                        auth.requestMatchers(
-                                                        "/v3/api-docs/**",
-                                                        "/swagger-ui/**",
-                                                        "/swagger-ui.html").permitAll();
+                                        // WebSocket handshake 인증은 JwtHandshakeInterceptor가 담당한다.
+                                        auth.requestMatchers("/ws/**", "/api/ws/**").permitAll();
 
                                         auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                         .anyRequest().authenticated();

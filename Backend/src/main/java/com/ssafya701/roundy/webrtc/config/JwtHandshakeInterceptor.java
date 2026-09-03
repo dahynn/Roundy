@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -29,6 +30,9 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     private final UserRepository userRepository;
     private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
+    @Value("${webrtc.test-bypass-enabled:false}")
+    private boolean testBypassEnabled;
+
     @Override
     public boolean beforeHandshake(
             ServerHttpRequest request,
@@ -46,7 +50,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
         // 1. 테스트 파라미터 확인 (userId가 있으면 테스트 모드 진입)
         String userIdParam = extractQueryParam(query, "userId");
-        if (userIdParam != null) {
+        if (testBypassEnabled && userIdParam != null) {
             String usernameParam = extractQueryParam(query, "username");
             String genderParam = extractQueryParam(query, "gender");
             String modeParam = extractQueryParam(query, "mode");

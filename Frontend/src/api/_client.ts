@@ -1,14 +1,11 @@
 import axios from 'axios';
+import { API_ORIGIN } from '@/config/endpoints';
 
 /**
  * 1. Axios 인스턴스 생성
  */
-const apiBaseUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== 'undefined'
-    ? import.meta.env.VITE_API_URL
-    : '';
-
 const client = axios.create({
-    baseURL: `${apiBaseUrl}/api`,
+    baseURL: `${API_ORIGIN}/api`,
     headers: { 'Content-Type': 'application/json' },
     withCredentials: true, // 쿠키 전송 활성화
 });
@@ -48,7 +45,7 @@ client.interceptors.response.use(
                 try {
                     // 토큰 재발급 요청 (쿠키에 담겨서 전송됨)
                     const { data } = await axios.post(
-                        `${apiBaseUrl}/api/auth/re-issue`,
+                        `${API_ORIGIN}/api/auth/re-issue`,
                         {},
                         { withCredentials: true }
                     );
