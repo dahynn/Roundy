@@ -1,0 +1,54 @@
+name: 빌드 및 테스트
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: roundy-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-build:
+    name: 프런트엔드 빌드
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - name: 소스 가져오기
+        uses: actions/checkout@v4
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+      - name: 의존성 설치
+        run: npm ci --no-audit --no-fund
+      - name: 프로덕션 빌드
+        run: npm run build
+
+  backend-test:
+    name: 백엔드 테스트
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - name: 소스 가져오기
+        uses: actions/checkout@v4
+      - name: Java 설정
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - name: 전체 테스트
+        run: ./gradlew --no-daemon test
