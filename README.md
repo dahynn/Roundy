@@ -39,6 +39,10 @@ Roudy is a comprehensive web application featuring a Spring Boot backend and a R
 
 ## Getting Started
 
+### Local integration stack
+
+Docker Compose로 MySQL, Redis, MinIO, OpenVidu 개발 서버, AI, 백엔드, 프런트엔드를 함께 실행할 수 있습니다. 실행 전 확인과 장애 복구 절차는 [배포·롤백 실행 문서](docs/deployment-runbook.md)를 따릅니다.
+
 ### Prerequisites
 - **Java**: JDK 21
 - **Node.js**: LTS version
