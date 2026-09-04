@@ -1,12 +1,10 @@
-# AI Server Dependencies
 deepface==0.0.98
 Flask==3.1.2
 flask_cors==6.0.2
-mediapipe==0.10.32
-numpy==2.4.1
-opencv_contrib_python==4.13.0.90
-opencv_python==4.13.0.90
-# GPU Support (Replaces standard tensorflow)
-tensorflow[and-cuda]==2.20.0
-tf-keras==2.20.1
+gunicorn==23.0.0
+mediapipe==0.10.18
+numpy==1.26.4
+opencv-python==4.10.0.84
+tensorflow==2.16.2
+tf-keras==2.16.0
 requests==2.32.5
