@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketExtension;
@@ -171,9 +172,8 @@ class MockWebSocketSession implements WebSocketSession {
 @Slf4j
 @RestController
 @RequestMapping("/api/test/rotation")
+@Profile({"local", "dev"})
 @RequiredArgsConstructor
-// TODO: [배포 전 필수] 아래 주석을 해제하여 프로덕션 환경에서 비활성화
-// @Profile("!prod")  // 프로덕션에서는 이 컨트롤러가 로드되지 않음
 public class RotationTestController {
     
     private final RotationScheduler rotationScheduler;

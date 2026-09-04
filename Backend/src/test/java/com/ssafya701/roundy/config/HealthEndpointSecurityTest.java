@@ -27,4 +27,13 @@ class HealthEndpointSecurityTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
     }
+
+    @Test
+    void testOnlyEndpointsAreBlockedOutsideLocalAndDevProfiles() throws Exception {
+        mockMvc.perform(get("/api/test/ws-message/types"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/webrtc/test/guide"))
+                .andExpect(status().isForbidden());
+    }
 }

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +27,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/webrtc/test")
-@org.springframework.context.annotation.Profile({"local", "dev", "default"})  // 운영 환경에서 비활성화
+@Profile({"local", "dev"})
 @CrossOrigin(origins = "*", allowedHeaders = "*")  // 테스트 컨트롤러는 모든 origin 허용
 @RequiredArgsConstructor
 public class WebSocketTestController {

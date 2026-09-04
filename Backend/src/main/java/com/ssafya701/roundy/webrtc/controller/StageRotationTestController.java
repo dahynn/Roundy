@@ -7,6 +7,7 @@ import com.ssafya701.roundy.webrtc.rotation.StageExecutor;
 import com.ssafya701.roundy.webrtc.rotation.StageScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/test/stage-rotation")
+@Profile({"local", "dev"})
 @RequiredArgsConstructor
 public class StageRotationTestController {
     
