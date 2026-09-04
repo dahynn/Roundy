@@ -74,6 +74,24 @@ services:
       retries: 20
       start_period: 30s
 
+  ai:
+    build:
+      context: ./AI
+    restart: unless-stopped
+    init: true
+    environment:
+      TF_CPP_MIN_LOG_LEVEL: "2"
+    ports:
+      - "127.0.0.1:${AI_PORT:-18000}:8000"
+    volumes:
+      - ai_model_cache:/home/roundy/.deepface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
   backend:
     build:
       context: ./Backend
@@ -103,7 +121,7 @@ services:
       MINIO_EXTERNAL_URL: http://localhost:${MINIO_API_PORT:-9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      AI_SERVER_URL: http://host.docker.internal:8000
+      AI_SERVER_URL: http://ai:8000
       VERIFICATION_AI_SERVER_IPS: 127.0.0.1
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
     extra_hosts:
@@ -118,6 +136,8 @@ services:
       minio:
         condition: service_healthy
       openvidu:
+        condition: service_healthy
+      ai:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/readiness"]
@@ -146,3 +166,4 @@ volumes:
   mysql_data:
   redis_data:
   minio_data:
+  ai_model_cache:
