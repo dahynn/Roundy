@@ -4,6 +4,7 @@ import com.ssafya701.roundy.global.common.CommonResponse;
 import com.ssafya701.roundy.webrtc.openvidu.OpenViduService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/test/openvidu")
+@Profile({"local", "dev"})
 @RequiredArgsConstructor
 public class OpenViduTestController {
 

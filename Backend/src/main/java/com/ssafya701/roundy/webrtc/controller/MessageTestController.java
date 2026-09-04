@@ -9,6 +9,7 @@ import com.ssafya701.roundy.webrtc.message.inbound.LeaveRoomMessage;
 import com.ssafya701.roundy.webrtc.message.outbound.*;
 import com.ssafya701.roundy.webrtc.room.enums.Stage;
 import com.ssafya701.roundy.webrtc.serializer.WsMessageSerializer;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/test/ws-message")
+@Profile({"local", "dev"})
 public class MessageTestController {
 
     private final WsMessageSerializer serializer;
