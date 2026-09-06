@@ -1,0 +1,22 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$ROUNDY_DOMAIN} {
+	encode zstd gzip
+
+	@minio path /minio-api/*
+	handle @minio {
+		uri strip_prefix /minio-api
+		reverse_proxy minio:9000
+	}
+
+	@backendHealth path /actuator/health /actuator/health/*
+	handle @backendHealth {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
