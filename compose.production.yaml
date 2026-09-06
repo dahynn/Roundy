@@ -1,0 +1,157 @@
+# Public MVP stack only. Do not use the local compose.yaml file for an Internet-facing deployment.
+# A production OpenVidu media node must already be running at OPENVIDU_URL.
+name: roundy-production
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      ROUNDY_DOMAIN: ${ROUNDY_DOMAIN:?ROUNDY_DOMAIN is required}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.4.11
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  redis:
+    image: redis:7.4.11-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY is required}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ai:
+    build:
+      context: ./AI
+    restart: unless-stopped
+    init: true
+    environment:
+      TF_CPP_MIN_LOG_LEVEL: "2"
+    volumes:
+      - ai_model_cache:/home/roundy/.deepface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  backend:
+    build:
+      context: ./Backend
+    restart: unless-stopped
+    init: true
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:?JPA_DDL_AUTO is required}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_FRONTEND_URL: https://${ROUNDY_DOMAIN}
+      CORS_ALLOWED_ORIGINS: https://${ROUNDY_DOMAIN}
+      WEBSOCKET_ALLOWED_ORIGINS: https://${ROUNDY_DOMAIN}
+      WEBRTC_TEST_BYPASS_ENABLED: "false"
+      SERVER_DOMAIN: https://${ROUNDY_DOMAIN}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:?KAKAO_CLIENT_ID is required}
+      KAKAO_SECRET_KEY: ${KAKAO_SECRET_KEY:?KAKAO_SECRET_KEY is required}
+      KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY:?KAKAO_ADMIN_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      OPENVIDU_URL: ${OPENVIDU_URL:?OPENVIDU_URL is required}
+      OPENVIDU_PUBLIC_URL: ${OPENVIDU_PUBLIC_URL:?OPENVIDU_PUBLIC_URL is required}
+      OPENVIDU_SECRET: ${OPENVIDU_SECRET:?OPENVIDU_SECRET is required}
+      OPENVIDU_INSECURE_TLS: "false"
+      MINIO_URL: http://minio:9000
+      MINIO_EXTERNAL_URL: https://${ROUNDY_DOMAIN}/minio-api
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY is required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY is required}
+      AI_SERVER_URL: http://ai:8000
+      VERIFICATION_AI_SERVER_IPS: ${VERIFICATION_AI_SERVER_IPS:?VERIFICATION_AI_SERVER_IPS is required}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./Frontend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mysql_data:
+  redis_data:
+  minio_data:
+  ai_model_cache:
