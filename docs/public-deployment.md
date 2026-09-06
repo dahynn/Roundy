@@ -27,9 +27,12 @@
 cp .env.production.example .env.production
 # .env.production의 placeholder를 실제 값으로 모두 교체
 docker compose --env-file .env.production -f compose.production.yaml config --quiet
+./scripts/check-production-ready.sh --env-file .env.production
 ```
 
 첫 기동에서는 기존 JPA 방식 때문에 `JPA_DDL_AUTO=update`가 필요할 수 있습니다. 스키마와 백업을 확인한 뒤에는 `validate`로 바꾸고 재기동합니다.
+
+사전 점검 스크립트는 컨테이너를 실행하지 않으며, 비밀값을 출력하지 않습니다. placeholder, 도메인 형식, HTTPS OpenVidu 주소와 Compose 문법만 확인합니다.
 
 ## 기동과 점검
 
