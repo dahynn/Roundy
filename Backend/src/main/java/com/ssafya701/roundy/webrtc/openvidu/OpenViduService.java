@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,20 +90,7 @@ public class OpenViduService {
             OpenViduTokenResponse response = openViduClient.createToken(sessionId);
             String token = response.getToken();
 
-            // [FIX] Mixed Content 방지 & 경로 보정
-            // 1. ws:// -> wss://
-            if (token != null && token.contains("ws://")) {
-                token = token.replace("ws://", "wss://");
-                log.info("OpenVidu 토큰 URL 변환: ws:// → wss://");
-            }
-
-            // 2. 경로 누락 보정: 토큰에 /openvidu 경로가 없으면 추가 (Ingress 라우팅용)
-            // 예: wss://i14a701.p.ssafy.io?sessionId=... ->
-            // wss://i14a701.p.ssafy.io/openvidu?sessionId=...
-            if (token != null && !token.contains("/openvidu")) {
-                token = token.replace("wss://i14a701.p.ssafy.io", "wss://i14a701.p.ssafy.io/openvidu");
-                log.info("OpenVidu 토큰 경로 보정: /openvidu 추가");
-            }
+            token = toBrowserTokenUrl(token);
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                     roomId, userId, response.getId());
@@ -142,6 +130,72 @@ public class OpenViduService {
         return publicUrl == null || publicUrl.isBlank()
                 ? openViduProperties.getUrl()
                 : publicUrl;
+    }
+
+    /**
+     * OpenVidu가 내부 호스트명으로 발급한 토큰을 브라우저가 접근 가능한 공개 주소로 바꾼다.
+     * 공개 URL에 경로가 있으면(예: /openvidu) 해당 경로를 보존한다.
+     */
+    String toBrowserTokenUrl(String token) {
+        if (token == null || token.isBlank()) {
+            return token;
+        }
+
+        try {
+            URI tokenUri = URI.create(token);
+            URI publicUri = URI.create(getOpenViduUrl());
+            if (!tokenUri.isAbsolute() || tokenUri.getRawAuthority() == null
+                    || publicUri.getScheme() == null || publicUri.getRawAuthority() == null) {
+                log.warn("OpenVidu 공개 URL 형식이 올바르지 않아 발급 토큰을 그대로 사용합니다");
+                return token;
+            }
+
+            String publicPath = normalizePath(publicUri.getRawPath());
+            String tokenPath = normalizePath(tokenUri.getRawPath());
+            String path = mergePaths(publicPath, tokenPath);
+            String scheme = toWebSocketScheme(publicUri.getScheme());
+
+            StringBuilder browserToken = new StringBuilder(scheme)
+                    .append("://")
+                    .append(publicUri.getRawAuthority())
+                    .append(path);
+            if (tokenUri.getRawQuery() != null) {
+                browserToken.append('?').append(tokenUri.getRawQuery());
+            }
+            if (tokenUri.getRawFragment() != null) {
+                browserToken.append('#').append(tokenUri.getRawFragment());
+            }
+
+            return browserToken.toString();
+        } catch (IllegalArgumentException exception) {
+            log.warn("OpenVidu 토큰 URL 형식이 올바르지 않아 발급 토큰을 그대로 사용합니다", exception);
+            return token;
+        }
+    }
+
+    private String normalizePath(String path) {
+        if (path == null || path.isBlank() || "/".equals(path)) {
+            return "";
+        }
+        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+    }
+
+    private String mergePaths(String publicPath, String tokenPath) {
+        if (publicPath.isEmpty() || tokenPath.startsWith(publicPath)) {
+            return tokenPath;
+        }
+        if (tokenPath.isEmpty()) {
+            return publicPath;
+        }
+        return publicPath + (tokenPath.startsWith("/") ? tokenPath : "/" + tokenPath);
+    }
+
+    private String toWebSocketScheme(String scheme) {
+        return switch (scheme) {
+            case "https", "wss" -> "wss";
+            case "http", "ws" -> "ws";
+            default -> scheme;
+        };
     }
 
     /**
