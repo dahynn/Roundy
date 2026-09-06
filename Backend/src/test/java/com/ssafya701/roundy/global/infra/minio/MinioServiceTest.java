@@ -15,6 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.InputStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -88,5 +89,19 @@ class MinioServiceTest {
 
         // when & then
         assertThrows(RuntimeException.class, () -> minioService.uploadImage(1L, file, "profile"));
+    }
+
+    @Test
+    @DisplayName("외부 URL이 없을 때 이전 배포 도메인을 이미지 주소에 사용하지 않는다")
+    void getImageUrl_UsesConfiguredInternalUrlWhenExternalUrlIsMissing() throws Exception {
+        ReflectionTestUtils.setField(minioService, "externalUrl", "");
+        when(externalMinioClient.getPresignedObjectUrl(any()))
+                .thenReturn("http://minio-svc:9000/roundy/user/123/profile.jpg?X-Amz-Signature=test");
+
+        String imageUrl = minioService.getImageUrl(123L, "profile");
+
+        assertThat(imageUrl)
+                .startsWith("http://localhost:9000/")
+                .doesNotContain("i14a701.p.ssafy.io");
     }
 }
