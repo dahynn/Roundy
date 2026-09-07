@@ -247,7 +247,7 @@ public class StageScheduler {
         // 스케줄러 정리
         stopStageRotation(roomId);
 
-        // (필요 시) 방 정리 로직 수행
+        stageExecutor.completeRoom(room);
     }
 
     /**

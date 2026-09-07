@@ -584,7 +584,11 @@ export default function MeetingPage() {
             <Settings size={20} className="text-white/60" />
           </button>
           <button
-            onClick={() => leaveRoom()}
+            onClick={() => {
+              leaveRoom();
+              leaveSession();
+              navigate('/home', { replace: true });
+            }}
             className="flex items-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-2xl transition-all group">
             <LogOut size={18} className="text-red-500 group-hover:-translate-x-1 transition-transform" />
             <span className="text-xs font-bold text-red-500 uppercase">Exit</span>

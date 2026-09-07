@@ -127,6 +127,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         // 방 조회 및 ROTATION 단계
         if (roomId != null) {
             roomRegistry.getRoom(roomId).ifPresent(room -> {
+                // 교체된 이전 소켓의 종료 이벤트가 새 연결을 제거하지 않도록 한다.
+                if (room.findParticipantBySessionId(session.getId()).isEmpty()) return;
                 // ROTATION 단계에서는 유예 기간 적용
                 if (room.getCurrentStage() != null && room.getCurrentStage().isRotationStage()) {
                     log.info("🔌 연결 해제 감지 (ROTATION 단계): userId={}, roomId={}", userId, roomId);
@@ -142,6 +144,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                     // ROTATION 단계가 아니면 즉시 제거
                     log.info("🔌 연결 해제 (즉시 제거): userId={}, roomId={}", userId, roomId);
                     roomRegistry.removeParticipantBySessionId(session.getId());
+                    cleanupEmptyRoom(roomId);
                 }
             });
         } else {
@@ -319,7 +322,13 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
      */
     private void handleLeaveRoom(WebSocketSession session, LeaveRoomMessage message) throws IOException {
         Long userId = (Long) session.getAttributes().get("userId");
-        String roomId = message.getRoomId();
+        RoomState joinedRoom = roomRegistry.findRoomBySessionId(session.getId()).orElse(null);
+        if (joinedRoom == null) return;
+        String roomId = joinedRoom.getRoomId();
+        if (message.getRoomId() != null && !roomId.equals(message.getRoomId())) {
+            sendError(session, "INVALID_ROOM", "현재 참여 중인 방만 퇴장할 수 있습니다.");
+            return;
+        }
 
         try {
             // [DB 연동] 방 퇴장 이벤트 기록
@@ -331,6 +340,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             
             // 1. 참가자 제거
             roomRegistry.removeParticipant(roomId, userId);
+            cleanupEmptyRoom(roomId);
 
             // 2. 방 상태 확인
             roomRegistry.getRoom(roomId).ifPresentOrElse(
@@ -363,6 +373,15 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             log.error("방 퇴장 실패: roomId={}, userId={}", roomId, userId, e);
             sendError(session, "LEAVE_FAILED", "방 퇴장에 실패했습니다");
+        }
+    }
+
+    private void cleanupEmptyRoom(String roomId) {
+        if (!roomRegistry.hasRoom(roomId)) {
+            stageScheduler.stopStageRotation(roomId);
+            rotationScheduler.stopRotation(roomId);
+            sessionService.cleanupRoom(roomId);
+            openViduService.removeSession(roomId);
         }
     }
 
@@ -611,9 +630,12 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         log.info("⚠️ 유예 기간 만료 - 영구 연결 해제 처리: userId={}, roomId={}", userId, roomId);
         
         // 여전히 유예 기간 내에 있는지 재확인 (이중 체크)
+        if (room.getParticipant(userId).map(ParticipantState::isSessionOpen).orElse(false)) return;
         if (!room.isInGracePeriod(userId, 30000)) {
             // 방에서 참가자 제거
-            ParticipantState removed = room.removeParticipant(userId);
+            ParticipantState removed = room.getParticipant(userId).orElse(null);
+            roomRegistry.removeParticipant(roomId, userId);
+            cleanupEmptyRoom(roomId);
             
             if (removed != null) {
                 // 파트너에게 PARTNER_LEFT 알림
