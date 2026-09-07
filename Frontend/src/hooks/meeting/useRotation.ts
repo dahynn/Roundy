@@ -33,6 +33,9 @@ interface LobbyCredentials {
 export const useRotationSystem = (roomId: string | null, token: string | null, userProfile: UserProfile | null) => {
     const socketRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<number | null>(null);
+    const deadlineRef = useRef<number | null>(null);
+    const stageSequenceRef = useRef(0);
+    const timerSequenceRef = useRef<number | null>(null);
 
     const [state, setState] = useState<RotationState & { lobbyCredentials?: LobbyCredentials }>({
         connected: false,
@@ -44,6 +47,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         remainingTime: 0,
         totalTime: 0, // [NEW]
         isBreak: false, // [NEW]
+        stageSequence: 0,
         participants: [],
         currentSpeaker: null,
         redirectInfo: null,
@@ -54,7 +58,6 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
     const sendMessage = useCallback((type: WsMessageType, payload: any = {}) => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
-            console.log(`[WS-SEND] ${type}:`, payload);
             const message = { type, ...payload };
             socketRef.current.send(JSON.stringify(message));
         }
@@ -63,7 +66,6 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
     const handleMessage = useCallback((event: MessageEvent) => {
         try {
             const data = JSON.parse(event.data);
-            console.log(`[WS-RECV] ${data.type}:`, data);
 
             switch (data.type) {
                 case 'JOIN_OK': {
@@ -100,6 +102,10 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
                 case 'STAGE_CHANGE': {
                     const payload = data as StageChangePayload;
+                    if (payload.stageSequence <= stageSequenceRef.current) break;
+                    stageSequenceRef.current = payload.stageSequence;
+                    deadlineRef.current = null;
+                    timerSequenceRef.current = null;
 
                     // 스테이지가 변경될 때, 로테이션(1:1) 단계가 아니면 다시 로비(단체방) 세션으로 복귀해야 함
                     // 예: 로테이션 끝 -> 중간 투표(VOTE_FIRST) -> 다시 로비 세션 필요
@@ -130,15 +136,25 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                         return {
                             ...prev,
                             currentStage: payload.stage,
+                            stageSequence: payload.stageSequence,
                             remainingTime: payload.durationSeconds,
                             totalTime: payload.durationSeconds, // [NEW] 전체 시간 설정
                             isBreak: false, // [NEW] 스테이지 시작 시 휴식 해제
                             currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
                             currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
+                            firstVoteResults: null,
                             lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`
                             // firstVoteResults: null // [FIX] React Batching 문제로 삭제 (Meeting.tsx에서 자동 숨김 처리)
                         };
                     });
+                    break;
+                }
+
+                case 'START_TIMER': {
+                    if (data.stageSequence !== stageSequenceRef.current || timerSequenceRef.current === data.stageSequence) break;
+                    timerSequenceRef.current = data.stageSequence;
+                    deadlineRef.current = Date.now() + data.totalSeconds * 1000;
+                    setState(prev => ({ ...prev, remainingTime: data.totalSeconds, totalTime: data.totalSeconds }));
                     break;
                 }
 
@@ -212,11 +228,17 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     break;
 
                 case 'BREAK': {
-                    console.log('🛑 [WS] BREAK Received:', data);
-                    const payload = data as any; // BreakPayload
+                    const payload = data as import('../../types/meeting/rotaion').BreakPayload;
+                    if (payload.stageSequence <= stageSequenceRef.current) break;
+                    stageSequenceRef.current = payload.stageSequence;
+                    deadlineRef.current = null;
+                    timerSequenceRef.current = null;
                     setState(prev => ({
                         ...prev,
+                        currentStage: 'BREAK',
+                        stageSequence: payload.stageSequence,
                         remainingTime: payload.durationSeconds,
+                        totalTime: payload.durationSeconds,
                         // totalTime: payload.durationSeconds, // 휴식 시간도 게이지로 보여줄지 여부 -> 일단은 유지 or 업데이트? 보통 휴식은 짧아서 업데이트 권장
                         isBreak: true, // [NEW] 휴식 상태 진입
                         lastMessage: '잠시 후 다음 단계로 이동합니다...'
@@ -293,14 +315,14 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
     useEffect(() => {
         // roomId는 연결 URL에 필요 없지만, JOIN_ROOM 메시지에는 필요함
         // 연결 로직은 token이 있을 때만 시도
-        if (!token) return;
+        if (!token || !roomId) return;
 
         const baseUrl = getWebSocketUrl();
 
-        const WS_URL = `${baseUrl}?token=${token}`;
-        console.log(`[WS] Connecting to ${WS_URL}`);
+        const url = new URL(baseUrl, window.location.href);
+        url.searchParams.set('token', token);
 
-        const socket = new WebSocket(WS_URL);
+        const socket = new WebSocket(url.toString());
         socketRef.current = socket;
 
         socket.onopen = () => {
@@ -313,6 +335,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
         socket.onmessage = handleMessage;
         socket.onclose = (event) => {
+            deadlineRef.current = null;
             console.log('[WS] Disconnected:', event.code, event.reason);
             setState(prev => ({ ...prev, connected: false }));
         };
@@ -324,18 +347,22 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         return () => {
             console.log('[WS] Closing connection');
             socket.close();
+            socket.onmessage = null;
+            socket.onclose = null;
+            if (socketRef.current === socket) socketRef.current = null;
+            deadlineRef.current = null;
         };
     }, [token, roomId, sendMessage, handleMessage]); // userProfile 의존성 제거
 
     // 타이머 (기존 게임 타이머)
     useEffect(() => {
-        if (state.remainingTime > 0) {
-            timerRef.current = window.setInterval(() => {
-                setState(prev => ({ ...prev, remainingTime: Math.max(0, prev.remainingTime - 1) }));
-            }, 1000);
-        }
+        timerRef.current = window.setInterval(() => {
+            if (deadlineRef.current === null) return;
+            const remainingTime = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
+            setState(prev => prev.remainingTime === remainingTime ? prev : { ...prev, remainingTime });
+        }, 250);
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }, [state.remainingTime]);
+    }, []);
 
     // 리다이렉트 카운트다운 처리
     useEffect(() => {
@@ -368,8 +395,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
     const sendFaceRevealPermission = (accepted: boolean) => sendMessage('FACE_REVEAL_PERMISSION', { accepted });
 
     // [NEW] 렌더링 완료 상태를 서버에 전달 (자동 동기화 위함)
-    const sendRenderComplete = useCallback((stage: string) => {
-        sendMessage('RENDER_COMPLETE', { stage });
+    const sendRenderComplete = useCallback((stage: string, stageSequence = stageSequenceRef.current) => {
+        sendMessage('RENDER_COMPLETE', { stage, stageSequence });
     }, [sendMessage]);
 
     // [TODO] RotationTest.tsx에서 JSON.stringify로 보내고 있어서 임시로 parsing 처리함. 추후 object로 변경 필요.

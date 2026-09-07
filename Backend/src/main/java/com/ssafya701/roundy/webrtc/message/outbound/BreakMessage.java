@@ -24,6 +24,9 @@ public class BreakMessage implements WsMessage {
      * 휴식 시간 (초)
      */
     private int durationSeconds;
+    private long stageSequence;
+
+    public BreakMessage(String roomId, int durationSeconds) { this(roomId, durationSeconds, 0); }
     
     @Override
     public WsMessageType getType() {

@@ -2,7 +2,9 @@ package com.ssafya701.roundy.webrtc.rotation;
 
 import com.ssafya701.roundy.webrtc.room.RoomState;
 import com.ssafya701.roundy.webrtc.room.enums.Stage;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.ssafya701.roundy.match.repository.SessionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -16,23 +18,37 @@ import java.util.concurrent.*;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class StageScheduler {
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService executorService;
     private final Map<String, ScheduledFuture<?>> roomTimers = new ConcurrentHashMap<>();
+    private final Map<String, RoomState> activeRooms = new ConcurrentHashMap<>();
 
     // 순환 참조 방지를 위해 RoomEventPublisher 사용
     private final RoomEventPublisher eventPublisher;
     private final StageExecutor stageExecutor;
     private final com.ssafya701.roundy.match.repository.SessionRepository sessionRepository;
 
+    @Autowired
+    public StageScheduler(RoomEventPublisher eventPublisher, StageExecutor stageExecutor, SessionRepository sessionRepository) {
+        this(eventPublisher, stageExecutor, sessionRepository, Executors.newSingleThreadScheduledExecutor());
+    }
+
+    StageScheduler(RoomEventPublisher eventPublisher, StageExecutor stageExecutor, SessionRepository sessionRepository,
+                   ScheduledExecutorService executorService) {
+        this.eventPublisher = eventPublisher;
+        this.stageExecutor = stageExecutor;
+        this.sessionRepository = sessionRepository;
+        this.executorService = executorService;
+    }
+
     /**
      * 8단계 로테이션 시작 (BREAK부터)
      */
     public void startStageRotation(RoomState room) {
+      synchronized (room) {
+        if (room.getCurrentStage() != Stage.WAITING || activeRooms.putIfAbsent(room.getRoomId(), room) != null) return;
         String roomId = room.getRoomId();
-        stopStageRotation(roomId);
 
         log.info("🎬 8단계 로테이션 시작: roomId={}", roomId);
 
@@ -51,6 +67,7 @@ public class StageScheduler {
                 sessionRepository.save(session);
             });
         }
+      }
     }
 
     /**
@@ -59,9 +76,8 @@ public class StageScheduler {
     private void startTransition(RoomState room, Stage targetStage) {
         String roomId = room.getRoomId();
 
-        // 1. 스테이지 설정 및 실행 (STAGE_CHANGE 전송)
+        // 응답이 즉시 돌아와도 유실되지 않도록 준비 목록을 먼저 등록한다.
         room.setCurrentStage(targetStage);
-        executeStage(room, targetStage);
 
         // 2. 렌더링 대기 초기화
         List<Long> participants = room.getParticipantList().stream()
@@ -69,6 +85,7 @@ public class StageScheduler {
                 .toList();
 
         room.initRenderWait(participants);
+        long sequence = room.getStageSequence();
         log.info("⏳ 렌더링 대기 시작: roomId={}, stage={}, 대상={}명", roomId, targetStage, participants.size());
 
         // 3. 타임아웃 스케줄링 (기본 5초, 투표 결과 관전 시 30초)
@@ -79,10 +96,11 @@ public class StageScheduler {
 
         ScheduledFuture<?> timeoutTask = executorService.schedule(() -> {
             log.warn("⏰ 렌더링 대기 타임아웃: roomId={}, stage={}", roomId, targetStage);
-            completeSynchronization(room);
+            completeSynchronization(room, sequence);
         }, timeoutSeconds, TimeUnit.SECONDS);
 
         room.setRenderTimeoutTask(timeoutTask);
+        executeStage(room, targetStage);
     }
 
     /**
@@ -90,12 +108,14 @@ public class StageScheduler {
      * (Handler에서 호출되거나 타임아웃으로 호출됨)
      */
     public void completeSynchronization(RoomState room) {
+        completeSynchronization(room, room.getStageSequence());
+    }
+
+    public void completeSynchronization(RoomState room, long sequence) {
+      synchronized (room) {
+        if (activeRooms.get(room.getRoomId()) != room || !room.completeRenderWait(sequence)) return;
         String roomId = room.getRoomId();
         Stage currentStage = room.getCurrentStage();
-
-        // 중복 실행 방지 (이미 타이머가 돌고 있다면 스킵)
-        // -> clearRenderWait()가 타스크를 캔슬하므로 안전장치 역할
-        room.clearRenderWait();
 
         int duration = currentStage.getDurationSeconds();
         log.info("🚀 스테이지 타이머 시작: roomId={}, stage={}, duration={}s", roomId, currentStage, duration);
@@ -105,6 +125,7 @@ public class StageScheduler {
 
         // 2. 스테이지 종료(다음 단계 결정) 예약
         scheduleNextStageProcessing(room, duration);
+      }
     }
 
     /**
@@ -112,17 +133,22 @@ public class StageScheduler {
      */
     private void scheduleNextStageProcessing(RoomState room, int delaySeconds) {
         String roomId = room.getRoomId();
+        long sequence = room.getStageSequence();
 
         ScheduledFuture<?> timer = executorService.schedule(() -> {
+          synchronized (room) {
+            if (activeRooms.get(roomId) != room || room.getStageSequence() != sequence) return;
             try {
                 // 다음 단계 결정 로직 실행
                 determineAndStartNextStage(room);
             } catch (Exception e) {
                 log.error("스테이지 전환 실패: roomId={}", roomId, e);
             }
+          }
         }, delaySeconds, TimeUnit.SECONDS);
 
-        roomTimers.put(roomId, timer);
+        ScheduledFuture<?> previous = roomTimers.put(roomId, timer);
+        if (previous != null) previous.cancel(false);
     }
 
     /**
@@ -246,6 +272,8 @@ public class StageScheduler {
      * 특정 방의 로테이션 중지
      */
     public void stopStageRotation(String roomId) {
+        RoomState room = activeRooms.remove(roomId);
+        if (room != null) room.clearRenderWait();
         ScheduledFuture<?> timer = roomTimers.remove(roomId);
         if (timer != null && !timer.isDone()) {
             timer.cancel(false);
@@ -255,13 +283,13 @@ public class StageScheduler {
     }
 
     // ... (shutdown, isActive 등 기존 유지) ...
+    @PreDestroy
     public void shutdown() {
-        // ... (기존 코드) ...
-        executorService.shutdown();
-        // ...
+        List.copyOf(activeRooms.keySet()).forEach(this::stopStageRotation);
+        executorService.shutdownNow();
     }
 
     public boolean isActive(String roomId) {
-        return roomTimers.containsKey(roomId);
+        return activeRooms.containsKey(roomId);
     }
 }

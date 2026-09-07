@@ -54,8 +54,9 @@ public class RoomState {
     /**
      * 현재 진행 중인 스테이지
      */
-    @lombok.Setter
     private Stage currentStage = Stage.WAITING;
+    private long stageSequence;
+    private boolean awaitingRender;
 
     /**
      * 쉬는 시간 이후 진행할 다음 스테이지 저장
@@ -84,8 +85,10 @@ public class RoomState {
      * 렌더링 대기 초기화
      * @param userIds 대기할 사용자 ID 리스트
      */
-    public void initRenderWait(List<Long> userIds) {
+    public synchronized void initRenderWait(List<Long> userIds) {
         clearRenderWait(); // 기존 작업 정리
+        stageSequence++;
+        awaitingRender = true;
         pendingRenderUsers.addAll(userIds);
     }
     
@@ -94,20 +97,26 @@ public class RoomState {
      * @param userId 완료한 사용자 ID
      * @return 모든 사용자가 준비되었으면 true, 아니면 false
      */
-    public boolean markUserReady(Long userId) {
+    public synchronized boolean markUserReady(Long userId, long sequence) {
         // 이미 대기열이 비어있다면(= 동기화 완료 후) 중복 실행 방지
-        if (pendingRenderUsers.isEmpty()) {
+        if (!awaitingRender || stageSequence != sequence || !pendingRenderUsers.remove(userId)) {
             return false;
         }
         
-        pendingRenderUsers.remove(userId);
         return pendingRenderUsers.isEmpty();
+    }
+
+    public synchronized boolean completeRenderWait(long sequence) {
+        if (!awaitingRender || stageSequence != sequence) return false;
+        clearRenderWait();
+        return true;
     }
     
     /**
      * 렌더링 대기 상태 정리
      */
-    public void clearRenderWait() {
+    public synchronized void clearRenderWait() {
+        awaitingRender = false;
         pendingRenderUsers.clear();
         if (renderTimeoutTask != null && !renderTimeoutTask.isDone()) {
             renderTimeoutTask.cancel(false);
@@ -115,8 +124,9 @@ public class RoomState {
         renderTimeoutTask = null;
     }
     
-    public void setRenderTimeoutTask(ScheduledFuture<?> task) {
-        this.renderTimeoutTask = task;
+    public synchronized void setRenderTimeoutTask(ScheduledFuture<?> task) {
+        if (awaitingRender) this.renderTimeoutTask = task;
+        else task.cancel(false);
     }
     private final Map<Long, Long> firstVotes = new ConcurrentHashMap<>();  // 첫인상 투표
     private final Map<Long, Long> finalVotes = new ConcurrentHashMap<>();  // 최종 투표

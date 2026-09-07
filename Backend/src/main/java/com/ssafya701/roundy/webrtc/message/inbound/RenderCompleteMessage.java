@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 public class RenderCompleteMessage implements WsMessage {
     
     private String stage;
+    private long stageSequence;
+
+    public RenderCompleteMessage(String stage) { this(stage, 0); }
 
     @Override
     public WsMessageType getType() {
