@@ -55,7 +55,7 @@ class SessionControllerTest {
         SessionEnterRequest request = request("verification-1");
         when(sessionService.getUserCurrentRoom(7L)).thenReturn(null);
         when(sessionService.isInQueue(7L, GenderType.FEMALE)).thenReturn(false);
-        when(verificationService.verifyAndDelete("verification-1")).thenReturn(true);
+        when(verificationService.verifyAndDelete(7L, "verification-1")).thenReturn(true);
         when(sessionService.addToQueueAndMatch(7L, GenderType.FEMALE))
                 .thenReturn(RoomMatchResult.waiting(0, 1));
         when(sessionService.getQueuePosition(7L, GenderType.FEMALE)).thenReturn(1);
@@ -66,14 +66,14 @@ class SessionControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getData().isSuccess()).isTrue();
         assertThat(response.getBody().getData().getQueuePosition()).isEqualTo(1);
-        verify(verificationService).verifyAndDelete("verification-1");
+        verify(verificationService).verifyAndDelete(7L, "verification-1");
     }
 
     @Test
     void firstQueueEntryIsRejectedWhenVerificationIsMissing() {
         when(sessionService.getUserCurrentRoom(7L)).thenReturn(null);
         when(sessionService.isInQueue(7L, GenderType.FEMALE)).thenReturn(false);
-        when(verificationService.verifyAndDelete(null)).thenReturn(false);
+        when(verificationService.verifyAndDelete(7L, null)).thenReturn(false);
 
         ResponseEntity<CommonResponse<SessionEnterResponse>> response =
                 controller.enterSession("Bearer jwt-token", null);
@@ -96,7 +96,7 @@ class SessionControllerTest {
 
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getData().isSuccess()).isTrue();
-        verify(verificationService, never()).verifyAndDelete(any());
+        verify(verificationService, never()).verifyAndDelete(any(), any());
     }
 
     @Test
