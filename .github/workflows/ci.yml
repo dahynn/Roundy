@@ -34,6 +34,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: 프로덕션 빌드
         run: npm run build
+      - name: 프런트엔드 회귀 테스트
+        run: npm test
 
   backend-test:
     name: 백엔드 테스트

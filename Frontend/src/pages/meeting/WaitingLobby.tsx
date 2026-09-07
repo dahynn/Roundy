@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Heart, Bell, LogOut, Sparkles, Loader2 } from 'lucide-react';
-import { enterSession } from '@/api/session';
-import type { SessionEnterResponse } from '@/api/session';
-import { TEST_TOKENS } from '@/constants/testUsers';
+import { useSessionQueue } from '@/hooks/meeting/useSessionQueue';
 
 
 const LOADING_MESSAGES = [
@@ -17,17 +15,14 @@ const LOADING_MESSAGES = [
 ];
 
 export default function WaitingLobby() {
-  const navigate = useNavigate();
   const location = useLocation();
   const requestId = (location.state as { requestId?: string } | null)?.requestId;
+  const { participantCount: currentParticipants, error, isLeaving, cancelQueue } = useSessionQueue(requestId);
 
   // --- [상태 관리] ---
-  const [currentParticipants, setCurrentParticipants] = useState(0);
   const [totalRequired] = useState(6);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
 
-  // --- [테스트용] 쿼리 파라미터 ---
-  const [searchParams] = useSearchParams();
   const progress = totalRequired > 0
     ? Math.min(100, Math.floor((currentParticipants / totalRequired) * 100))
     : 0;
@@ -39,105 +34,6 @@ export default function WaitingLobby() {
     }, 2500);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    const queryUser = searchParams.get('user');
-    const queryToken = searchParams.get('token');
-    const handleAutoLogin = () => {
-      // 1. user 인덱스로 토큰 조회
-      if (queryUser) {
-        const idx = parseInt(queryUser, 10);
-        const token = TEST_TOKENS[idx];
-        console.log(`[Lobby Debug] queryUser=${queryUser}, idx=${idx}, tokenFound=${!!token}`);
-
-        if (token) {
-          localStorage.setItem('accessToken', token);
-        } else {
-          console.warn("[Lobby Debug] Token not found! Clearing localStorage.");
-          localStorage.removeItem('accessToken'); // 기존 토큰 삭제 (오로그인 방지)
-        }
-      }
-      // 2. 직접 토큰 입력
-      else if (queryToken) {
-        localStorage.setItem('accessToken', queryToken);
-      }
-
-      // 3. Auto Start 체크
-      if (searchParams.get('auto') === 'true') {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          setIsMatching(true);
-        }
-      }
-    };
-
-    handleAutoLogin();
-  }, [searchParams]);
-
-  // --- 매칭 로직 ---
-  const [isMatching, setIsMatching] = useState(false);
-
-  const startMatching = () => {
-    // 1. 토큰 존재 여부 확인
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      alert("로그인이 필요합니다. 홈으로 이동합니다.");
-      navigate('/home');
-      return;
-    }
-    setIsMatching(true);
-  };
-
-  useEffect(() => {
-    if (!isMatching) return;
-
-    let isMounted = true;
-    let timer: number | null = null;
-    let retryCount = 0;
-
-    const pollMatch = async () => {
-      if (!isMounted) return;
-      try {
-        const response = await enterSession(requestId) as unknown as SessionEnterResponse;
-
-        if (!response.success) {
-          setIsMatching(false);
-          alert(response.message || '본인 인증을 다시 진행해주세요.');
-          navigate('/verify', { replace: true });
-          return;
-        }
-
-        if (response.roomId) {
-          const token = localStorage.getItem('accessToken');
-          if (token) {
-            navigate(`/meeting?room=${response.roomId}`);
-            return;
-          } else {
-            alert("인증 토큰이 만료되었습니다.");
-            navigate('/home');
-          }
-        }
-
-        if (response.queuePosition !== undefined && response.queuePosition !== null) {
-          const estimatedFilled = Math.max(0, 6 - response.queuePosition);
-          setCurrentParticipants(estimatedFilled);
-        }
-        timer = window.setTimeout(pollMatch, 3000);
-        retryCount++;
-
-      } catch (error) {
-        console.error("[pollMatch Error]", error); // 자세한 에러 내용을 콘솔에 출력
-        timer = window.setTimeout(pollMatch, 3000);
-        retryCount++;
-      }
-    };
-
-    pollMatch();
-    return () => {
-      isMounted = false;
-      if (timer) clearTimeout(timer);
-    };
-  }, [isMatching, navigate, requestId]);
 
 
   return (
@@ -153,7 +49,7 @@ export default function WaitingLobby() {
       <header className="relative z-10 w-full px-8 py-6 flex justify-between items-center">
         <div
           className="group flex items-center gap-2.5 cursor-pointer"
-          onClick={() => navigate('/home')}
+          onClick={() => { if (!isLeaving) void cancelQueue(); }}
         >
           <div className="relative w-10 h-10 flex items-center justify-center">
             <div className="absolute inset-0 bg-gradient-to-tr from-[#FF4D94] to-[#7C3AED] rounded-xl shadow-lg opacity-90 group-hover:scale-110 transition-transform duration-300"></div>
@@ -226,13 +122,15 @@ export default function WaitingLobby() {
 
             <button
               onClick={() => {
-                if (confirm('대기열에서 나가시겠습니까? 참여 신청이 취소됩니다.')) navigate('/home');
+                if (confirm('대기열에서 나가시겠습니까? 참여 신청이 취소됩니다.')) void cancelQueue();
               }}
+              disabled={isLeaving}
               className="w-full py-4 rounded-2xl text-gray-400 hover:text-[#FF4D94] hover:bg-pink-50/50 transition-all flex items-center justify-center gap-2 text-sm font-bold tracking-wide group/btn border border-transparent hover:border-pink-100"
             >
               <LogOut size={16} className="group-hover/btn:-translate-x-0.5 transition-transform opacity-70 group-hover:opacity-100" />
-              대기열 취소하고 나가기
+              {isLeaving ? '대기열 취소 중...' : '대기열 취소하고 나가기'}
             </button>
+            {error && <p role="alert" className="mt-4 text-sm text-rose-600 text-center">{error}</p>}
 
           </div>
         </div>
