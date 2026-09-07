@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -44,32 +46,27 @@ class VerificationServiceTest {
     void startVerificationStoresPendingWithoutIncrementingRateLimitAgain() {
         verificationService.startVerification(7L, "request-1");
 
-        verify(valueOperations).set("verify:request-1", "PENDING", 300L, TimeUnit.SECONDS);
+        verify(valueOperations).set("verify:7:request-1", "PENDING", 300L, TimeUnit.SECONDS);
         verify(valueOperations, never()).increment(anyString());
     }
 
     @Test
     void updateVerificationStatusReplacesPendingWithVerified() {
-        when(valueOperations.get("verify:request-1")).thenReturn("PENDING");
-
-        verificationService.updateVerificationStatus("request-1", true);
-
-        verify(valueOperations).set("verify:request-1", "VERIFIED", 300L, TimeUnit.SECONDS);
+        verificationService.updateVerificationStatus(7L, "request-1", true);
+        verify(redisTemplate).execute(any(org.springframework.data.redis.core.script.RedisScript.class),
+                eq(java.util.List.of("verify:7:request-1")), eq("VERIFIED"), eq("300"));
     }
 
     @Test
     void updateVerificationStatusIgnoresAlreadyCompletedRequest() {
-        when(valueOperations.get("verify:request-1")).thenReturn("VERIFIED");
-
-        verificationService.updateVerificationStatus("request-1", false);
-
-        verify(valueOperations, never()).set("verify:request-1", "FAILED", 300L, TimeUnit.SECONDS);
+        verificationService.updateVerificationStatus(7L, "request-1", false);
+        verify(valueOperations, never()).set("verify:7:request-1", "FAILED", 300L, TimeUnit.SECONDS);
     }
 
     @Test
     void verifyAndDeleteRejectsMissingRequestIdWithoutRedisAccess() {
-        assertThat(verificationService.verifyAndDelete(null)).isFalse();
-        assertThat(verificationService.verifyAndDelete(" ")).isFalse();
+        assertThat(verificationService.verifyAndDelete(7L, null)).isFalse();
+        assertThat(verificationService.verifyAndDelete(7L, " ")).isFalse();
 
         verify(valueOperations, never()).getAndDelete(anyString());
     }

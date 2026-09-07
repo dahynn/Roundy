@@ -83,7 +83,7 @@ public class SessionController {
                 // 4. 최초 대기열 입장에만 얼굴 검증 결과를 원자적으로 소비한다.
                 // 이후 폴링은 Redis 대기열 상태로 식별하므로 requestId 재사용이 필요 없다.
                 boolean alreadyInQueue = sessionService.isInQueue(userId, gender);
-                if (!alreadyInQueue && !verificationService.verifyAndDelete(request.getRequestId())) {
+                if (!alreadyInQueue && !verificationService.verifyAndDelete(userId, request.getRequestId())) {
                         log.warn("Verification failed or already used: userId={}, requestId={}",
                                         userId, request.getRequestId());
                         return ResponseEntity.ok(

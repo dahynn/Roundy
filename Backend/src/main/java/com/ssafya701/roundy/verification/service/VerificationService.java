@@ -11,10 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 // 검증 상태 관리 (Redis PENDING/VERIFIED/FAILED, Rate Limiting, Cache)
@@ -40,6 +42,16 @@ public class VerificationService {
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_VERIFIED = "VERIFIED";
     private static final String STATUS_FAILED = "FAILED";
+    private static final DefaultRedisScript<Long> COMPLETE_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) ~= 'PENDING' then return 0 end
+            redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+            return 1
+            """, Long.class);
+    private static final DefaultRedisScript<Long> CONSUME_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) ~= 'VERIFIED' then return 0 end
+            redis.call('DEL', KEYS[1])
+            return 1
+            """, Long.class);
 
     /**
      * 검증 시작 (다이어그램 ⑥번)
@@ -48,7 +60,7 @@ public class VerificationService {
      */
     public void startVerification(Long userId, String requestId) {
         // Redis에 PENDING 상태 저장
-        String key = VERIFICATION_KEY_PREFIX + requestId;
+        String key = verificationKey(userId, requestId);
         redisTemplate.opsForValue().set(key, STATUS_PENDING, ttlSeconds, TimeUnit.SECONDS);
 
         log.info("Verification started: requestId={}, userId={}", requestId, userId);
@@ -102,17 +114,15 @@ public class VerificationService {
      * AI 검증 완료 후 VERIFIED/FAILED 상태로 변경
      * PENDING 상태인 요청만 완료 상태로 전환한다.
      */
-    public void updateVerificationStatus(String requestId, boolean success) {
-        String key = VERIFICATION_KEY_PREFIX + requestId;
+    public void updateVerificationStatus(Long userId, String requestId, boolean success) {
+        String key = verificationKey(userId, requestId);
         String newStatus = success ? STATUS_VERIFIED : STATUS_FAILED;
 
-        String currentStatus = redisTemplate.opsForValue().get(key);
-        if (!STATUS_PENDING.equals(currentStatus)) {
-            log.warn("Verification result ignored: requestId={}, currentStatus={}", requestId, currentStatus);
+        Long changed = redisTemplate.execute(COMPLETE_SCRIPT, List.of(key), newStatus, String.valueOf(ttlSeconds));
+        if (!Long.valueOf(1).equals(changed)) {
+            log.warn("Verification result ignored: userId={}, requestId={}", userId, requestId);
             return;
         }
-
-        redisTemplate.opsForValue().set(key, newStatus, ttlSeconds, TimeUnit.SECONDS);
 
         log.info("Verification status updated: requestId={}, status={}", requestId, newStatus);
     }
@@ -121,8 +131,8 @@ public class VerificationService {
      * 검증 상태 확인 (다이어그램 ⑭번)
      * Client가 큐 진입 시 호출
      */
-    public String checkVerificationStatus(String requestId) {
-        String key = VERIFICATION_KEY_PREFIX + requestId;
+    public String checkVerificationStatus(Long userId, String requestId) {
+        String key = verificationKey(userId, requestId);
         String status = redisTemplate.opsForValue().get(key);
 
         if (status == null) {
@@ -137,8 +147,8 @@ public class VerificationService {
      * 검증 기록 삭제 (재사용 방지)
      * Client가 큐 진입 성공 후 호출
      */
-    public void deleteVerificationRecord(String requestId) {
-        String key = VERIFICATION_KEY_PREFIX + requestId;
+    public void deleteVerificationRecord(Long userId, String requestId) {
+        String key = verificationKey(userId, requestId);
         Boolean deleted = redisTemplate.delete(key);
 
         if (Boolean.TRUE.equals(deleted)) {
@@ -149,25 +159,16 @@ public class VerificationService {
     /**
      * 검증 상태 확인하고 동시에 삭제
      * 같은 requestId로 중복 입장 불가
-     * Redis GETDEL 사용
+     * 본인 소유의 VERIFIED 상태만 원자적으로 소비한다. PENDING/FAILED는 보존한다.
      */
-    public boolean verifyAndDelete(String requestId) {
-        if (requestId == null || requestId.isBlank()) {
+    public boolean verifyAndDelete(Long userId, String requestId) {
+        if (userId == null || requestId == null || requestId.isBlank()) {
             log.warn("Verification requestId is missing");
             return false;
         }
 
-        String key = VERIFICATION_KEY_PREFIX + requestId;
-
-        // GETDEL: GET과 DELETE를 한 번에 수행
-        String status = redisTemplate.opsForValue().getAndDelete(key);
-
-        if (status == null) {
-            log.warn("Verification record not found or already used: requestId={}", requestId);
-            return false;
-        }
-
-        boolean isVerified = STATUS_VERIFIED.equals(status);
+        String key = verificationKey(userId, requestId);
+        boolean isVerified = Long.valueOf(1).equals(redisTemplate.execute(CONSUME_SCRIPT, List.of(key)));
         log.info("Verification checked and deleted: requestId={}, verified={}", requestId, isVerified);
 
         return isVerified;
@@ -176,8 +177,12 @@ public class VerificationService {
     /**
      * 검증 상태가 VERIFIED인지 확인
      */
-    public boolean isVerified(String requestId) {
-        String status = checkVerificationStatus(requestId);
+    public boolean isVerified(Long userId, String requestId) {
+        String status = checkVerificationStatus(userId, requestId);
         return STATUS_VERIFIED.equals(status);
+    }
+
+    private String verificationKey(Long userId, String requestId) {
+        return VERIFICATION_KEY_PREFIX + Objects.requireNonNull(userId) + ":" + Objects.requireNonNull(requestId);
     }
 }

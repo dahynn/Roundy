@@ -56,9 +56,8 @@ public class VerificationController {
                 // 4. Redis PENDING 저장
                 verificationService.startVerification(userId, requestId);
 
-                try {
+                try (java.io.InputStream originalImage = minioService.downloadImage(userId, "verification")) {
                         // 5. MinIO에서 원본 이미지 조회
-                        java.io.InputStream originalImage = minioService.downloadImage(userId, "verification");
 
                         // 6. AI 검증 요청 (동기, 5~10초 대기)
                         com.ssafya701.roundy.global.infra.ai.AiVerificationResult result = aiServerClient
@@ -69,14 +68,14 @@ public class VerificationController {
                                 log.warn("Face detection failed: userId={}, error={}", userId,
                                                 result.getErrorMessage());
 
-                                verificationService.updateVerificationStatus(requestId, false);
+                                verificationService.updateVerificationStatus(userId, requestId, false);
 
                                 return ResponseEntity.ok()
                                                 .body(CommonResponse.ofFailure(result.getErrorMessage()));
                         }
 
                         // 7. Redis 상태 업데이트
-                        verificationService.updateVerificationStatus(requestId, result.isVerified());
+                        verificationService.updateVerificationStatus(userId, requestId, result.isVerified());
 
                         log.info("Verification completed: userId={}, requestId={}, verified={}",
                                         userId, requestId, result.isVerified());
@@ -91,7 +90,7 @@ public class VerificationController {
                         // AI 서버 주소 미확정 시
                         log.warn("AI server not configured: {}", e.getMessage());
 
-                        verificationService.updateVerificationStatus(requestId, false);
+                        verificationService.updateVerificationStatus(userId, requestId, false);
 
                         // 임시 응답 (AI 주소 확정 전까지)
                         com.ssafya701.roundy.verification.dto.response.VerificationResponse tempResponse = new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
@@ -101,7 +100,7 @@ public class VerificationController {
                 } catch (Exception e) {
                         log.error("Verification failed: userId={}, requestId={}", userId, requestId, e);
 
-                        verificationService.updateVerificationStatus(requestId, false);
+                        verificationService.updateVerificationStatus(userId, requestId, false);
 
                         // 에러 응답
                         com.ssafya701.roundy.verification.dto.response.VerificationResponse errorResponse = new com.ssafya701.roundy.verification.dto.response.VerificationResponse(
