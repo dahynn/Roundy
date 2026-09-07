@@ -20,6 +20,10 @@ public class RoomMatchResult {
         return new RoomMatchResult("WAITING", null, null, null);
     }
 
+    public static RoomMatchResult rejected() {
+        return new RoomMatchResult("REJECTED", null, null, null);
+    }
+
     public static RoomMatchResult matched(String roomId, List<String> males, List<String> females) {
         return new RoomMatchResult("MATCHED", roomId, males, females);
     }

@@ -8,6 +8,38 @@ local femaleQueueKey = KEYS[2]    -- 'session:female'
 local requiredMale = 3
 local requiredFemale = 3
 
+-- 인증 소비, 대기열 등록, 기존 방 확인을 매칭과 같은 원자적 실행에 포함한다.
+local userId = ARGV[2]
+local gender = ARGV[3]
+local now = redis.call('TIME')
+local nowMillis = tonumber(now[1]) * 1000 + math.floor(tonumber(now[2]) / 1000)
+local maleLeaseKey = KEYS[4]
+local femaleLeaseKey = KEYS[5]
+
+-- 폴링이 끊긴 사용자는 30초 후 제외한다. FIFO 점수는 최초 입장 시각을 유지한다.
+for _, pair in ipairs({{maleQueueKey, maleLeaseKey}, {femaleQueueKey, femaleLeaseKey}}) do
+    redis.call('ZREMRANGEBYSCORE', pair[2], '-inf', nowMillis)
+    redis.call('ZINTERSTORE', pair[1], 2, pair[1], pair[2], 'WEIGHTS', 1, 0)
+end
+
+local currentRoomKey = 'user:' .. userId .. ':currentRoom'
+local existingRoom = redis.call('GET', currentRoomKey)
+if existingRoom then
+    if redis.call('EXISTS', 'room:' .. existingRoom .. ':member:' .. userId) == 1 then
+        return {'MATCHED', existingRoom, '[]', '[]'}
+    end
+    redis.call('DEL', currentRoomKey)
+end
+
+local queueKey = gender == 'MALE' and maleQueueKey or femaleQueueKey
+local leaseKey = gender == 'MALE' and maleLeaseKey or femaleLeaseKey
+if not redis.call('ZSCORE', queueKey, userId) then
+    if redis.call('GET', KEYS[3]) ~= 'VERIFIED' then return {'REJECTED'} end
+    redis.call('DEL', KEYS[3])
+    redis.call('ZADD', queueKey, nowMillis, userId)
+end
+redis.call('ZADD', leaseKey, nowMillis + 30000, userId)
+
 -- 1. 현재 큐 인원 확인
 local maleCount = redis.call('ZCARD', maleQueueKey)
 local femaleCount = redis.call('ZCARD', femaleQueueKey)
@@ -32,9 +64,11 @@ local roomId = ARGV[1]
 -- 3-3. 선택된 유저들을 큐에서 제거
 for i, userId in ipairs(maleMembers) do
     redis.call('ZREM', maleQueueKey, userId)
+    redis.call('ZREM', maleLeaseKey, userId)
 end
 for i, userId in ipairs(femaleMembers) do
     redis.call('ZREM', femaleQueueKey, userId)
+    redis.call('ZREM', femaleLeaseKey, userId)
 end
 
 -- 3-4. 방 멤버 저장 (TTL 2시간)
@@ -71,6 +105,10 @@ redis.call('SET', 'room:' .. roomId .. ':created', redis.call('TIME')[1])
 redis.call('EXPIRE', 'room:' .. roomId .. ':created', 7200)
 
 -- 4. 성공 응답
+-- 요청자보다 앞선 6명이 매칭되었을 수도 있으므로 본인에게 배정된 방만 반환한다.
+if redis.call('GET', currentRoomKey) ~= roomId then
+    return {'WAITING', redis.call('ZCARD', maleQueueKey), redis.call('ZCARD', femaleQueueKey)}
+end
 return {
     'MATCHED',
     roomId,

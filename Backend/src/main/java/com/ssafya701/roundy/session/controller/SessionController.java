@@ -12,7 +12,6 @@ import com.ssafya701.roundy.session.service.SessionService;
 import com.ssafya701.roundy.auth.entity.User;
 import com.ssafya701.roundy.auth.enums.GenderType;
 import com.ssafya701.roundy.auth.repository.UserRepository;
-import com.ssafya701.roundy.verification.service.VerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class SessionController {
 
         private final SessionService sessionService;
-        private final VerificationService verificationService;
         private final JwtTokenProvider jwtTokenProvider;
         private final UserRepository userRepository;
 
@@ -58,32 +56,9 @@ public class SessionController {
                                                         new SessionEnterResponse(false, "성별 정보가 없습니다.", null)));
                 }
 
-                // 3. 이미 매칭된 방이 있는지 먼저 확인 (폴링 요청은 검증 토큰을 재사용하지 않음)
-                String existingRoomId = sessionService.getUserCurrentRoom(userId);
-                if (existingRoomId != null) {
-                        // 이미 매칭된 상태라면 즉시 방 정보 반환
-                        RoomMemberInfo memberInfo = sessionService.getRoomMemberInfo(userId, existingRoomId);
-
-                        if (memberInfo != null) {
-                                SessionEnterResponse response = SessionEnterResponse.matched(
-                                                memberInfo.getRoomId(),
-                                                memberInfo.getGender());
-
-                                log.info("User already matched (polling catch): userId={}, roomId={}",
-                                                userId, memberInfo.getRoomId());
-                                return ResponseEntity.ok(CommonResponse.ofSuccess(response));
-                        } else {
-                                // 정보가 없으면 키 삭제 후 재시도 유도 (Self-Repair)
-                                log.warn("User has room key but no member info: userId={}, roomId={}", userId,
-                                                existingRoomId);
-                                sessionService.removeUserCurrentRoomKey(userId);
-                        }
-                }
-
-                // 4. 최초 대기열 입장에만 얼굴 검증 결과를 원자적으로 소비한다.
-                // 이후 폴링은 Redis 대기열 상태로 식별하므로 requestId 재사용이 필요 없다.
-                boolean alreadyInQueue = sessionService.isInQueue(userId, gender);
-                if (!alreadyInQueue && !verificationService.verifyAndDelete(userId, request.getRequestId())) {
+                // 검증 소비와 매칭을 한 번에 실행해 폴링 사이에 재입장하는 경쟁 상태를 막는다.
+                RoomMatchResult matchResult = sessionService.addToQueueAndMatch(userId, gender, request.getRequestId());
+                if ("REJECTED".equals(matchResult.getStatus())) {
                         log.warn("Verification failed or already used: userId={}, requestId={}",
                                         userId, request.getRequestId());
                         return ResponseEntity.ok(
@@ -92,9 +67,6 @@ public class SessionController {
                                                                         "본인 인증이 완료되지 않았거나 만료되었습니다.",
                                                                         null)));
                 }
-
-                // 5. 세션 큐에 추가 + 매칭 시도
-                RoomMatchResult matchResult = sessionService.addToQueueAndMatch(userId, gender);
 
                 // 6. 매칭 결과에 따른 응답
                 if ("MATCHED".equals(matchResult.getStatus())) {

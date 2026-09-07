@@ -49,42 +49,31 @@ public class SessionService {
     }
 
     // 큐에 추가 + 자동 매칭 (선착순 FIFO)
-    public RoomMatchResult addToQueueAndMatch(Long userId, GenderType gender) {
-        String queueKey = getQueueKey(gender);
-        long timestamp = System.currentTimeMillis();
-
-        // ZADD NX: 이미 있으면 추가 안 함 (중복 방지)
-        Boolean added = redisTemplate.opsForZSet().addIfAbsent(queueKey, Objects.requireNonNull(userId.toString()),
-                timestamp);
-
-        if (Boolean.FALSE.equals(added)) {
-            log.warn("User already in queue: userId={}, gender={}", userId, gender);
-        } else {
-            log.info("User added to queue: userId={}, gender={}, timestamp={}", userId, gender, timestamp);
-        }
-
-        // 매칭 시도 (이미 있든 새로 추가든 매칭은 시도)
-        return tryMatchRoom();
+    public RoomMatchResult addToQueueAndMatch(Long userId, GenderType gender, String requestId) {
+        return tryMatchRoom(userId, gender, requestId);
     }
 
     // Lua Script로 원자적 매칭 수행 (남3녀3)
-    private RoomMatchResult tryMatchRoom() {
+    private RoomMatchResult tryMatchRoom(Long userId, GenderType gender, String requestId) {
         try {
             // 이번 매칭에 사용할 후보 Room ID 생성 (UUID)
             String candidateRoomId = java.util.UUID.randomUUID().toString();
 
             List<Object> result = redisTemplate.execute(
                     matchRoomScript,
-                    Arrays.asList(SESSION_QUEUE_MALE, SESSION_QUEUE_FEMALE), // KEYS (2개)
-                    candidateRoomId // ARGV[1]
+                    Arrays.asList(SESSION_QUEUE_MALE, SESSION_QUEUE_FEMALE,
+                            "verify:" + userId + ":" + (requestId == null ? "" : requestId),
+                            SESSION_QUEUE_MALE + ":lease", SESSION_QUEUE_FEMALE + ":lease"),
+                    candidateRoomId, userId.toString(), gender.name()
             );
 
             if (result == null || result.isEmpty()) {
                 log.error("Lua script returned null or empty result");
-                return RoomMatchResult.waiting(0, 0);
+                throw new IllegalStateException("매칭 결과를 확인할 수 없습니다.");
             }
 
             String status = (String) result.get(0);
+            if ("REJECTED".equals(status)) return RoomMatchResult.rejected();
 
             if ("WAITING".equals(status)) {
                 int maleCount = ((Number) result.get(1)).intValue();
@@ -110,11 +99,11 @@ public class SessionService {
                 return RoomMatchResult.matched(roomId, males, females);
             }
 
-            return RoomMatchResult.waiting(0, 0);
+            throw new IllegalStateException("알 수 없는 매칭 상태입니다.");
 
         } catch (Exception e) {
             log.error("Error executing Lua script for room matching", e);
-            return RoomMatchResult.waiting(0, 0);
+            throw new IllegalStateException("대기열 처리에 실패했습니다. 잠시 후 다시 시도해주세요.", e);
         }
     }
 
@@ -153,7 +142,7 @@ public class SessionService {
         // 각 멤버의 정보 조회
         for (String userId : Objects.requireNonNull(allMembers)) {
             String memberInfoKey = "room:" + roomId + ":member:" + Objects.requireNonNull(userId);
-            Map<Object, Object> memberInfo = redisTemplate.opsForHash().entries(memberInfoKey);
+            Map<Object, Object> memberInfo = stringRedisTemplate.opsForHash().entries(memberInfoKey);
 
             if (!memberInfo.isEmpty()) {
                 String gender = (String) memberInfo.get("gender");
@@ -177,7 +166,10 @@ public class SessionService {
     // 큐에서 제거 (퇴장)
     public boolean removeFromQueue(Long userId, GenderType gender) {
         String queueKey = getQueueKey(gender);
-        Long removed = redisTemplate.opsForZSet().remove(queueKey, Objects.requireNonNull(userId.toString()));
+        Long removed = redisTemplate.execute(new DefaultRedisScript<>("""
+                redis.call('ZREM', KEYS[2], ARGV[1])
+                return redis.call('ZREM', KEYS[1], ARGV[1])
+                """, Long.class), List.of(queueKey, queueKey + ":lease"), userId.toString());
 
         if (removed != null && removed > 0) {
             log.info("User removed from queue: userId={}, gender={}", userId, gender);
