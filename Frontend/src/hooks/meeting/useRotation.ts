@@ -12,7 +12,7 @@ import type {
     ErrorPayload,
     FaceRevealStartPayload, // Import FaceRevealStartPayload
     SpeakerChangePayload, // Import SpeakerChangePayload
-    RotationStage // Import Stage Type
+    FirstVoteResultPayload
 } from '../../types/meeting/rotaion';
 
 interface UserProfile {
@@ -56,7 +56,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         lobbyCredentials: undefined, // 초기 대기실 토큰 저장용
     });
 
-    const sendMessage = useCallback((type: WsMessageType, payload: any = {}) => {
+    const sendMessage = useCallback((type: WsMessageType, payload: Record<string, unknown> = {}) => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
             const message = { type, ...payload };
             socketRef.current.send(JSON.stringify(message));
@@ -107,29 +107,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     deadlineRef.current = null;
                     timerSequenceRef.current = null;
 
-                    // 스테이지가 변경될 때, 로테이션(1:1) 단계가 아니면 다시 로비(단체방) 세션으로 복귀해야 함
-                    // 예: 로테이션 끝 -> 중간 투표(VOTE_FIRST) -> 다시 로비 세션 필요
-                    // 1:1 스테이지 리스트
-                    const isPairStage = ['ROTATION_SHORT', 'ROTATION_LONG', 'FACE_REVEAL'].includes(payload.stage);
-
                     setState(prev => {
-                        let nextPartner = prev.currentPartner;
-
-                        // 1:1 스테이지가 아니면 (SELF_INTRO 등) 로비(단체) 세션 사용
-                        // 직전 단계가 WAITING(로비)이었다면 currentPartner는 이미 로비 세션임.
-                        // 하지만 명시적으로 lobbyCredentials를 사용하여 세션 정보를 보장함.
-                        if (!isPairStage && prev.lobbyCredentials) {
-                            // 로비 세션 ID가 기존과 동일하다면, 상태 업데이트 후에도 Meeting.tsx useEffect가 재실행되지 않도록
-                            // (혹은 재실행되더라도 joinSession 가드로 방어)
-                            // 여기서 nextPartner를 갱신
-                            nextPartner = {
-                                id: null,
-                                nickname: 'Lobby',
-                                sessionId: prev.lobbyCredentials.sessionId,
-                                token: prev.lobbyCredentials.token
-                            };
-                        }
-
                         // FACE_REVEAL_START 메시지가 먼저 도착했을 경우 성공 메시지를 유지하기 위함
                         const shouldKeepMessage = payload.stage === 'FACE_REVEAL' && prev.lastMessage?.includes('매칭되었습니다');
 
@@ -140,7 +118,6 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                             remainingTime: payload.durationSeconds,
                             totalTime: payload.durationSeconds, // [NEW] 전체 시간 설정
                             isBreak: false, // [NEW] 스테이지 시작 시 휴식 해제
-                            currentPartner: nextPartner, // 세션 정보 업데이트 (필요 시 OpenVidu 재접속 유발)
                             currentSpeaker: null, // 스테이지 변경 시 발언자 정보 초기화
                             firstVoteResults: null,
                             lastMessage: shouldKeepMessage ? prev.lastMessage : `스테이지 변경: ${payload.stage}`
@@ -155,6 +132,15 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     timerSequenceRef.current = data.stageSequence;
                     deadlineRef.current = Date.now() + data.totalSeconds * 1000;
                     setState(prev => ({ ...prev, remainingTime: data.totalSeconds, totalTime: data.totalSeconds }));
+                    break;
+                }
+
+                case 'MEDIA_SESSION': {
+                    if (data.stageSequence < stageSequenceRef.current) break;
+                    setState(prev => ({ ...prev,
+                        lobbyCredentials: { sessionId: data.sessionId, token: data.token },
+                        currentPartner: { id: null, nickname: 'Lobby', sessionId: data.sessionId, token: data.token },
+                    }));
                     break;
                 }
 
@@ -248,7 +234,7 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
 
                 case 'FIRST_VOTE_RESULT': {
                     console.log('📊 [WS] FIRST_VOTE_RESULT Received:', data);
-                    const payload = data as any; // FirstVoteResultPayload
+                    const payload = data as FirstVoteResultPayload;
                     setState(prev => ({
                         ...prev,
                         firstVoteResults: payload.results,
@@ -317,6 +303,14 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         // 연결 로직은 token이 있을 때만 시도
         if (!token || !roomId) return;
 
+        stageSequenceRef.current = 0;
+        timerSequenceRef.current = null;
+        deadlineRef.current = null;
+        setState(prev => ({ ...prev, connected: false, roomId: null, currentStage: 'WAITING',
+            stageSequence: 0, remainingTime: 0, totalTime: 0, isBreak: false, participants: [],
+            currentSpeaker: null, currentPartner: null, lobbyCredentials: undefined,
+            firstVoteResults: null, matchResult: null, redirectInfo: null, lastMessage: null }));
+
         const baseUrl = getWebSocketUrl();
 
         const url = new URL(baseUrl, window.location.href);
@@ -347,6 +341,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         return () => {
             console.log('[WS] Closing connection');
             socket.close();
+            socket.onopen = null;
+            socket.onerror = null;
             socket.onmessage = null;
             socket.onclose = null;
             if (socketRef.current === socket) socketRef.current = null;

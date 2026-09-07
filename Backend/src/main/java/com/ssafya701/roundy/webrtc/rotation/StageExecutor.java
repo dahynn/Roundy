@@ -84,6 +84,7 @@ public class StageExecutor {
      */
     public void executeVote(RoomState room, boolean isFirst) {
         Stage stage = isFirst ? Stage.VOTE_FIRST : Stage.VOTE_FINAL;
+        if (!isFirst) eventPublisher.publishLobbyConnections(room);
         
         // STAGE_CHANGE 브로드캐스트
         eventPublisher.publishStageChange(room, stage);

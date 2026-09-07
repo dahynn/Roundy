@@ -22,6 +22,7 @@ export type WsMessageType =
     | 'RENDER_COMPLETE' // [NEW] 렌더링 완료 신호 전송
     // Server -> Client
     | 'JOIN_OK'
+    | 'MEDIA_SESSION'
     | 'ROOM_STATE'
     | 'STAGE_CHANGE' // Restored for RotationTest compatibility
     | 'START_TIMER'
@@ -40,9 +41,9 @@ export type WsMessageType =
     | 'FIRST_VOTE_RESULT'; // [NEW] 첫인상 투표 결과
 
 // --- 기본 메시지 구조 ---
-export interface WsMessage<T = any> {
+export interface WsMessage {
     type: WsMessageType;
-    [key: string]: any; // 유동적인 필드 처리를 위해
+    [key: string]: unknown;
 }
 
 // --- Payload Interfaces (서버 수신 데이터) ---

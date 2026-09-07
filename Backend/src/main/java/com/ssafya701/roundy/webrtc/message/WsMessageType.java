@@ -19,6 +19,7 @@ public enum WsMessageType {
     
     // 기존: 방 관리
     JOIN_OK,
+    MEDIA_SESSION,
     ROOM_ISSUED,
     ROOM_STATE,
     

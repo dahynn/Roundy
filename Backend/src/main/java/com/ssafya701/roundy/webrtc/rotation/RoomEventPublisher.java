@@ -32,6 +32,28 @@ public class RoomEventPublisher {
     private final WsMessageSerializer messageSerializer;
     private final WebRtcEventLogger eventLogger;
     private final OpenViduService openViduService;
+
+    public void publishLobbyConnections(RoomState room) {
+        // 빈 단체방은 OpenVidu에서 제거될 수 있다. 전환마다 새 세션과 사용자별 새 토큰을 발급한다.
+        String mediaSessionId = room.getRoomId() + "-lobby-" + room.getStageSequence();
+        try {
+            openViduService.ensureSession(mediaSessionId);
+        } catch (OpenViduService.OpenViduServiceException exception) {
+            log.error("단체 화상방 생성 실패: roomId={}", room.getRoomId());
+            broadcastToRoom(room, new ErrorMessage("OPENVIDU_ERROR", "단체 화상방을 준비하지 못했습니다."));
+            return;
+        }
+        for (ParticipantState participant : room.getParticipantList()) {
+            try {
+                String token = openViduService.generateToken(mediaSessionId, participant.getUserId());
+                sendToParticipant(participant, new MediaSessionMessage(
+                        room.getRoomId(), room.getStageSequence(), mediaSessionId, token));
+            } catch (OpenViduService.OpenViduServiceException exception) {
+                log.error("단체 화상방 토큰 발급 실패: roomId={}, userId={}", room.getRoomId(), participant.getUserId());
+                sendToParticipant(participant, new ErrorMessage("OPENVIDU_ERROR", "단체 화상방 접속 정보를 받지 못했습니다."));
+            }
+        }
+    }
     
     /**
      * ROUND_START 브로드캐스트

@@ -31,6 +31,7 @@ const StepWaiting = ({ count }: { count: number }) => (
 // --- Types ---
 import { useUser } from '@/context/UserContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import type { VoteResultItem } from '@/types/meeting/rotaion';
 
 export default function MeetingPage() {
   // --------------------------------------------------------------------------------
@@ -61,7 +62,7 @@ export default function MeetingPage() {
   // useRotationSystem에서 nickname을 username으로 사용하는지 확인 필요
   // 현재 hook 정의: interface UserProfile { userId, username, ... }
   const { state: wsState, submitVote, leaveRoom, sendFaceRevealPermission, sendRenderComplete } = useRotationSystem(roomId, token, userProfile);
-  const { publisher, subscribers, joinSession, initSelfCamera, leaveSession } = useOpenVidu();
+  const { publisher, subscribers, error: videoError, joinSession, initSelfCamera, leaveSession } = useOpenVidu();
 
   // [AI Masking] Magic Mirror Hook
   const { canvasRef, maskedStream, isStreamReady, setMode, isLoaded: isAiLoaded } = useMagicMirror();
@@ -73,14 +74,13 @@ export default function MeetingPage() {
   const [isCamOn, setIsCamOn] = useState(true);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
-  const [localVoteResults, setLocalVoteResults] = useState<any[] | null>(null); // 결과 저장용
+  const [localVoteResults, setLocalVoteResults] = useState<VoteResultItem[] | null>(null);
 
   // Notice & Typing Animation State
   const [currentNotice, setCurrentNotice] = useState<string | null>(null);
   const [displayText, setDisplayText] = useState('');
 
   // [Moved] Missing Refs & States
-  const [lines, setLines] = useState<any[]>([]);
   const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
   const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
@@ -97,7 +97,7 @@ export default function MeetingPage() {
     if (!userProfile) return [];
 
     // 1. 가용 Subscriber 목록 복사 (매칭되면 제거하기 위해)
-    let availableSubs = [...subscribers];
+    const availableSubs = [...subscribers];
 
     // 2. 1차 패스: 본인 및 정확한 닉네임 매칭
     const partiallyMapped = wsState.participants.map(p => {
@@ -116,7 +116,7 @@ export default function MeetingPage() {
       // 구독자 스트림 찾기 (정확한 매칭: userId > nickname)
       const matchIndex = availableSubs.findIndex(s => {
         const rawData = s.stream.connection.data;
-        let parsedData: any = {};
+        let parsedData: Record<string, unknown> = {};
 
         // Parse Logic: Handle potentially nested JSON
         try {
@@ -207,7 +207,7 @@ export default function MeetingPage() {
     // 파트너 스트림 찾기 (정확한 매칭: userId > nickname)
     const sub = subscribers.find(s => {
       const rawData = s.stream.connection.data;
-      let parsedData: any = {};
+      let parsedData: Record<string, unknown> = {};
       try {
         const firstParse = JSON.parse(rawData);
         if (firstParse.clientData) {
@@ -220,7 +220,7 @@ export default function MeetingPage() {
         } else {
           parsedData = firstParse;
         }
-      } catch { }
+      } catch { /* 구형 클라이언트의 평문 닉네임은 아래에서 비교한다. */ }
 
       // 1. userId 매칭
       if (parsedData.userId && parsedData.userId === wsState.currentPartner!.id) return true;
@@ -240,13 +240,13 @@ export default function MeetingPage() {
     return {
       id: wsState.currentPartner.id || 0,
       name: wsState.currentPartner.nickname || 'Unknown',
-      gender: userProfile.gender === 'MALE' ? 'FEMALE' : 'MALE',
+      gender: userProfile.gender === 'MALE' ? 'FEMALE' as const : 'MALE' as const,
       voteTo: 0,
       keywords: [],
       badges: [],
       stream: partnerStream
     };
-  }, [wsState.currentPartner, userProfile?.gender, subscribers]);
+  }, [wsState.currentPartner, userProfile, subscribers]);
 
   // 현재 발언자 인덱스 계산 (Step1_Intro 용)
   const activeSpeakerIdx = useMemo(() => {
@@ -598,6 +598,7 @@ export default function MeetingPage() {
 
       {/* Main Content */}
       <main className="flex-1 w-full relative flex flex-col items-center justify-center p-8 overflow-hidden">
+        {videoError && <p role="alert" className="absolute top-4 z-50 rounded-lg bg-red-950 px-4 py-2 text-white">{videoError}</p>}
         {/* Background */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-[#FF4D94] rounded-full blur-[150px] opacity-[0.03] pointer-events-none" />
 
@@ -650,7 +651,7 @@ export default function MeetingPage() {
             {/* STEP 3 & 4: TALK (ROTATION) - 숏/롱 통합 */}
             {(wsState.currentStage === 'ROTATION_SHORT' || wsState.currentStage === 'ROTATION_LONG') && uiPartner && !wsState.isBreak && (
               <Step4_Talk
-                partners={[uiPartner as any]}
+                partners={[uiPartner]}
                 currentPartnerIndex={0}
                 remainingTime={wsState.remainingTime}
                 myStream={publisher || undefined}
