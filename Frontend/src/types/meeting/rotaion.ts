@@ -1,6 +1,7 @@
 // 문서에 정의된 스테이지 목록 (UI 상태용)
 export type RotationStage =
     | 'WAITING'
+    | 'BREAK'
     | 'SELF_INTRO'
     | 'VOTE_FIRST'
     | 'ROTATION_SHORT'
@@ -23,6 +24,7 @@ export type WsMessageType =
     | 'JOIN_OK'
     | 'ROOM_STATE'
     | 'STAGE_CHANGE' // Restored for RotationTest compatibility
+    | 'START_TIMER'
     | 'ROUND_START' // Changed from STAGE_CHANGE
     | 'ROUND_END'
     | 'PAIR_ASSIGNED'
@@ -76,6 +78,7 @@ export interface StageChangePayload {
     roomId: string;
     stage: RotationStage;
     durationSeconds: number;
+    stageSequence: number;
 }
 
 // ROUND_START: 라운드 시작
@@ -168,6 +171,7 @@ export interface GameAnswerPayload {
 export interface BreakPayload {
     type: 'BREAK';
     durationSeconds: number;
+    stageSequence: number;
 }
 
 // [NEW] FIRST_VOTE_RESULT: 첫인상 투표 결과
@@ -237,6 +241,7 @@ export interface RotationState {
     matchResult?: MatchResultPayload | null;
     totalTime: number; // [NEW] 스테이지 전체 시간 (게이지 바 용)
     isBreak: boolean; // [NEW] 휴식/전환 상태 여부
+    stageSequence?: number;
 }
 
 // KICK: 강제 퇴장

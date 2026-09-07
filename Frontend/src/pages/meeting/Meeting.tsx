@@ -85,7 +85,6 @@ export default function MeetingPage() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [resultSubStage, setResultSubStage] = useState<'MALE_SIDE' | 'FEMALE_SIDE' | null>(null);
   const [selfIntroReady, setSelfIntroReady] = useState(false);
-  const sentStageRef = useRef<string | null>(null);
 
 
 
@@ -391,29 +390,15 @@ export default function MeetingPage() {
   // 컴포넌트가 마운트되고 스테이지가 결정되면 즉시 서버에 완료 신호를 보냅니다.
   // 이를 통해 모든 참가자가 준비되었을 때 다음 단계(타이머 시작 등)로 진행할 수 있습니다.
   useEffect(() => {
-    if (wsState.connected && wsState.currentStage) {
-      // [FIX] Duplicate Guard: 이미 신호를 보낸 스테이지라면 스킵
-      if (sentStageRef.current === wsState.currentStage) return;
-
-      // WAITING 단계에서도 보낼 수 있지만, 보통 게임/대화 스테이지에서 중요함
-      // console.log(`[Meeting] 렌더링 완료 신호 전송: ${wsState.currentStage}`);
-
-      // [LOGIC] SELF_INTRO: Intro 멘트 보여주는 시간 동안은 완료 신호 보류 -> 멘트 끝나면 전송
-      if (wsState.currentStage === 'SELF_INTRO' && !selfIntroReady) {
-        return;
-      }
-
-      // [LOGIC] FIRST_VOTE_RESULT: 결과 보여주는 시간 동안은 완료 신호 보류 -> 결과 표시 끝나면 전송
-      if (wsState.firstVoteResults && !localVoteResults) {
-        // localVoteResults가 null이 되었다는 것은 결과 표시가 끝났다는 의미
-        // 하지만 여기서는 useEffect 흐름상 localVoteResults가 null이 될 때 이 effect가 다시 트리거되지 않을 수 있음
-        // 따라서 별도 effect에서 처리하거나 여기서 조건부 처리 필요
-      }
-
-      sendRenderComplete(wsState.currentStage);
-      sentStageRef.current = wsState.currentStage;
-    }
-  }, [wsState.currentStage, wsState.connected, sendRenderComplete, selfIntroReady]); // selfIntroReady 의존성 추가
+    if (!wsState.connected || !wsState.stageSequence) return;
+    const delay = wsState.isBreak && wsState.firstVoteResults ? 13000
+      : wsState.currentStage === 'SELF_INTRO' ? 3000 : 0;
+    const timer = window.setTimeout(() => {
+      sendRenderComplete(wsState.currentStage, wsState.stageSequence);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [wsState.currentStage, wsState.stageSequence, wsState.connected,
+    wsState.isBreak, wsState.firstVoteResults, sendRenderComplete]);
 
   // 마이크/카메라 토글 반영
   useEffect(() => {
@@ -437,11 +422,11 @@ export default function MeetingPage() {
       setCurrentNotice('이제 자기소개를 시작합니다');
 
       // 3초 후 멘트 종료 -> selfIntroReady=true -> RENDER_COMPLETE 전송 트리거
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setCurrentNotice(null);
         setSelfIntroReady(true);
       }, 3000);
-      return;
+      return () => clearTimeout(timer);
     }
 
     if (stage === 'VOTE_FIRST') setCurrentNotice('당신의 마음은 사로잡은 사람은?');
@@ -455,7 +440,7 @@ export default function MeetingPage() {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [wsState.currentStage]);
+  }, [wsState.currentStage, wsState.stageSequence]);
 
   // Break Time Notice Update
   useEffect(() => {
@@ -518,24 +503,10 @@ export default function MeetingPage() {
       const timer = setTimeout(() => {
         setLocalVoteResults(null);
 
-        // 결과 표시가 끝났으므로 다음 단계(ROTATION_SHORT)로 넘어가기 위한 신호 전송
-        // 주의: RENDER_COMPLETE를 'FIRST_VOTE_RESULT'라는 가상의 스테이지 이름으로 보내거나,
-        // 현재 stage가 VOTE_FIRST이므로 이를 다시 보내서 서버가 트리거하게 함.
-        // 하지만 sentStageRef 때문에 막힐 수 있으므로, 여기서 직접 호출하거나 ref를 초기화해야 함.
-        // 여기서는 명시적으로 'FIRST_VOTE_RESULT_DONE' 이라는 신호를 보내 서버가 ROTATION_SHORT로 넘기도록 유도하거나,
-        // 단순히 RENDER_COMPLETE를 다시 호출.
-
-        // sentStageRef를 잠시 속여서(?) 다시 보내도록 함
-        sentStageRef.current = null;
-        sendRenderComplete('FIRST_VOTE_RESULT_DONE');
-        // [SYNC] 이제 여기서 setLocalVoteResults(null)을 하지 않음.
-        // 서버가 RENDER_COMPLETE를 모두 받고 스테이지를 변경(STAGE_CHANGE)하면,
-        // 위쪽 useEffect의 'stage' 변경 감지 로직에서 setLocalVoteResults(null)이 실행됨.
-
       }, 13000); // [SYNC] 애니메이션(8초) + 감상(5초) 후 준비 완료 신호 전송
       return () => clearTimeout(timer);
     }
-  }, [wsState.firstVoteResults, sendRenderComplete]);
+  }, [wsState.firstVoteResults]);
 
   // ... (Auto Vote Logic skipped) ...
 

@@ -329,7 +329,7 @@ class WebRtcIntegrationTest {
 
         // When: 모든 클라이언트가 BREAK 화면 렌더링 완료를 알림
         for (WebSocketTestClient participant : participants) {
-            participant.sendMessage(new RenderCompleteMessage("BREAK"));
+            participant.sendMessage(new RenderCompleteMessage("BREAK", roomRegistry.getRoom(roomId).orElseThrow().getStageSequence()));
         }
 
         // Then: 서버가 타이머 시작을 동기화해 브로드캐스트

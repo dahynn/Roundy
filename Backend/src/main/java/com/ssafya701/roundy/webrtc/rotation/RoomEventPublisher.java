@@ -211,7 +211,7 @@ public class RoomEventPublisher {
         StageChangeMessage message = new StageChangeMessage(
             room.getRoomId(),
             stage,
-            stage.getDurationSeconds()
+            stage.getDurationSeconds(), room.getStageSequence()
         );
         
         broadcastToRoom(room, message);
@@ -226,7 +226,7 @@ public class RoomEventPublisher {
         com.ssafya701.roundy.webrtc.message.outbound.BreakMessage message = 
             new com.ssafya701.roundy.webrtc.message.outbound.BreakMessage(
                 room.getRoomId(),
-                Stage.BREAK.getDurationSeconds()
+                Stage.BREAK.getDurationSeconds(), room.getStageSequence()
             );
         
         broadcastToRoom(room, message);
@@ -431,7 +431,7 @@ public class RoomEventPublisher {
         StageChangeMessage message = new StageChangeMessage(
                 room.getRoomId(),
                 stage,
-                durationSeconds);
+                durationSeconds, room.getStageSequence());
         
         ParticipantState participant = room.getParticipant(userId).orElse(null);
         if (participant != null) {
@@ -500,7 +500,7 @@ public class RoomEventPublisher {
      * 타이머 시작 알림
      */
     public void publishStartTimer(RoomState room, int durationSeconds) {
-        StartTimerMessage message = new StartTimerMessage(durationSeconds);
+        StartTimerMessage message = new StartTimerMessage(durationSeconds, room.getStageSequence());
         
         broadcastToRoom(room, message);
         log.info("START_TIMER 발행: roomId={}, duration={}s", room.getRoomId(), durationSeconds);

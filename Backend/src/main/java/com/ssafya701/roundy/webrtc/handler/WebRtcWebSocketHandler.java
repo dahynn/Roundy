@@ -590,14 +590,13 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             return; // 조용히 무시 (또는 에러 로그)
         }
         
-        // 현재 스테이지와 일치하는지 확인 (선택적 검증)
-        // if (!room.getCurrentStage().name().equals(stageName)) { ... }
-        
-        boolean allReady = room.markUserReady(userId);
+        // 같은 단계 이름이 반복되더라도 이전 전환의 완료 메시지를 받지 않는다.
+        if (!room.getCurrentStage().name().equals(stageName)) return;
+        boolean allReady = room.markUserReady(userId, message.getStageSequence());
         log.info("🖥️ 렌더링 완료 수신: userId={}, stage={}, allReady={}", userId, stageName, allReady);
         
         if (allReady) {
-            stageScheduler.completeSynchronization(room);
+            stageScheduler.completeSynchronization(room, message.getStageSequence());
         }
     }
     

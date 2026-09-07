@@ -30,6 +30,11 @@ public class StageChangeMessage implements WsMessage {
      * 스테이지 진행 시간 (초)
      */
     private int durationSeconds;
+    private long stageSequence;
+
+    public StageChangeMessage(String roomId, Stage stage, int durationSeconds) {
+        this(roomId, stage, durationSeconds, 0);
+    }
     
     @Override
     public WsMessageType getType() {
