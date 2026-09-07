@@ -67,7 +67,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
 
         log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         log.info("🔌 [WebSocket 연결 성공]");
-        log.info("   📍 URL: {}", session.getUri());
+        log.info("   📍 Path: {}", session.getUri() == null ? null : session.getUri().getPath());
         log.info("   👤 User ID: {}", userId);
         log.info("   🏷️  Username: {}", username);
         log.info("   ⚧️  Gender: {}", gender);

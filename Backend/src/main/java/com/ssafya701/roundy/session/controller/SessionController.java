@@ -143,6 +143,10 @@ public class SessionController {
 
                 log.info("Room members request: userId={}, roomId={}", userId, roomId);
 
+                if (sessionService.getRoomMemberInfo(userId, roomId) == null) {
+                        return ResponseEntity.status(403).build();
+                }
+
                 RoomMembersResponse members = sessionService.getRoomMembers(roomId);
 
                 return ResponseEntity.ok(CommonResponse.ofSuccess(members));

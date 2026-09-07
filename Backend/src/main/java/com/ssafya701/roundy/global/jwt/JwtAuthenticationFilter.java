@@ -61,17 +61,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.info("🔑 Security Context Set - UserID: {}, URI: {}", authentication.getName(),
                         request.getRequestURI());
             }
-            filterChain.doFilter(request, response);
         } catch (com.ssafya701.roundy.global.error.CustomException e) {
             // JWT 관련 커스텀 예외 발생 시 401 응답 처리
             log.info("⚠️ JWT Auth Failed: {} for URI: {}", e.getMessage(), request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"success\":false, \"message\":\"" + e.getMessage() + "\"}");
-        } catch (Exception e) {
-            log.error("🔥 Security Filter Error: ", e);
-            filterChain.doFilter(request, response);
+            return;
         }
+        // 컨트롤러 예외를 인증 실패로 바꾸거나 필터 체인을 두 번 실행하지 않는다.
+        filterChain.doFilter(request, response);
     }
 
     private String resolveToken(HttpServletRequest request) {
