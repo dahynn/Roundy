@@ -266,8 +266,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                         ...prev,
                         lastMessage: `퇴장 안내: ${payload.reason}`,
                         redirectInfo: {
-                            message: `매칭 실패. ${payload.reason}\n잠시 후 홈으로 이동합니다.`,
-                            targetPath: '/',
+                            message: `${payload.reason}\n잠시 후 홈으로 이동합니다.`,
+                            targetPath: '/home',
                             remainingSeconds: 3 // 3초 카운트다운
                         }
                     }));

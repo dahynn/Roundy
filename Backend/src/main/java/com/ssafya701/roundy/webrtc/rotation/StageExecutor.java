@@ -31,6 +31,7 @@ public class StageExecutor {
     private final MatchService matchService;
     private final com.ssafya701.roundy.session.service.SessionService sessionService; // [추가] Redis 정리를 위해 주입
     private final GameQuestionRepository questionRepository;
+    private final com.ssafya701.roundy.webrtc.room.RoomRegistry roomRegistry;
     private final PairingStrategy pairingStrategy = new PairingStrategy();
     private final ScheduledExecutorService gameScheduler = Executors.newScheduledThreadPool(10);
     
@@ -371,8 +372,8 @@ public class StageExecutor {
         
         // ✅ 매칭된 커플에게만 STAGE_CHANGE 전송
         for (RoomState.MatchPair couple : matches) {
-            eventPublisher.publishStageChangeToUser(room, couple.getUserId1(), Stage.FACE_REVEAL, 180);
-            eventPublisher.publishStageChangeToUser(room, couple.getUserId2(), Stage.FACE_REVEAL, 180);
+            eventPublisher.publishStageChangeToUser(room, couple.getUserId1(), Stage.FACE_REVEAL, Stage.FACE_REVEAL.getDurationSeconds());
+            eventPublisher.publishStageChangeToUser(room, couple.getUserId2(), Stage.FACE_REVEAL, Stage.FACE_REVEAL.getDurationSeconds());
         }
         
         // ✅ 싱글 유저 강퇴
@@ -404,29 +405,25 @@ public class StageExecutor {
         log.info("얼굴 공개: roomId={}, 매칭 커플 {}쌍, 강퇴 {}명", 
             room.getRoomId(), matches.size(), singleUsers.size());
             
-        // ✅ [버그 수정] 유저 요청: "FACE_REVEAL 시작 후 몇 초 뒤에 방 정리(데이터 초기화)"
-        // 원래는 MATCHING_RESULT 끝나고 바로 했으나, 그러면 참가자 데이터가 지워져서 에러 발생함.
-        // 여기서 10초 정도 여유를 두고 정리하도록 변경.
-        java.util.concurrent.ScheduledExecutorService cleanupScheduler = 
-            java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
-        cleanupScheduler.schedule(() -> {
-            log.info("🔄 방 자동 데이터 정리 (얼굴 공개 시작 후): roomId={}", room.getRoomId());
-            
-            // [추가] Redis 데이터 정리 (좀비 방 방지)
-            if (sessionService != null) {
-                sessionService.cleanupRoom(room.getRoomId());
-            }
+    }
 
-            // 주의: room.reset()은 참가자 목록을 다 지우므로, 
-            // 혹시라도 이후에 서버에서 데이터를 조회해야 한다면 문제가 될 수 있음.
-            // 하지만 현재는 OpenVidu 세션이 이미 생성되었으므로 P2P 통신에는 문제 없음.
-            room.reset();
+    /** 마지막 단계의 시간이 실제로 끝난 뒤에만 참가자와 방 정보를 정리한다. */
+    public void completeRoom(RoomState room) {
+        for (ParticipantState participant : room.getParticipantList()) {
             try {
-                eventPublisher.broadcastRoomState(room);
+                eventPublisher.sendToUser(room, participant.getUserId(),
+                        new com.ssafya701.roundy.webrtc.message.outbound.KickMessage("미팅이 종료되었습니다."));
+                participant.getSession().close(org.springframework.web.socket.CloseStatus.NORMAL);
             } catch (java.io.IOException e) {
-                log.warn("방 정리 후 상태 전송 실패 (정상): {}", e.getMessage());
+                log.warn("종료 안내 전송 실패: roomId={}, userId={}", room.getRoomId(), participant.getUserId());
             }
-            cleanupScheduler.shutdown();
-        }, 10, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        sessionService.cleanupRoom(room.getRoomId());
+        roomRegistry.removeRoom(room.getRoomId());
+    }
+
+    @jakarta.annotation.PreDestroy
+    public void shutdown() {
+        gameScheduler.shutdownNow();
     }
 }
