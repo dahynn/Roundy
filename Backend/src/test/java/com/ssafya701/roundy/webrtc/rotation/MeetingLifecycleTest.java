@@ -51,6 +51,7 @@ class MeetingLifecycleTest {
             verify(publisher, times(6)).publishSpeakerChange(eq(room), anyLong(), eq(Stage.SELF_INTRO.getDurationSeconds()));
             verify(publisher, times(6)).publishPairAssignments(eq(room), anyInt(), anyMap());
             verify(matches, times(3)).createMatch(eq(1L), anyLong(), anyLong());
+            verify(publisher).publishLobbyConnections(room);
             verify(queue, never()).cleanupRoom(anyString());
             verify(registry, never()).removeRoom(anyString());
 

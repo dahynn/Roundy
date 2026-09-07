@@ -22,7 +22,7 @@ interface VoteResultItem {
     voterId: number;
     voterNickname?: string; // [NEW] Payload fallbacks
     targetId: number | null;
-    targetNickname?: string; // [NEW] Payload fallbacks
+    targetNickname?: string | null; // 기권에는 대상 닉네임이 없다.
 }
 
 interface Step2_ResultProps {

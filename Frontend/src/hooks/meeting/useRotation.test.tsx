@@ -37,6 +37,27 @@ function setup() {
 }
 
 describe('서버 단계와 타이머 동기화', () => {
+  it('단체방 복귀는 이전 토큰이 아니라 서버가 새로 발급한 접속 정보를 사용한다', () => {
+    const { result, receive } = setup();
+    receive({ type: 'JOIN_OK', roomId: 'room-1', token: 'used-lobby-token' });
+    receive({ type: 'PAIR_ASSIGNED', partnerId: 2, privateSessionId: 'pair', privateToken: 'pair-token' });
+    receive({ type: 'MEDIA_SESSION', stageSequence: 10, sessionId: 'new-lobby', token: 'fresh-token' });
+    receive({ type: 'STAGE_CHANGE', stage: 'VOTE_FINAL', stageSequence: 10, durationSeconds: 20 });
+    expect(result.current.state.currentPartner?.sessionId).toBe('new-lobby');
+    expect(result.current.state.currentPartner?.token).toBe('fresh-token');
+    receive({ type: 'MEDIA_SESSION', stageSequence: 9, sessionId: 'old-lobby', token: 'old-token' });
+    expect(result.current.state.currentPartner?.token).toBe('fresh-token');
+  });
+
+  it('다른 방으로 이동하면 이전 방의 단계 번호와 결과를 초기화한다', () => {
+    const { result, rerender } = renderHook(({ id }) => useRotationSystem(id, 'token', null), { initialProps: { id: 'old' } });
+    act(() => FakeSocket.instances[0].receive({ type: 'STAGE_CHANGE', stage: 'FACE_REVEAL', stageSequence: 99, durationSeconds: 15 }));
+    rerender({ id: 'new' });
+    act(() => FakeSocket.instances[1].receive({ type: 'STAGE_CHANGE', stage: 'SELF_INTRO', stageSequence: 1, durationSeconds: 10 }));
+    expect(result.current.state.stageSequence).toBe(1);
+    expect(result.current.state.currentStage).toBe('SELF_INTRO');
+    expect(FakeSocket.instances[0].onmessage).toBeNull();
+  });
   it('단계 화면만 바뀌었을 때는 시간이 줄지 않고 START_TIMER 이후부터 줄어든다', async () => {
     const { result, receive } = setup();
     receive({ type: 'STAGE_CHANGE', stage: 'VOTE_FIRST', stageSequence: 1, durationSeconds: 10 });

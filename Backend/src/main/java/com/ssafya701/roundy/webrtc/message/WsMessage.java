@@ -24,6 +24,7 @@ import com.ssafya701.roundy.webrtc.message.outbound.*;
     @JsonSubTypes.Type(value = SubmitVoteMessage.class, name = "SUBMIT_VOTE"),
     @JsonSubTypes.Type(value = SubmitGameVoteMessage.class, name = "SUBMIT_GAME_ANSWER"),
     @JsonSubTypes.Type(value = JoinOkMessage.class, name = "JOIN_OK"),
+    @JsonSubTypes.Type(value = MediaSessionMessage.class, name = "MEDIA_SESSION"),
     @JsonSubTypes.Type(value = RoomStateMessage.class, name = "ROOM_STATE"),
     @JsonSubTypes.Type(value = RoundStartMessage.class, name = "ROUND_START"),
     @JsonSubTypes.Type(value = RoundEndMessage.class, name = "ROUND_END"),
