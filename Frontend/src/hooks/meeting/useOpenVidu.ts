@@ -153,7 +153,6 @@ export const useOpenVidu = () => {
         }
 
         // [CHANGED] 사용자 요청으로 토큰 변환 로직 제거 (Raw Token Test)
-        console.log('[useOpenVidu] 원본 토큰 사용:', token);
 
         console.log(`🔄 [joinSession] 세션 접속 시도: ${sessionId}`);
 

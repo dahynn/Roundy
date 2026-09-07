@@ -353,7 +353,7 @@ export default function MeetingPage() {
     console.log('🔍 [Meeting] OpenVidu 연결 useEffect 실행:', {
       hasPartnerInfo: !!partnerInfo,
       sessionId: partnerInfo?.sessionId,
-      token: partnerInfo?.token ? partnerInfo.token.substring(0, 50) + '...' : null,
+      hasToken: !!partnerInfo?.token,
       hasUserProfile: !!userProfile,
       hasMaskedStream: !!maskedStream,
       isStreamActive: maskedStream?.active

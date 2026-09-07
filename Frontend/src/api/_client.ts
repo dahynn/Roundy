@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { API_ORIGIN } from '@/config/endpoints';
 
 /**
@@ -10,13 +10,27 @@ const client = axios.create({
     withCredentials: true, // 쿠키 전송 활성화
 });
 
+// 여러 API가 동시에 401을 받아도 Refresh Token은 한 번만 교환한다.
+let refreshPromise: Promise<string> | null = null;
+function refreshAccessToken(): Promise<string> {
+    refreshPromise ??= axios.post(
+        `${API_ORIGIN}/api/auth/re-issue`, {}, { withCredentials: true, timeout: 10000 },
+    ).then(({ data }) => {
+        if (!data.success || typeof data.data?.accessToken !== 'string') {
+            throw new Error('로그인 정보를 갱신하지 못했습니다.');
+        }
+        const token = data.data.accessToken;
+        localStorage.setItem('accessToken', token);
+        return token;
+    }).finally(() => { refreshPromise = null; });
+    return refreshPromise;
+}
+
 client.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('accessToken');
-        console.log('[API] Request Interceptor - Token:', token ? token.substring(0, 20) + '...' : 'NULL');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('[API] Header set:', config.headers.Authorization);
         } else {
             console.warn('[API] No access token found in localStorage!');
         }
@@ -33,38 +47,26 @@ client.interceptors.response.use(
         if (response.data.success) {
             return response.data.data;
         }
-        return Promise.reject(response.data.message || '알 수 없는 에러');
+        return Promise.reject(new AxiosError(response.data.message || '알 수 없는 에러',
+            'ERR_BAD_RESPONSE', response.config, response.request, response));
     },
     async (error) => {
         const originalRequest = error.config;
 
         // 401 에러이고, 아직 재시도를 하지 않았으며, 재발급 요청 자체가 아닐 때
-        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/re-issue')) {
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry
+            && !originalRequest.url?.includes('/auth/re-issue')) {
             originalRequest._retry = true;
-            if (true) { // Refresh Token도 쿠키로 관리되므로 일단 시도
-                try {
-                    // 토큰 재발급 요청 (쿠키에 담겨서 전송됨)
-                    const { data } = await axios.post(
-                        `${API_ORIGIN}/api/auth/re-issue`,
-                        {},
-                        { withCredentials: true }
-                    );
-
-                    if (data.success) {
-                        // 성공 시 새로운 Access Token을 localStorage에 저장
-                        const newToken = data.data.accessToken;
-                        localStorage.setItem('accessToken', newToken);
-
-                        // 기존 요청 헤더 업데이트 및 재시도
-                        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                        return client(originalRequest);
-                    }
-                } catch (refreshError) {
-                    console.error('토큰 재발급 실패:', refreshError);
-                    localStorage.removeItem('accessToken');
-                    window.location.href = '/';
-                    return Promise.reject(refreshError);
-                }
+            try {
+                const currentToken = localStorage.getItem('accessToken');
+                const newToken = currentToken && originalRequest.headers.Authorization !== `Bearer ${currentToken}`
+                    ? currentToken : await refreshAccessToken();
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                return client(originalRequest);
+            } catch (refreshError) {
+                localStorage.removeItem('accessToken');
+                window.location.href = '/';
+                return Promise.reject(refreshError);
             }
         }
         return Promise.reject(error);

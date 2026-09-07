@@ -31,7 +31,7 @@ class SessionControllerTest {
     void setUp() {
         controller = new SessionController(sessionService, jwtTokenProvider, userRepository);
         when(jwtTokenProvider.getUserId("jwt-token")).thenReturn(7L);
-        when(userRepository.findById(7L)).thenReturn(Optional.of(
+        lenient().when(userRepository.findById(7L)).thenReturn(Optional.of(
                 User.builder().kakaoId(77L).gender(GenderType.FEMALE).build()));
     }
 
@@ -63,5 +63,11 @@ class SessionControllerTest {
     void leavingAnAlreadyEmptyQueueIsIdempotent() {
         when(sessionService.removeFromQueue(7L, GenderType.FEMALE)).thenReturn(false);
         assertThat(controller.leaveSession("Bearer jwt-token").getBody().isSuccess()).isTrue();
+    }
+
+    @Test
+    void outsidersCannotReadRoomMembers() {
+        assertThat(controller.getRoomMembers("Bearer jwt-token", "someone-elses-room").getStatusCode().value()).isEqualTo(403);
+        verify(sessionService, never()).getRoomMembers(anyString());
     }
 }
