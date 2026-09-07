@@ -84,7 +84,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
         try {
             // JWT 토큰 검증
-            if (!jwtTokenProvider.validateToken(token)) {
+            if (!jwtTokenProvider.validateAccessToken(token)) {
                 log.warn("WebSocket 연결 실패: JWT 토큰 검증 실패");
                 return false;
             }

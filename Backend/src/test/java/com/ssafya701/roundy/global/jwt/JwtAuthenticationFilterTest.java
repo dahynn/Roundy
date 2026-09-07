@@ -47,7 +47,7 @@ class JwtAuthenticationFilterTest {
         request.addHeader("Authorization", "Bearer test-expired");
         var response = new MockHttpServletResponse();
         var provider = mock(JwtTokenProvider.class);
-        when(provider.validateToken("test-expired")).thenThrow(new CustomException(ErrorEnum.TOKEN_EXPIRATION));
+        when(provider.validateAccessToken("test-expired")).thenThrow(new CustomException(ErrorEnum.TOKEN_EXPIRATION));
         FilterChain chain = mock(FilterChain.class);
         new JwtAuthenticationFilter(provider).doFilter(request, response, chain);
         assertThat(response.getStatus()).isEqualTo(401);

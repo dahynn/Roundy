@@ -89,6 +89,19 @@ public class JwtTokenProvider {
         }
     }
 
+    // 같은 서명 키를 쓰더라도 재발급용 토큰으로 API·WebSocket에 접근할 수 없다.
+    // 기존 Access Token에는 role이 있고 Refresh Token에는 없다.
+    public boolean validateAccessToken(String token) {
+        validateToken(token);
+        Object role = Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token).getBody().get("role");
+        if (!(role instanceof String) || java.util.Arrays.stream(UserRole.values())
+                .noneMatch(value -> value.name().equals(role))) {
+            throw new CustomException(ErrorEnum.INVALID_TOKEN);
+        }
+        return true;
+    }
+
     // 만료 시간 조회
     public long getExpirationTime() {
         return accessTokenValidTime;
