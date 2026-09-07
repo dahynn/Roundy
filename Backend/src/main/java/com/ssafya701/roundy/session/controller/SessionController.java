@@ -221,8 +221,8 @@ public class SessionController {
                         log.info("User left session: userId={}, gender={}", userId, gender);
                         return ResponseEntity.ok(CommonResponse.ofSuccess(null));
                 } else {
-                        log.warn("User not in queue: userId={}", userId);
-                        return ResponseEntity.ok(CommonResponse.ofFailure("대기실에 없습니다."));
+                        // 취소 응답 유실 후 재시도해도 이미 퇴장한 상태를 성공으로 처리한다.
+                        return ResponseEntity.ok(CommonResponse.ofSuccess(null));
                 }
         }
 }

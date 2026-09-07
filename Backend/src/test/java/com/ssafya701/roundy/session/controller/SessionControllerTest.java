@@ -99,6 +99,13 @@ class SessionControllerTest {
         verify(verificationService, never()).verifyAndDelete(any());
     }
 
+    @Test
+    void leavingAnAlreadyEmptyQueueIsIdempotent() {
+        when(sessionService.removeFromQueue(7L, GenderType.FEMALE)).thenReturn(false);
+
+        assertThat(controller.leaveSession("Bearer jwt-token").getBody().isSuccess()).isTrue();
+    }
+
     private SessionEnterRequest request(String requestId) {
         return new SessionEnterRequest(requestId);
     }

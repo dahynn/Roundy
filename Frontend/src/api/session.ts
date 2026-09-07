@@ -25,7 +25,7 @@ export interface SessionEnterResponse {
  * @returns 현재 세션의 남/녀 참여자 수, 총 수용 인원, 남은 자리 수
  */
 export const getSessionStatus = (): Promise<SessionStatusResponse> =>
-    client.get('/session/status');
+    client.get('/session/status', { timeout: 10000 });
 
 /**
  * 세션 입장 요청 (매칭 폴링)
@@ -35,11 +35,11 @@ export const getSessionStatus = (): Promise<SessionStatusResponse> =>
  * 이미 대기열에 들어간 사용자의 폴링 요청에서는 서버가 기존 상태를 확인한다.
  */
 export const enterSession = (requestId?: string): Promise<SessionEnterResponse> =>
-    client.post('/session/enter', { requestId });
+    client.post('/session/enter', { requestId }, { timeout: 10000 });
 
 /**
  * 세션 대기실 퇴장
  * DELETE /api/session/leave
  */
-export const leaveSession = () =>
-    client.delete('/session/leave');
+export const leaveSession = (): Promise<void> =>
+    client.delete('/session/leave', { timeout: 10000 });
