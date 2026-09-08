@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ssafya701.roundy.session.service.SessionQueueRedisTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-09-08T09:50:00.390Z" hostname="yudahyeon-ui-MacBookAir.local" time="0.704">
+  <properties/>
+  <testcase name="staleRoomCleanupMustPreserveNewRoomAssignment()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.704">
+    <failure message="org.opentest4j.AssertionFailedError: &#10;expected: &quot;new-10674632246&quot;&#10; but was: null" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: 
+expected: &quot;new-10674632246&quot;
+ but was: null
+	at app//com.ssafya701.roundy.session.service.SessionQueueRedisTest.staleRoomCleanupMustPreserveNewRoomAssignment(SessionQueueRedisTest.java:146)
+	at java.base@21.0.9/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base@21.0.9/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base@21.0.9/java.util.ArrayList.forEach(ArrayList.java:1596)
+</failure>
+  </testcase>
+  <system-out><![CDATA[18:50:00.267 [Test worker] ERROR io.netty.resolver.dns.DnsServerAddressStreamProviders -- Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+18:50:01.027 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632246, userId=10674632246
+18:50:01.062 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632246, status=VERIFIED
+18:50:01.062 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632247, userId=10674632247
+18:50:01.063 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632247, status=VERIFIED
+18:50:01.063 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632248, userId=10674632248
+18:50:01.064 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632248, status=VERIFIED
+18:50:01.064 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632249, userId=10674632249
+18:50:01.064 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632249, status=VERIFIED
+18:50:01.065 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632250, userId=10674632250
+18:50:01.065 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632250, status=VERIFIED
+18:50:01.065 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632251, userId=10674632251
+18:50:01.066 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632251, status=VERIFIED
+18:50:01.066 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10674632252, userId=10674632252
+18:50:01.066 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10674632252, status=VERIFIED
+18:50:01.070 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=old-10674632246
+18:50:01.072 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService --   - 멤버 1명 매핑 삭제 완료
+18:50:01.073 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=old-10674632246
+18:50:01.073 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=old-10674632246
+18:50:01.073 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=old-10674632246
+18:50:01.078 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=old-10674632246
+18:50:01.079 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=old-10674632246
+18:50:01.079 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=new-10674632246
+18:50:01.079 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService --   - 멤버 1명 매핑 삭제 완료
+18:50:01.080 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=new-10674632246
+18:50:01.082 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632246
+18:50:01.083 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632246
+18:50:01.083 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632247
+18:50:01.084 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632247
+18:50:01.084 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632248
+18:50:01.084 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632248
+18:50:01.085 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632249
+18:50:01.086 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632249
+18:50:01.086 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632250
+18:50:01.087 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632250
+18:50:01.088 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632251
+18:50:01.088 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632251
+18:50:01.089 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632252
+18:50:01.089 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10674632252
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/private/tmp/codex-gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.17.8/f09415827a71be7ed621c7bd02550678f28bc81c/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>
