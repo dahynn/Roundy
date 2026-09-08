@@ -68,8 +68,12 @@ class SessionQueueRedisTest {
 
     @Test
     void concurrentRequestsForOneUserConsumeVerificationOnceAndKeepOneSeat() throws Exception {
-        try (var workers = Executors.newFixedThreadPool(8)) {
-            var calls = IntStream.range(0, 16).<Callable<String>>mapToObj(i -> () -> enter(0, GenderType.MALE).getStatus()).toList();
+        var start = new CyclicBarrier(16);
+        try (var workers = Executors.newFixedThreadPool(16)) {
+            var calls = IntStream.range(0, 16).<Callable<String>>mapToObj(i -> () -> {
+                start.await(10, TimeUnit.SECONDS);
+                return enter(0, GenderType.MALE).getStatus();
+            }).toList();
             for (var result : workers.invokeAll(calls)) assertThat(result.get()).isEqualTo("WAITING");
         }
         assertThat(redis.opsForZSet().zCard("session:male")).isEqualTo(1);
@@ -78,9 +82,12 @@ class SessionQueueRedisTest {
 
     @Test
     void concurrentSixPersonEntryAndPollingNeverRequeuesMatchedUsers() throws Exception {
+        var start = new CyclicBarrier(6);
         try (var workers = Executors.newFixedThreadPool(6)) {
-            var calls = IntStream.range(0, 6).<Callable<String>>mapToObj(i -> () -> enter(i,
-                    i < 3 ? GenderType.MALE : GenderType.FEMALE).getStatus()).toList();
+            var calls = IntStream.range(0, 6).<Callable<String>>mapToObj(i -> () -> {
+                start.await(10, TimeUnit.SECONDS);
+                return enter(i, i < 3 ? GenderType.MALE : GenderType.FEMALE).getStatus();
+            }).toList();
             for (var result : workers.invokeAll(calls)) result.get();
         }
         Set<String> rooms = new HashSet<>();
@@ -124,6 +131,76 @@ class SessionQueueRedisTest {
         assertThat(response.getStatus()).isEqualTo("REJECTED");
         assertThat(redis.opsForZSet().zCard("session:male")).isZero();
         assertThat(enter(0, GenderType.MALE).getStatus()).isEqualTo("WAITING");
+    }
+
+    @Test
+    void cancellationBeforeSixthEntryExcludesTheCancelledUser() {
+        for (int i = 0; i < 5; i++) enter(i, i < 3 ? GenderType.MALE : GenderType.FEMALE);
+        assertThat(sessions.removeFromQueue(users.getFirst(), GenderType.MALE)).isTrue();
+        assertThat(enter(5, GenderType.FEMALE).getStatus()).isEqualTo("WAITING");
+        var matched = enter(6, GenderType.MALE);
+        assertThat(matched.getStatus()).isEqualTo("MATCHED");
+        assertThat(sessions.getUserCurrentRoom(users.getFirst())).isNull();
+        assertThat(redis.opsForSet().members("room:" + matched.getRoomId() + ":members"))
+                .hasSize(6).doesNotContain(users.getFirst().toString());
+        assertThat(enter(0, GenderType.MALE).getStatus()).isEqualTo("REJECTED");
+    }
+
+    @RepeatedTest(25)
+    void cancellationRacingWithMatchHasOneAtomicWinner() throws Exception {
+        for (int i = 0; i < 5; i++) enter(i, i < 3 ? GenderType.MALE : GenderType.FEMALE);
+        var start = new CyclicBarrier(2);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var cancellation = workers.submit(() -> {
+                start.await(10, TimeUnit.SECONDS);
+                return sessions.removeFromQueue(users.getFirst(), GenderType.MALE);
+            });
+            var match = workers.submit(() -> {
+                start.await(10, TimeUnit.SECONDS);
+                return enter(5, GenderType.FEMALE);
+            });
+            boolean cancelled = cancellation.get(10, TimeUnit.SECONDS);
+            var result = match.get(10, TimeUnit.SECONDS);
+            if (cancelled) {
+                assertThat(result.getStatus()).isEqualTo("WAITING");
+                assertThat(sessions.getUserCurrentRoom(users.getFirst())).isNull();
+            } else {
+                assertThat(result.getStatus()).isEqualTo("MATCHED");
+                assertThat(sessions.getUserCurrentRoom(users.getFirst())).isEqualTo(result.getRoomId());
+                var members = sessions.getRoomMembers(result.getRoomId());
+                assertThat(members.getMales()).hasSize(3);
+                assertThat(members.getFemales()).hasSize(3);
+            }
+            assertThat(sessions.isInQueue(users.getFirst(), GenderType.MALE)).isFalse();
+        }
+    }
+
+    @Test
+    void staleRoomCleanupMustPreserveNewRoomAssignment() {
+        String oldRoom = "old-" + users.getFirst();
+        String newRoom = "new-" + users.getFirst();
+        String user = users.getFirst().toString();
+        try {
+            // 이전 방의 정리 작업이 늦게 도착한 상태. 새 방의 소유권은 보존해야 한다.
+            redis.opsForSet().add("room:" + oldRoom + ":members", user);
+            redis.opsForHash().put("room:" + oldRoom + ":member:" + user, "gender", "MALE");
+            redis.opsForValue().set("room:" + oldRoom + ":created", "1");
+            redis.opsForSet().add("room:" + newRoom + ":members", user);
+            redis.opsForHash().put("room:" + newRoom + ":member:" + user, "gender", "MALE");
+            redis.opsForValue().set("user:" + user + ":currentRoom", newRoom);
+
+            sessions.cleanupRoom(oldRoom);
+            sessions.cleanupRoom(oldRoom); // 중복 종료 이벤트도 멱등적으로 처리한다.
+
+            assertThat(sessions.getUserCurrentRoom(users.getFirst())).isEqualTo(newRoom);
+            assertThat(redis.hasKey("room:" + newRoom + ":member:" + user)).isTrue();
+            assertThat(redis.hasKey("room:" + oldRoom + ":members")).isFalse();
+            assertThat(redis.hasKey("room:" + oldRoom + ":member:" + user)).isFalse();
+            assertThat(redis.hasKey("room:" + oldRoom + ":created")).isFalse();
+        } finally {
+            sessions.cleanupRoom(oldRoom);
+            sessions.cleanupRoom(newRoom);
+        }
     }
 
     @Test

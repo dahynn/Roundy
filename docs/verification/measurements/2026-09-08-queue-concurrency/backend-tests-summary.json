@@ -1,0 +1,210 @@
+{
+  "totals": {
+    "tests": 134,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "name": "com.ssafya701.roundy.session.controller.SessionControllerTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.715Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.028"
+    },
+    {
+      "name": "com.ssafya701.roundy.RoundyApplicationTests",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:58.945Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.007"
+    },
+    {
+      "name": "com.ssafya701.roundy.global.infra.minio.MinioServiceTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.428Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.106"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.service.WebRtcRoomServiceTest",
+      "tests": "11",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:07.517Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.058"
+    },
+    {
+      "name": "com.ssafya701.roundy.global.jwt.AccessTokenBoundaryTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.557Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.132"
+    },
+    {
+      "name": "com.ssafya701.roundy.config.HealthEndpointSecurityTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.364Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.062"
+    },
+    {
+      "name": "com.ssafya701.roundy.verification.service.VerificationServiceTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.866Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.035"
+    },
+    {
+      "name": "Stage Enum \ud14c\uc2a4\ud2b8",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.922Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.001"
+    },
+    {
+      "name": "com.ssafya701.roundy.global.jwt.JwtAuthenticationFilterTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.689Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.026"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.rotation.MeetingLifecycleTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.951Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.203"
+    },
+    {
+      "name": "com.ssafya701.roundy.verification.service.VerificationRedisTest",
+      "tests": "6",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:59.745Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.014"
+    },
+    {
+      "name": "RoomState \ud14c\uc2a4\ud2b8",
+      "tests": "7",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.890Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.031"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.openvidu.OpenViduServiceTest",
+      "tests": "6",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.823Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.063"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.rotation.LobbyConnectionsTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.923Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.028"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.integration.WebRtcIntegrationTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:03.258Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "3.557"
+    },
+    {
+      "name": "Gender \uac80\uc99d \ud14c\uc2a4\ud2b8",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.886Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.004"
+    },
+    {
+      "name": "com.ssafya701.roundy.session.service.SessionQueueRedisTest",
+      "tests": "33",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:51:54.452Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "1.472"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.logging.WebRtcEventLoggerTest",
+      "tests": "18",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:06.817Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.005"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.rotation.StageSchedulerTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:07.180Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "0.005"
+    },
+    {
+      "name": "com.ssafya701.roundy.webrtc.handler.WebRtcWebSocketHandlerTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-09-08T09:52:00.842Z",
+      "hostname": "yudahyeon-ui-MacBookAir.local",
+      "time": "2.032"
+    }
+  ]
+}

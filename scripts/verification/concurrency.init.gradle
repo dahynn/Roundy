@@ -1,0 +1,20 @@
+// Historical production sources remain untouched; only this common test source set is added.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def harness = System.getenv('ROUNDY_CONCURRENCY_HARNESS')
+    if (!harness) throw new GradleException('ROUNDY_CONCURRENCY_HARNESS is required')
+    p.sourceSets {
+        concurrencyTest {
+            java.srcDir(new File(harness, 'java'))
+            compileClasspath += p.sourceSets.main.output + p.configurations.testRuntimeClasspath
+            runtimeClasspath += output + compileClasspath
+        }
+    }
+    p.tasks.register('concurrencyTest', Test) {
+        testClassesDirs = p.sourceSets.concurrencyTest.output.classesDirs
+        classpath = p.sourceSets.concurrencyTest.runtimeClasspath
+        useJUnitPlatform()
+        maxParallelForks = 1
+        outputs.upToDateWhen { false }
+    }
+}

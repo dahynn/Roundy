@@ -1,0 +1,1235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ssafya701.roundy.session.service.SessionQueueRedisTest" tests="33" skipped="0" failures="0" errors="0" timestamp="2026-09-08T09:51:54.452Z" hostname="yudahyeon-ui-MacBookAir.local" time="1.472">
+  <properties/>
+  <testcase name="anotherUsersVerificationCannotEnterTheQueue()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.967"/>
+  <testcase name="cancelledRequestCannotEnterAgainWithoutNewVerification()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.024"/>
+  <testcase name="stalePollingLeaseCannotLeaveAGhostParticipant()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.022"/>
+  <testcase name="repetition 1 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.042"/>
+  <testcase name="repetition 2 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.021"/>
+  <testcase name="repetition 3 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.017"/>
+  <testcase name="repetition 4 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.014"/>
+  <testcase name="repetition 5 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.013"/>
+  <testcase name="repetition 6 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.013"/>
+  <testcase name="repetition 7 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.014"/>
+  <testcase name="repetition 8 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.016"/>
+  <testcase name="repetition 9 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.012"/>
+  <testcase name="repetition 10 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.011"/>
+  <testcase name="repetition 11 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.01"/>
+  <testcase name="repetition 12 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.014"/>
+  <testcase name="repetition 13 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.022"/>
+  <testcase name="repetition 14 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.019"/>
+  <testcase name="repetition 15 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.018"/>
+  <testcase name="repetition 16 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.01"/>
+  <testcase name="repetition 17 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.012"/>
+  <testcase name="repetition 18 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.071"/>
+  <testcase name="repetition 19 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.009"/>
+  <testcase name="repetition 20 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.01"/>
+  <testcase name="repetition 21 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.009"/>
+  <testcase name="repetition 22 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.007"/>
+  <testcase name="repetition 23 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.006"/>
+  <testcase name="repetition 24 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.007"/>
+  <testcase name="repetition 25 of 25" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.007"/>
+  <testcase name="staleRoomCleanupMustPreserveNewRoomAssignment()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.008"/>
+  <testcase name="cancellationBeforeSixthEntryExcludesTheCancelledUser()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.007"/>
+  <testcase name="concurrentRequestsForOneUserConsumeVerificationOnceAndKeepOneSeat()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.007"/>
+  <testcase name="concurrentSixPersonEntryAndPollingNeverRequeuesMatchedUsers()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.008"/>
+  <testcase name="fourthManStaysQueuedWhenEarlierParticipantsMatch()" classname="com.ssafya701.roundy.session.service.SessionQueueRedisTest" time="0.007"/>
+  <system-out><![CDATA[18:51:54.281 [Test worker] ERROR io.netty.resolver.dns.DnsServerAddressStreamProviders -- Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+18:51:55.350 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293282, userId=10649293282
+18:51:55.393 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293282, status=VERIFIED
+18:51:55.394 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293283, userId=10649293283
+18:51:55.394 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293283, status=VERIFIED
+18:51:55.394 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293284, userId=10649293284
+18:51:55.395 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293284, status=VERIFIED
+18:51:55.395 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293285, userId=10649293285
+18:51:55.396 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293285, status=VERIFIED
+18:51:55.396 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293286, userId=10649293286
+18:51:55.397 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293286, status=VERIFIED
+18:51:55.397 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293287, userId=10649293287
+18:51:55.397 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293287, status=VERIFIED
+18:51:55.398 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10649293288, userId=10649293288
+18:51:55.398 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10649293288, status=VERIFIED
+18:51:55.405 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.408 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10649293282, gender=MALE
+18:51:55.408 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293282
+18:51:55.409 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293283
+18:51:55.410 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293283
+18:51:55.410 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293284
+18:51:55.411 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293284
+18:51:55.412 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293285
+18:51:55.412 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293285
+18:51:55.413 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293286
+18:51:55.413 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293286
+18:51:55.414 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293287
+18:51:55.414 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293287
+18:51:55.415 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293288
+18:51:55.416 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10649293288
+18:51:55.424 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955455, userId=10482955455
+18:51:55.424 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955455, status=VERIFIED
+18:51:55.425 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955456, userId=10482955456
+18:51:55.425 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955456, status=VERIFIED
+18:51:55.426 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955457, userId=10482955457
+18:51:55.426 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955457, status=VERIFIED
+18:51:55.427 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955458, userId=10482955458
+18:51:55.427 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955458, status=VERIFIED
+18:51:55.428 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955459, userId=10482955459
+18:51:55.429 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955459, status=VERIFIED
+18:51:55.429 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955460, userId=10482955460
+18:51:55.429 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955460, status=VERIFIED
+18:51:55.430 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10482955461, userId=10482955461
+18:51:55.430 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10482955461, status=VERIFIED
+18:51:55.431 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.432 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10482955455, gender=MALE
+18:51:55.436 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955455
+18:51:55.437 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955455
+18:51:55.437 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955456
+18:51:55.438 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955456
+18:51:55.439 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955457
+18:51:55.439 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955457
+18:51:55.440 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955458
+18:51:55.440 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955458
+18:51:55.441 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955459
+18:51:55.441 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955459
+18:51:55.442 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955460
+18:51:55.442 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955460
+18:51:55.443 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955461
+18:51:55.443 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10482955461
+18:51:55.447 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962021, userId=10672962021
+18:51:55.448 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962021, status=VERIFIED
+18:51:55.448 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962022, userId=10672962022
+18:51:55.448 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962022, status=VERIFIED
+18:51:55.449 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962023, userId=10672962023
+18:51:55.449 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962023, status=VERIFIED
+18:51:55.450 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962024, userId=10672962024
+18:51:55.450 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962024, status=VERIFIED
+18:51:55.450 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962025, userId=10672962025
+18:51:55.450 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962025, status=VERIFIED
+18:51:55.451 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962026, userId=10672962026
+18:51:55.451 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962026, status=VERIFIED
+18:51:55.451 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10672962027, userId=10672962027
+18:51:55.452 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10672962027, status=VERIFIED
+18:51:55.453 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.455 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.457 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962021
+18:51:55.458 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962021
+18:51:55.459 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10672962022, gender=MALE
+18:51:55.460 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962022
+18:51:55.461 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962023
+18:51:55.462 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962023
+18:51:55.463 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962024
+18:51:55.463 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962024
+18:51:55.464 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962025
+18:51:55.464 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962025
+18:51:55.465 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962026
+18:51:55.465 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962026
+18:51:55.466 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962027
+18:51:55.466 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10672962027
+18:51:55.472 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577862, userId=10680577862
+18:51:55.472 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577862, status=VERIFIED
+18:51:55.473 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577863, userId=10680577863
+18:51:55.473 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577863, status=VERIFIED
+18:51:55.473 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577864, userId=10680577864
+18:51:55.473 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577864, status=VERIFIED
+18:51:55.474 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577865, userId=10680577865
+18:51:55.474 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577865, status=VERIFIED
+18:51:55.474 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577866, userId=10680577866
+18:51:55.475 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577866, status=VERIFIED
+18:51:55.475 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577867, userId=10680577867
+18:51:55.475 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577867, status=VERIFIED
+18:51:55.475 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10680577868, userId=10680577868
+18:51:55.476 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10680577868, status=VERIFIED
+18:51:55.477 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.477 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.478 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.478 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.478 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.480 [pool-3-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577862
+18:51:55.488 [pool-3-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=267dae0b-dfd1-4d48-acf0-762ea0223d81, males=[10680577862, 10680577863, 10680577864], females=[10680577865, 10680577866, 10680577867]
+18:51:55.491 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=267dae0b-dfd1-4d48-acf0-762ea0223d81, maleCount=3, femaleCount=3
+18:51:55.495 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=267dae0b-dfd1-4d48-acf0-762ea0223d81
+18:51:55.501 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=267dae0b-dfd1-4d48-acf0-762ea0223d81
+18:51:55.501 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577862
+18:51:55.502 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577862
+18:51:55.503 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577863
+18:51:55.504 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577863
+18:51:55.505 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577864
+18:51:55.506 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577864
+18:51:55.507 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577865
+18:51:55.508 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577865
+18:51:55.509 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577866
+18:51:55.509 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577866
+18:51:55.510 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577867
+18:51:55.511 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577867
+18:51:55.512 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577868
+18:51:55.512 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10680577868
+18:51:55.515 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728810, userId=10330728810
+18:51:55.515 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728810, status=VERIFIED
+18:51:55.516 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728811, userId=10330728811
+18:51:55.516 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728811, status=VERIFIED
+18:51:55.516 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728812, userId=10330728812
+18:51:55.516 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728812, status=VERIFIED
+18:51:55.517 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728813, userId=10330728813
+18:51:55.517 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728813, status=VERIFIED
+18:51:55.517 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728814, userId=10330728814
+18:51:55.517 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728814, status=VERIFIED
+18:51:55.518 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728815, userId=10330728815
+18:51:55.518 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728815, status=VERIFIED
+18:51:55.518 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10330728816, userId=10330728816
+18:51:55.518 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10330728816, status=VERIFIED
+18:51:55.519 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.520 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.521 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.521 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.521 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.522 [pool-4-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728810
+18:51:55.522 [pool-4-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=9a020172-e1b5-47f6-9cc7-07f21e7e889b, males=[10330728810, 10330728811, 10330728812], females=[10330728813, 10330728814, 10330728815]
+18:51:55.524 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=9a020172-e1b5-47f6-9cc7-07f21e7e889b, maleCount=3, femaleCount=3
+18:51:55.525 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=9a020172-e1b5-47f6-9cc7-07f21e7e889b
+18:51:55.526 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=9a020172-e1b5-47f6-9cc7-07f21e7e889b
+18:51:55.527 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728810
+18:51:55.527 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728810
+18:51:55.528 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728811
+18:51:55.529 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728811
+18:51:55.529 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728812
+18:51:55.530 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728812
+18:51:55.531 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728813
+18:51:55.531 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728813
+18:51:55.532 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728814
+18:51:55.532 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728814
+18:51:55.533 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728815
+18:51:55.534 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728815
+18:51:55.535 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728816
+18:51:55.535 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10330728816
+18:51:55.537 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163374, userId=10455163374
+18:51:55.538 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163374, status=VERIFIED
+18:51:55.538 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163375, userId=10455163375
+18:51:55.538 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163375, status=VERIFIED
+18:51:55.539 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163376, userId=10455163376
+18:51:55.539 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163376, status=VERIFIED
+18:51:55.540 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163377, userId=10455163377
+18:51:55.540 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163377, status=VERIFIED
+18:51:55.540 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163378, userId=10455163378
+18:51:55.541 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163378, status=VERIFIED
+18:51:55.541 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163379, userId=10455163379
+18:51:55.542 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163379, status=VERIFIED
+18:51:55.542 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10455163380, userId=10455163380
+18:51:55.542 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10455163380, status=VERIFIED
+18:51:55.543 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.543 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.544 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.544 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.545 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.545 [pool-5-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163374
+18:51:55.546 [pool-5-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=1867cb3d-bb1a-4b4d-8ca5-5b0b510253d8, males=[10455163374, 10455163375, 10455163376], females=[10455163377, 10455163378, 10455163379]
+18:51:55.547 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=1867cb3d-bb1a-4b4d-8ca5-5b0b510253d8, maleCount=3, femaleCount=3
+18:51:55.548 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=1867cb3d-bb1a-4b4d-8ca5-5b0b510253d8
+18:51:55.548 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=1867cb3d-bb1a-4b4d-8ca5-5b0b510253d8
+18:51:55.549 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163374
+18:51:55.549 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163374
+18:51:55.550 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163375
+18:51:55.550 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163375
+18:51:55.550 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163376
+18:51:55.550 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163376
+18:51:55.551 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163377
+18:51:55.551 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163377
+18:51:55.552 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163378
+18:51:55.552 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163378
+18:51:55.552 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163379
+18:51:55.552 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163379
+18:51:55.553 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163380
+18:51:55.553 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10455163380
+18:51:55.555 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860404, userId=10087860404
+18:51:55.555 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860404, status=VERIFIED
+18:51:55.555 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860405, userId=10087860405
+18:51:55.556 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860405, status=VERIFIED
+18:51:55.556 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860406, userId=10087860406
+18:51:55.556 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860406, status=VERIFIED
+18:51:55.557 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860407, userId=10087860407
+18:51:55.557 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860407, status=VERIFIED
+18:51:55.557 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860408, userId=10087860408
+18:51:55.558 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860408, status=VERIFIED
+18:51:55.558 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860409, userId=10087860409
+18:51:55.558 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860409, status=VERIFIED
+18:51:55.558 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10087860410, userId=10087860410
+18:51:55.559 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10087860410, status=VERIFIED
+18:51:55.560 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.561 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.561 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.562 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.562 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.563 [pool-6-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10087860404, gender=MALE
+18:51:55.563 [pool-6-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.564 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860404
+18:51:55.564 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860404
+18:51:55.564 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10087860405, gender=MALE
+18:51:55.565 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860405
+18:51:55.565 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10087860406, gender=MALE
+18:51:55.565 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860406
+18:51:55.566 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860407
+18:51:55.566 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10087860407, gender=FEMALE
+18:51:55.567 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860408
+18:51:55.567 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10087860408, gender=FEMALE
+18:51:55.567 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860409
+18:51:55.568 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10087860409, gender=FEMALE
+18:51:55.568 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860410
+18:51:55.568 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10087860410
+18:51:55.570 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333015, userId=10820333015
+18:51:55.570 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333015, status=VERIFIED
+18:51:55.571 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333016, userId=10820333016
+18:51:55.571 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333016, status=VERIFIED
+18:51:55.571 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333017, userId=10820333017
+18:51:55.571 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333017, status=VERIFIED
+18:51:55.571 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333018, userId=10820333018
+18:51:55.572 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333018, status=VERIFIED
+18:51:55.572 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333019, userId=10820333019
+18:51:55.572 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333019, status=VERIFIED
+18:51:55.572 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333020, userId=10820333020
+18:51:55.572 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333020, status=VERIFIED
+18:51:55.572 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10820333021, userId=10820333021
+18:51:55.573 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10820333021, status=VERIFIED
+18:51:55.574 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.575 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.575 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.575 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.576 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.576 [pool-7-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10820333015, gender=MALE
+18:51:55.576 [pool-7-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.577 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333015
+18:51:55.577 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333015
+18:51:55.578 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10820333016, gender=MALE
+18:51:55.578 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333016
+18:51:55.579 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10820333017, gender=MALE
+18:51:55.579 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333017
+18:51:55.580 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333018
+18:51:55.580 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10820333018, gender=FEMALE
+18:51:55.580 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333019
+18:51:55.581 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10820333019, gender=FEMALE
+18:51:55.581 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333020
+18:51:55.581 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10820333020, gender=FEMALE
+18:51:55.582 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333021
+18:51:55.582 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10820333021
+18:51:55.584 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618460, userId=10865618460
+18:51:55.584 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618460, status=VERIFIED
+18:51:55.584 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618461, userId=10865618461
+18:51:55.584 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618461, status=VERIFIED
+18:51:55.584 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618462, userId=10865618462
+18:51:55.584 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618462, status=VERIFIED
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618463, userId=10865618463
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618463, status=VERIFIED
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618464, userId=10865618464
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618464, status=VERIFIED
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618465, userId=10865618465
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618465, status=VERIFIED
+18:51:55.585 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10865618466, userId=10865618466
+18:51:55.586 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10865618466, status=VERIFIED
+18:51:55.587 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.587 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.587 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.587 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.588 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.588 [pool-8-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10865618460, gender=MALE
+18:51:55.588 [pool-8-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.589 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618460
+18:51:55.590 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618460
+18:51:55.591 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10865618461, gender=MALE
+18:51:55.591 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618461
+18:51:55.593 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10865618462, gender=MALE
+18:51:55.593 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618462
+18:51:55.593 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618463
+18:51:55.594 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10865618463, gender=FEMALE
+18:51:55.594 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618464
+18:51:55.594 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10865618464, gender=FEMALE
+18:51:55.595 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618465
+18:51:55.595 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10865618465, gender=FEMALE
+18:51:55.595 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618466
+18:51:55.595 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10865618466
+18:51:55.597 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481925, userId=10462481925
+18:51:55.597 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481925, status=VERIFIED
+18:51:55.597 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481926, userId=10462481926
+18:51:55.598 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481926, status=VERIFIED
+18:51:55.598 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481927, userId=10462481927
+18:51:55.598 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481927, status=VERIFIED
+18:51:55.598 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481928, userId=10462481928
+18:51:55.598 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481928, status=VERIFIED
+18:51:55.599 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481929, userId=10462481929
+18:51:55.599 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481929, status=VERIFIED
+18:51:55.599 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481930, userId=10462481930
+18:51:55.599 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481930, status=VERIFIED
+18:51:55.599 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10462481931, userId=10462481931
+18:51:55.599 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10462481931, status=VERIFIED
+18:51:55.600 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.601 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.601 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.601 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.601 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.602 [pool-9-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481925
+18:51:55.602 [pool-9-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=1a49d758-3193-482b-8aad-772114617ab1, males=[10462481925, 10462481926, 10462481927], females=[10462481928, 10462481929, 10462481930]
+18:51:55.604 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=1a49d758-3193-482b-8aad-772114617ab1, maleCount=3, femaleCount=3
+18:51:55.604 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=1a49d758-3193-482b-8aad-772114617ab1
+18:51:55.605 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=1a49d758-3193-482b-8aad-772114617ab1
+18:51:55.605 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481925
+18:51:55.605 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481925
+18:51:55.606 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481926
+18:51:55.606 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481926
+18:51:55.607 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481927
+18:51:55.607 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481927
+18:51:55.608 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481928
+18:51:55.608 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481928
+18:51:55.608 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481929
+18:51:55.609 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481929
+18:51:55.609 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481930
+18:51:55.609 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481930
+18:51:55.610 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481931
+18:51:55.610 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10462481931
+18:51:55.612 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730735, userId=10656730735
+18:51:55.612 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730735, status=VERIFIED
+18:51:55.612 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730736, userId=10656730736
+18:51:55.612 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730736, status=VERIFIED
+18:51:55.612 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730737, userId=10656730737
+18:51:55.613 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730737, status=VERIFIED
+18:51:55.613 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730738, userId=10656730738
+18:51:55.613 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730738, status=VERIFIED
+18:51:55.613 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730739, userId=10656730739
+18:51:55.613 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730739, status=VERIFIED
+18:51:55.614 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730740, userId=10656730740
+18:51:55.614 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730740, status=VERIFIED
+18:51:55.614 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10656730741, userId=10656730741
+18:51:55.615 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10656730741, status=VERIFIED
+18:51:55.616 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.616 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.617 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.617 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.617 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.618 [pool-10-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10656730735, gender=MALE
+18:51:55.618 [pool-10-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.619 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730735
+18:51:55.619 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730735
+18:51:55.619 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10656730736, gender=MALE
+18:51:55.620 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730736
+18:51:55.620 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10656730737, gender=MALE
+18:51:55.620 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730737
+18:51:55.621 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730738
+18:51:55.621 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10656730738, gender=FEMALE
+18:51:55.621 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730739
+18:51:55.622 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10656730739, gender=FEMALE
+18:51:55.624 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730740
+18:51:55.625 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10656730740, gender=FEMALE
+18:51:55.626 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730741
+18:51:55.626 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10656730741
+18:51:55.628 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356071, userId=10275356071
+18:51:55.628 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356071, status=VERIFIED
+18:51:55.628 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356072, userId=10275356072
+18:51:55.628 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356072, status=VERIFIED
+18:51:55.629 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356073, userId=10275356073
+18:51:55.629 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356073, status=VERIFIED
+18:51:55.629 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356074, userId=10275356074
+18:51:55.629 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356074, status=VERIFIED
+18:51:55.629 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356075, userId=10275356075
+18:51:55.629 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356075, status=VERIFIED
+18:51:55.630 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356076, userId=10275356076
+18:51:55.630 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356076, status=VERIFIED
+18:51:55.630 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10275356077, userId=10275356077
+18:51:55.630 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10275356077, status=VERIFIED
+18:51:55.631 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.631 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.631 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.631 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.632 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.632 [pool-11-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356071
+18:51:55.632 [pool-11-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=cfe42f01-4d3e-4a0d-a0f4-4064b8725449, males=[10275356071, 10275356072, 10275356073], females=[10275356074, 10275356075, 10275356076]
+18:51:55.633 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=cfe42f01-4d3e-4a0d-a0f4-4064b8725449, maleCount=3, femaleCount=3
+18:51:55.634 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=cfe42f01-4d3e-4a0d-a0f4-4064b8725449
+18:51:55.634 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=cfe42f01-4d3e-4a0d-a0f4-4064b8725449
+18:51:55.634 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356071
+18:51:55.635 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356071
+18:51:55.635 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356072
+18:51:55.635 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356072
+18:51:55.636 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356073
+18:51:55.636 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356073
+18:51:55.637 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356074
+18:51:55.637 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356074
+18:51:55.637 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356075
+18:51:55.637 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356075
+18:51:55.638 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356076
+18:51:55.638 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356076
+18:51:55.638 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356077
+18:51:55.639 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10275356077
+18:51:55.641 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132088, userId=10496132088
+18:51:55.641 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132088, status=VERIFIED
+18:51:55.642 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132089, userId=10496132089
+18:51:55.642 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132089, status=VERIFIED
+18:51:55.642 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132090, userId=10496132090
+18:51:55.642 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132090, status=VERIFIED
+18:51:55.642 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132091, userId=10496132091
+18:51:55.642 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132091, status=VERIFIED
+18:51:55.643 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132092, userId=10496132092
+18:51:55.643 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132092, status=VERIFIED
+18:51:55.643 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132093, userId=10496132093
+18:51:55.643 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132093, status=VERIFIED
+18:51:55.643 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10496132094, userId=10496132094
+18:51:55.644 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10496132094, status=VERIFIED
+18:51:55.644 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.645 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.645 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.645 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.645 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.646 [pool-12-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.646 [pool-12-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10496132088, gender=MALE
+18:51:55.646 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132088
+18:51:55.647 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132088
+18:51:55.647 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10496132089, gender=MALE
+18:51:55.647 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132089
+18:51:55.648 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10496132090, gender=MALE
+18:51:55.648 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132090
+18:51:55.648 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132091
+18:51:55.648 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10496132091, gender=FEMALE
+18:51:55.649 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132092
+18:51:55.649 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10496132092, gender=FEMALE
+18:51:55.649 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132093
+18:51:55.649 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10496132093, gender=FEMALE
+18:51:55.650 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132094
+18:51:55.650 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10496132094
+18:51:55.651 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079642, userId=10842079642
+18:51:55.651 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079642, status=VERIFIED
+18:51:55.651 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079643, userId=10842079643
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079643, status=VERIFIED
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079644, userId=10842079644
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079644, status=VERIFIED
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079645, userId=10842079645
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079645, status=VERIFIED
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079646, userId=10842079646
+18:51:55.652 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079646, status=VERIFIED
+18:51:55.653 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079647, userId=10842079647
+18:51:55.653 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079647, status=VERIFIED
+18:51:55.653 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10842079648, userId=10842079648
+18:51:55.653 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10842079648, status=VERIFIED
+18:51:55.654 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.654 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.654 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.654 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.655 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.655 [pool-13-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10842079642, gender=MALE
+18:51:55.655 [pool-13-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.656 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079642
+18:51:55.656 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079642
+18:51:55.657 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10842079643, gender=MALE
+18:51:55.657 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079643
+18:51:55.657 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10842079644, gender=MALE
+18:51:55.657 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079644
+18:51:55.658 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079645
+18:51:55.658 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10842079645, gender=FEMALE
+18:51:55.658 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079646
+18:51:55.658 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10842079646, gender=FEMALE
+18:51:55.659 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079647
+18:51:55.659 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10842079647, gender=FEMALE
+18:51:55.660 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079648
+18:51:55.660 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10842079648
+18:51:55.662 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060574, userId=10670060574
+18:51:55.662 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060574, status=VERIFIED
+18:51:55.663 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060575, userId=10670060575
+18:51:55.663 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060575, status=VERIFIED
+18:51:55.663 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060576, userId=10670060576
+18:51:55.664 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060576, status=VERIFIED
+18:51:55.664 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060577, userId=10670060577
+18:51:55.664 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060577, status=VERIFIED
+18:51:55.664 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060578, userId=10670060578
+18:51:55.665 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060578, status=VERIFIED
+18:51:55.665 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060579, userId=10670060579
+18:51:55.665 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060579, status=VERIFIED
+18:51:55.665 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10670060580, userId=10670060580
+18:51:55.665 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10670060580, status=VERIFIED
+18:51:55.666 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.666 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.667 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.667 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.668 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.668 [pool-14-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10670060574, gender=MALE
+18:51:55.668 [pool-14-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.669 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060574
+18:51:55.669 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060574
+18:51:55.670 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10670060575, gender=MALE
+18:51:55.670 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060575
+18:51:55.671 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10670060576, gender=MALE
+18:51:55.671 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060576
+18:51:55.672 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060577
+18:51:55.672 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10670060577, gender=FEMALE
+18:51:55.672 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060578
+18:51:55.673 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10670060578, gender=FEMALE
+18:51:55.674 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060579
+18:51:55.674 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10670060579, gender=FEMALE
+18:51:55.674 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060580
+18:51:55.674 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10670060580
+18:51:55.677 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619623, userId=10407619623
+18:51:55.677 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619623, status=VERIFIED
+18:51:55.678 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619624, userId=10407619624
+18:51:55.678 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619624, status=VERIFIED
+18:51:55.678 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619625, userId=10407619625
+18:51:55.678 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619625, status=VERIFIED
+18:51:55.679 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619626, userId=10407619626
+18:51:55.679 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619626, status=VERIFIED
+18:51:55.679 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619627, userId=10407619627
+18:51:55.679 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619627, status=VERIFIED
+18:51:55.679 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619628, userId=10407619628
+18:51:55.680 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619628, status=VERIFIED
+18:51:55.680 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10407619629, userId=10407619629
+18:51:55.680 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10407619629, status=VERIFIED
+18:51:55.681 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.681 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.681 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.682 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.682 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.683 [pool-15-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619623
+18:51:55.684 [pool-15-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=036d010c-79de-41b0-963f-39bd8170200c, males=[10407619623, 10407619624, 10407619625], females=[10407619626, 10407619627, 10407619628]
+18:51:55.685 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=036d010c-79de-41b0-963f-39bd8170200c, maleCount=3, femaleCount=3
+18:51:55.686 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=036d010c-79de-41b0-963f-39bd8170200c
+18:51:55.686 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=036d010c-79de-41b0-963f-39bd8170200c
+18:51:55.686 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619623
+18:51:55.687 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619623
+18:51:55.687 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619624
+18:51:55.688 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619624
+18:51:55.688 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619625
+18:51:55.688 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619625
+18:51:55.692 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619626
+18:51:55.693 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619626
+18:51:55.694 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619627
+18:51:55.694 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619627
+18:51:55.695 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619628
+18:51:55.695 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619628
+18:51:55.696 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619629
+18:51:55.696 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10407619629
+18:51:55.699 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823604, userId=10689823604
+18:51:55.699 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823604, status=VERIFIED
+18:51:55.699 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823605, userId=10689823605
+18:51:55.699 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823605, status=VERIFIED
+18:51:55.699 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823606, userId=10689823606
+18:51:55.699 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823606, status=VERIFIED
+18:51:55.700 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823607, userId=10689823607
+18:51:55.700 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823607, status=VERIFIED
+18:51:55.701 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823608, userId=10689823608
+18:51:55.701 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823608, status=VERIFIED
+18:51:55.702 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823609, userId=10689823609
+18:51:55.703 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823609, status=VERIFIED
+18:51:55.703 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10689823610, userId=10689823610
+18:51:55.704 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10689823610, status=VERIFIED
+18:51:55.706 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.707 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.707 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.708 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.708 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.711 [pool-16-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10689823604, gender=MALE
+18:51:55.711 [pool-16-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.712 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823604
+18:51:55.712 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823604
+18:51:55.712 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10689823605, gender=MALE
+18:51:55.713 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823605
+18:51:55.713 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10689823606, gender=MALE
+18:51:55.713 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823606
+18:51:55.713 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823607
+18:51:55.713 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10689823607, gender=FEMALE
+18:51:55.714 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823608
+18:51:55.715 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10689823608, gender=FEMALE
+18:51:55.715 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823609
+18:51:55.715 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10689823609, gender=FEMALE
+18:51:55.716 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823610
+18:51:55.716 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10689823610
+18:51:55.719 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287773, userId=10206287773
+18:51:55.719 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287773, status=VERIFIED
+18:51:55.720 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287774, userId=10206287774
+18:51:55.720 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287774, status=VERIFIED
+18:51:55.720 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287775, userId=10206287775
+18:51:55.721 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287775, status=VERIFIED
+18:51:55.721 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287776, userId=10206287776
+18:51:55.722 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287776, status=VERIFIED
+18:51:55.722 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287777, userId=10206287777
+18:51:55.725 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287777, status=VERIFIED
+18:51:55.725 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287778, userId=10206287778
+18:51:55.725 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287778, status=VERIFIED
+18:51:55.725 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10206287779, userId=10206287779
+18:51:55.726 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10206287779, status=VERIFIED
+18:51:55.728 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.728 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.728 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.729 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.729 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.729 [pool-17-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10206287773, gender=MALE
+18:51:55.729 [pool-17-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.730 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287773
+18:51:55.731 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287773
+18:51:55.731 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10206287774, gender=MALE
+18:51:55.731 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287774
+18:51:55.732 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10206287775, gender=MALE
+18:51:55.732 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287775
+18:51:55.732 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287776
+18:51:55.732 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10206287776, gender=FEMALE
+18:51:55.733 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287777
+18:51:55.733 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10206287777, gender=FEMALE
+18:51:55.734 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287778
+18:51:55.734 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10206287778, gender=FEMALE
+18:51:55.734 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287779
+18:51:55.734 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10206287779
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270549, userId=10271270549
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270549, status=VERIFIED
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270550, userId=10271270550
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270550, status=VERIFIED
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270551, userId=10271270551
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270551, status=VERIFIED
+18:51:55.736 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270552, userId=10271270552
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270552, status=VERIFIED
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270553, userId=10271270553
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270553, status=VERIFIED
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270554, userId=10271270554
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270554, status=VERIFIED
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10271270555, userId=10271270555
+18:51:55.737 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10271270555, status=VERIFIED
+18:51:55.738 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.738 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.738 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.738 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.739 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.739 [pool-18-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270549
+18:51:55.739 [pool-18-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=b39eba6d-1ec8-439d-8353-6a9f5948e935, males=[10271270549, 10271270550, 10271270551], females=[10271270552, 10271270553, 10271270554]
+18:51:55.740 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=b39eba6d-1ec8-439d-8353-6a9f5948e935, maleCount=3, femaleCount=3
+18:51:55.741 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=b39eba6d-1ec8-439d-8353-6a9f5948e935
+18:51:55.741 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=b39eba6d-1ec8-439d-8353-6a9f5948e935
+18:51:55.742 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270549
+18:51:55.742 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270549
+18:51:55.743 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270550
+18:51:55.743 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270550
+18:51:55.743 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270551
+18:51:55.743 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270551
+18:51:55.744 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270552
+18:51:55.744 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270552
+18:51:55.744 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270553
+18:51:55.745 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270553
+18:51:55.745 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270554
+18:51:55.745 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270554
+18:51:55.745 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270555
+18:51:55.746 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10271270555
+18:51:55.747 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368806, userId=10397368806
+18:51:55.747 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368806, status=VERIFIED
+18:51:55.747 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368807, userId=10397368807
+18:51:55.747 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368807, status=VERIFIED
+18:51:55.748 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368808, userId=10397368808
+18:51:55.748 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368808, status=VERIFIED
+18:51:55.748 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368809, userId=10397368809
+18:51:55.748 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368809, status=VERIFIED
+18:51:55.748 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368810, userId=10397368810
+18:51:55.748 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368810, status=VERIFIED
+18:51:55.749 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368811, userId=10397368811
+18:51:55.749 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368811, status=VERIFIED
+18:51:55.749 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10397368812, userId=10397368812
+18:51:55.749 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10397368812, status=VERIFIED
+18:51:55.750 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.750 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.750 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.750 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.751 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.751 [pool-19-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368806
+18:51:55.752 [pool-19-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=c28c6cbd-ff90-40a8-90c5-dd1762f5d7b3, males=[10397368806, 10397368807, 10397368808], females=[10397368809, 10397368810, 10397368811]
+18:51:55.753 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=c28c6cbd-ff90-40a8-90c5-dd1762f5d7b3, maleCount=3, femaleCount=3
+18:51:55.753 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=c28c6cbd-ff90-40a8-90c5-dd1762f5d7b3
+18:51:55.753 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=c28c6cbd-ff90-40a8-90c5-dd1762f5d7b3
+18:51:55.754 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368806
+18:51:55.754 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368806
+18:51:55.754 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368807
+18:51:55.754 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368807
+18:51:55.755 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368808
+18:51:55.755 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368808
+18:51:55.755 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368809
+18:51:55.756 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368809
+18:51:55.756 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368810
+18:51:55.756 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368810
+18:51:55.757 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368811
+18:51:55.757 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368811
+18:51:55.758 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368812
+18:51:55.758 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10397368812
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761952, userId=10080761952
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761952, status=VERIFIED
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761953, userId=10080761953
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761953, status=VERIFIED
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761954, userId=10080761954
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761954, status=VERIFIED
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761955, userId=10080761955
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761955, status=VERIFIED
+18:51:55.760 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761956, userId=10080761956
+18:51:55.761 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761956, status=VERIFIED
+18:51:55.761 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761957, userId=10080761957
+18:51:55.761 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761957, status=VERIFIED
+18:51:55.761 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080761958, userId=10080761958
+18:51:55.761 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080761958, status=VERIFIED
+18:51:55.762 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.762 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.762 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.762 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.762 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.763 [pool-20-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080761952, gender=MALE
+18:51:55.763 [pool-20-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.814 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761952
+18:51:55.818 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761952
+18:51:55.819 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080761953, gender=MALE
+18:51:55.819 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761953
+18:51:55.820 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080761954, gender=MALE
+18:51:55.821 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761954
+18:51:55.825 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761955
+18:51:55.826 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080761955, gender=FEMALE
+18:51:55.827 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761956
+18:51:55.827 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080761956, gender=FEMALE
+18:51:55.828 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761957
+18:51:55.828 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080761957, gender=FEMALE
+18:51:55.829 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761958
+18:51:55.829 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080761958
+18:51:55.832 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904953, userId=10539904953
+18:51:55.832 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904953, status=VERIFIED
+18:51:55.832 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904954, userId=10539904954
+18:51:55.832 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904954, status=VERIFIED
+18:51:55.832 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904955, userId=10539904955
+18:51:55.832 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904955, status=VERIFIED
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904956, userId=10539904956
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904956, status=VERIFIED
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904957, userId=10539904957
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904957, status=VERIFIED
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904958, userId=10539904958
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904958, status=VERIFIED
+18:51:55.833 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10539904959, userId=10539904959
+18:51:55.834 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10539904959, status=VERIFIED
+18:51:55.834 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.835 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.835 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.835 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.836 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.836 [pool-21-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10539904953, gender=MALE
+18:51:55.836 [pool-21-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.837 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904953
+18:51:55.837 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904953
+18:51:55.837 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10539904954, gender=MALE
+18:51:55.837 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904954
+18:51:55.837 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10539904955, gender=MALE
+18:51:55.838 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904955
+18:51:55.838 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904956
+18:51:55.838 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10539904956, gender=FEMALE
+18:51:55.838 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904957
+18:51:55.838 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10539904957, gender=FEMALE
+18:51:55.839 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904958
+18:51:55.839 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10539904958, gender=FEMALE
+18:51:55.839 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904959
+18:51:55.839 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10539904959
+18:51:55.841 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843354, userId=10419843354
+18:51:55.841 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843354, status=VERIFIED
+18:51:55.842 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843355, userId=10419843355
+18:51:55.842 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843355, status=VERIFIED
+18:51:55.842 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843356, userId=10419843356
+18:51:55.843 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843356, status=VERIFIED
+18:51:55.843 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843357, userId=10419843357
+18:51:55.843 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843357, status=VERIFIED
+18:51:55.843 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843358, userId=10419843358
+18:51:55.843 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843358, status=VERIFIED
+18:51:55.844 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843359, userId=10419843359
+18:51:55.844 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843359, status=VERIFIED
+18:51:55.844 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10419843360, userId=10419843360
+18:51:55.844 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10419843360, status=VERIFIED
+18:51:55.845 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.845 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.846 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.846 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.846 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.847 [pool-22-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.847 [pool-22-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10419843354, gender=MALE
+18:51:55.847 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843354
+18:51:55.847 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843354
+18:51:55.847 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10419843355, gender=MALE
+18:51:55.848 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843355
+18:51:55.848 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10419843356, gender=MALE
+18:51:55.848 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843356
+18:51:55.848 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843357
+18:51:55.848 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10419843357, gender=FEMALE
+18:51:55.848 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843358
+18:51:55.849 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10419843358, gender=FEMALE
+18:51:55.849 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843359
+18:51:55.849 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10419843359, gender=FEMALE
+18:51:55.849 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843360
+18:51:55.849 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10419843360
+18:51:55.850 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047610, userId=10507047610
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047610, status=VERIFIED
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047611, userId=10507047611
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047611, status=VERIFIED
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047612, userId=10507047612
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047612, status=VERIFIED
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047613, userId=10507047613
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047613, status=VERIFIED
+18:51:55.851 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047614, userId=10507047614
+18:51:55.852 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047614, status=VERIFIED
+18:51:55.852 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047615, userId=10507047615
+18:51:55.852 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047615, status=VERIFIED
+18:51:55.852 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10507047616, userId=10507047616
+18:51:55.852 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10507047616, status=VERIFIED
+18:51:55.853 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.853 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.853 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.853 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.853 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.854 [pool-23-thread-1] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047610
+18:51:55.854 [pool-23-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=8eae478a-a422-4637-8dda-270148cb0b8c, males=[10507047610, 10507047611, 10507047612], females=[10507047613, 10507047614, 10507047615]
+18:51:55.855 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=8eae478a-a422-4637-8dda-270148cb0b8c, maleCount=3, femaleCount=3
+18:51:55.855 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=8eae478a-a422-4637-8dda-270148cb0b8c
+18:51:55.855 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=8eae478a-a422-4637-8dda-270148cb0b8c
+18:51:55.855 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047610
+18:51:55.855 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047610
+18:51:55.856 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047611
+18:51:55.856 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047611
+18:51:55.857 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047612
+18:51:55.857 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047612
+18:51:55.857 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047613
+18:51:55.857 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047613
+18:51:55.858 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047614
+18:51:55.858 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047614
+18:51:55.858 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047615
+18:51:55.858 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047615
+18:51:55.858 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047616
+18:51:55.859 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10507047616
+18:51:55.860 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479872999, userId=10479872999
+18:51:55.860 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479872999, status=VERIFIED
+18:51:55.860 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479873000, userId=10479873000
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479873000, status=VERIFIED
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479873001, userId=10479873001
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479873001, status=VERIFIED
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479873002, userId=10479873002
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479873002, status=VERIFIED
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479873003, userId=10479873003
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479873003, status=VERIFIED
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479873004, userId=10479873004
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479873004, status=VERIFIED
+18:51:55.861 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10479873005, userId=10479873005
+18:51:55.862 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10479873005, status=VERIFIED
+18:51:55.862 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.862 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.862 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.863 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.863 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.863 [pool-24-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.863 [pool-24-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10479872999, gender=MALE
+18:51:55.864 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479872999
+18:51:55.864 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479872999
+18:51:55.864 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10479873000, gender=MALE
+18:51:55.864 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873000
+18:51:55.864 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10479873001, gender=MALE
+18:51:55.864 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873001
+18:51:55.865 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873002
+18:51:55.865 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10479873002, gender=FEMALE
+18:51:55.865 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873003
+18:51:55.865 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10479873003, gender=FEMALE
+18:51:55.865 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873004
+18:51:55.865 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10479873004, gender=FEMALE
+18:51:55.866 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873005
+18:51:55.866 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10479873005
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195379, userId=10189195379
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195379, status=VERIFIED
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195380, userId=10189195380
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195380, status=VERIFIED
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195381, userId=10189195381
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195381, status=VERIFIED
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195382, userId=10189195382
+18:51:55.867 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195382, status=VERIFIED
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195383, userId=10189195383
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195383, status=VERIFIED
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195384, userId=10189195384
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195384, status=VERIFIED
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10189195385, userId=10189195385
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10189195385, status=VERIFIED
+18:51:55.868 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.869 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.869 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.869 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.869 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.869 [pool-25-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10189195379, gender=MALE
+18:51:55.869 [pool-25-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.870 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195379
+18:51:55.870 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195379
+18:51:55.870 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10189195380, gender=MALE
+18:51:55.870 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195380
+18:51:55.871 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10189195381, gender=MALE
+18:51:55.871 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195381
+18:51:55.871 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195382
+18:51:55.871 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10189195382, gender=FEMALE
+18:51:55.871 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195383
+18:51:55.871 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10189195383, gender=FEMALE
+18:51:55.872 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195384
+18:51:55.872 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10189195384, gender=FEMALE
+18:51:55.872 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195385
+18:51:55.872 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10189195385
+18:51:55.873 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491493, userId=10128491493
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491493, status=VERIFIED
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491494, userId=10128491494
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491494, status=VERIFIED
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491495, userId=10128491495
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491495, status=VERIFIED
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491496, userId=10128491496
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491496, status=VERIFIED
+18:51:55.874 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491497, userId=10128491497
+18:51:55.875 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491497, status=VERIFIED
+18:51:55.875 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491498, userId=10128491498
+18:51:55.875 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491498, status=VERIFIED
+18:51:55.875 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10128491499, userId=10128491499
+18:51:55.875 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10128491499, status=VERIFIED
+18:51:55.876 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.876 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.876 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.876 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.876 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.876 [pool-26-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10128491493, gender=MALE
+18:51:55.876 [pool-26-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.877 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491493
+18:51:55.877 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491493
+18:51:55.877 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10128491494, gender=MALE
+18:51:55.877 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491494
+18:51:55.878 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10128491495, gender=MALE
+18:51:55.878 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491495
+18:51:55.878 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491496
+18:51:55.878 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10128491496, gender=FEMALE
+18:51:55.878 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491497
+18:51:55.878 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10128491497, gender=FEMALE
+18:51:55.879 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491498
+18:51:55.879 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10128491498, gender=FEMALE
+18:51:55.879 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491499
+18:51:55.879 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10128491499
+18:51:55.880 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907708, userId=10080907708
+18:51:55.880 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907708, status=VERIFIED
+18:51:55.880 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907709, userId=10080907709
+18:51:55.880 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907709, status=VERIFIED
+18:51:55.880 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907710, userId=10080907710
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907710, status=VERIFIED
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907711, userId=10080907711
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907711, status=VERIFIED
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907712, userId=10080907712
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907712, status=VERIFIED
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907713, userId=10080907713
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907713, status=VERIFIED
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10080907714, userId=10080907714
+18:51:55.881 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10080907714, status=VERIFIED
+18:51:55.882 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.882 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.882 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.882 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.883 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.883 [pool-27-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080907708, gender=MALE
+18:51:55.883 [pool-27-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.883 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907708
+18:51:55.883 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907708
+18:51:55.884 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080907709, gender=MALE
+18:51:55.884 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907709
+18:51:55.884 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080907710, gender=MALE
+18:51:55.884 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907710
+18:51:55.885 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907711
+18:51:55.885 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080907711, gender=FEMALE
+18:51:55.885 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907712
+18:51:55.885 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080907712, gender=FEMALE
+18:51:55.885 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907713
+18:51:55.886 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10080907713, gender=FEMALE
+18:51:55.886 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907714
+18:51:55.886 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10080907714
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307549, userId=10491307549
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307549, status=VERIFIED
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307550, userId=10491307550
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307550, status=VERIFIED
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307551, userId=10491307551
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307551, status=VERIFIED
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307552, userId=10491307552
+18:51:55.887 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307552, status=VERIFIED
+18:51:55.888 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307553, userId=10491307553
+18:51:55.888 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307553, status=VERIFIED
+18:51:55.888 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307554, userId=10491307554
+18:51:55.888 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307554, status=VERIFIED
+18:51:55.888 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10491307555, userId=10491307555
+18:51:55.888 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10491307555, status=VERIFIED
+18:51:55.890 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=old-10491307549
+18:51:55.890 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=old-10491307549
+18:51:55.890 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=old-10491307549
+18:51:55.890 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=old-10491307549
+18:51:55.891 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=old-10491307549
+18:51:55.891 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=old-10491307549
+18:51:55.891 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=new-10491307549
+18:51:55.892 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=new-10491307549
+18:51:55.892 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307549
+18:51:55.892 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307549
+18:51:55.892 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307550
+18:51:55.892 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307550
+18:51:55.892 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307551
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307551
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307552
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307552
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307553
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307553
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307554
+18:51:55.893 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307554
+18:51:55.894 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307555
+18:51:55.894 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10491307555
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715946, userId=10351715946
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715946, status=VERIFIED
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715947, userId=10351715947
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715947, status=VERIFIED
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715948, userId=10351715948
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715948, status=VERIFIED
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715949, userId=10351715949
+18:51:55.895 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715949, status=VERIFIED
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715950, userId=10351715950
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715950, status=VERIFIED
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715951, userId=10351715951
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715951, status=VERIFIED
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10351715952, userId=10351715952
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10351715952, status=VERIFIED
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.896 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.897 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.897 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=1
+18:51:55.897 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=2
+18:51:55.897 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10351715946, gender=MALE
+18:51:55.897 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.897 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=4df3d969-649c-4e00-8c86-1131a2b08bfb, males=[10351715947, 10351715948, 10351715952], females=[10351715949, 10351715950, 10351715951]
+18:51:55.899 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715946
+18:51:55.899 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715946
+18:51:55.899 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=4df3d969-649c-4e00-8c86-1131a2b08bfb
+18:51:55.899 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=4df3d969-649c-4e00-8c86-1131a2b08bfb
+18:51:55.899 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715947
+18:51:55.899 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715947
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715948
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715948
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715949
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715949
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715950
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715950
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715951
+18:51:55.900 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715951
+18:51:55.901 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715952
+18:51:55.901 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10351715952
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993741, userId=10118993741
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993741, status=VERIFIED
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993742, userId=10118993742
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993742, status=VERIFIED
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993743, userId=10118993743
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993743, status=VERIFIED
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993744, userId=10118993744
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993744, status=VERIFIED
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993745, userId=10118993745
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993745, status=VERIFIED
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993746, userId=10118993746
+18:51:55.902 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993746, status=VERIFIED
+18:51:55.903 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10118993747, userId=10118993747
+18:51:55.903 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10118993747, status=VERIFIED
+18:51:55.904 [pool-28-thread-16] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-4] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-5] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-6] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-7] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-10] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.904 [pool-28-thread-3] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-9] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-12] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-8] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-14] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-11] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-13] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.905 [pool-28-thread-15] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.906 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10118993741, gender=MALE
+18:51:55.906 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993741
+18:51:55.906 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993742
+18:51:55.906 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993742
+18:51:55.907 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993743
+18:51:55.907 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993743
+18:51:55.907 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993744
+18:51:55.907 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993744
+18:51:55.907 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993745
+18:51:55.907 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993745
+18:51:55.908 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993746
+18:51:55.908 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993746
+18:51:55.908 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993747
+18:51:55.908 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10118993747
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439301, userId=10783439301
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439301, status=VERIFIED
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439302, userId=10783439302
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439302, status=VERIFIED
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439303, userId=10783439303
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439303, status=VERIFIED
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439304, userId=10783439304
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439304, status=VERIFIED
+18:51:55.909 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439305, userId=10783439305
+18:51:55.910 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439305, status=VERIFIED
+18:51:55.910 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439306, userId=10783439306
+18:51:55.910 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439306, status=VERIFIED
+18:51:55.910 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10783439307, userId=10783439307
+18:51:55.910 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10783439307, status=VERIFIED
+18:51:55.911 [pool-29-thread-1] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=1
+18:51:55.911 [pool-29-thread-4] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=2
+18:51:55.911 [pool-29-thread-2] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=1
+18:51:55.911 [pool-29-thread-6] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=0, female=1
+18:51:55.911 [pool-29-thread-5] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=3
+18:51:55.912 [pool-29-thread-3] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[10783439301, 10783439302, 10783439303], females=[10783439304, 10783439305, 10783439306]
+18:51:55.912 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[], females=[]
+18:51:55.912 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[], females=[]
+18:51:55.913 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[], females=[]
+18:51:55.913 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[], females=[]
+18:51:55.913 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[], females=[]
+18:51:55.913 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, males=[], females=[]
+18:51:55.914 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room members retrieved: roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98, maleCount=3, femaleCount=3
+18:51:55.914 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98
+18:51:55.914 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=6f3a5372-d890-4a04-a266-3d22dd6bfc98
+18:51:55.914 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439301
+18:51:55.915 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439301
+18:51:55.915 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439302
+18:51:55.915 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439302
+18:51:55.915 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439303
+18:51:55.915 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439303
+18:51:55.915 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439304
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439304
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439305
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439305
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439306
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439306
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439307
+18:51:55.916 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10783439307
+18:51:55.917 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181882, userId=10365181882
+18:51:55.917 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181882, status=VERIFIED
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181883, userId=10365181883
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181883, status=VERIFIED
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181884, userId=10365181884
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181884, status=VERIFIED
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181885, userId=10365181885
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181885, status=VERIFIED
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181886, userId=10365181886
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181886, status=VERIFIED
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181887, userId=10365181887
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181887, status=VERIFIED
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification started: requestId=request-10365181888, userId=10365181888
+18:51:55.918 [Test worker] INFO com.ssafya701.roundy.verification.service.VerificationService -- Verification status updated: requestId=request-10365181888, status=VERIFIED
+18:51:55.919 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.919 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=2, female=0
+18:51:55.919 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=3, female=0
+18:51:55.920 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=4, female=0
+18:51:55.920 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=4, female=1
+18:51:55.920 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=4, female=2
+18:51:55.920 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Room matched! roomId=119bc166-0def-4cc6-ba72-ca76912de434, males=[10365181882, 10365181883, 10365181884], females=[10365181886, 10365181887, 10365181888]
+18:51:55.920 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- Matching waiting: male=1, female=0
+18:51:55.922 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ]]>&#x1f9f9;<![CDATA[ Redis 방 데이터 정리 시작: roomId=119bc166-0def-4cc6-ba72-ca76912de434
+18:51:55.922 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- ✅ Redis 방 데이터 정리 완료: roomId=119bc166-0def-4cc6-ba72-ca76912de434
+18:51:55.922 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181882
+18:51:55.922 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181882
+18:51:55.922 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181883
+18:51:55.922 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181883
+18:51:55.923 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181884
+18:51:55.923 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181884
+18:51:55.923 [Test worker] INFO com.ssafya701.roundy.session.service.SessionService -- User removed from queue: userId=10365181885, gender=MALE
+18:51:55.923 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181885
+18:51:55.923 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181886
+18:51:55.923 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181886
+18:51:55.923 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181887
+18:51:55.924 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181887
+18:51:55.924 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181888
+18:51:55.924 [Test worker] WARN com.ssafya701.roundy.session.service.SessionService -- User not found in queue: userId=10365181888
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/private/tmp/codex-gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.17.8/f09415827a71be7ed621c7bd02550678f28bc81c/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>
