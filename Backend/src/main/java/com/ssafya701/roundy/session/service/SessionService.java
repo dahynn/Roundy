@@ -39,6 +39,7 @@ public class SessionService {
     private static final int REQUIRED_COUNT_PER_GENDER = 3;
 
     private DefaultRedisScript<List> matchRoomScript;
+    private DefaultRedisScript<Long> cleanupRoomScript;
 
     @PostConstruct
     public void init() {
@@ -46,6 +47,10 @@ public class SessionService {
         matchRoomScript.setScriptSource(
                 new ResourceScriptSource(new ClassPathResource("lua/match-room.lua")));
         matchRoomScript.setResultType(List.class);
+        cleanupRoomScript = new DefaultRedisScript<>();
+        cleanupRoomScript.setScriptSource(
+                new ResourceScriptSource(new ClassPathResource("lua/cleanup-room.lua")));
+        cleanupRoomScript.setResultType(Long.class);
     }
 
     // 큐에 추가 + 자동 매칭 (선착순 FIFO)
@@ -233,29 +238,9 @@ public class SessionService {
         log.info("🧹 Redis 방 데이터 정리 시작: roomId={}", roomId);
         
         try {
-            // 1. 방 멤버 조회
-            String roomMembersKey = "room:" + roomId + ":members";
-            java.util.Set<String> memberIds = redisTemplate.opsForSet().members(roomMembersKey);
-            
-            if (memberIds != null && !memberIds.isEmpty()) {
-                for (String userIdStr : memberIds) {
-                    // 2. 각 멤버의 currentRoom 매핑 삭제
-                    String userRoomKey = "user:" + userIdStr + ":currentRoom";
-                    redisTemplate.delete(userRoomKey);
-                    
-                    // 3. 각 멤버의 방 내 정보 삭제
-                    String memberInfoKey = "room:" + roomId + ":member:" + userIdStr;
-                    redisTemplate.delete(memberInfoKey);
-                }
-                log.info("  - 멤버 {}명 매핑 삭제 완료", memberIds.size());
-            }
-            
-            // 4. 멤버 목록 Set 삭제
-            redisTemplate.delete(roomMembersKey);
-            
-            // 5. 방 생성 시간 정보 삭제
-            String roomCreatedKey = "room:" + roomId + ":created";
-            redisTemplate.delete(roomCreatedKey);
+            // 확인과 삭제를 하나의 연산으로 묶어, 늦은 종료 이벤트가 새 방을 지우지 않게 한다.
+            stringRedisTemplate.execute(cleanupRoomScript,
+                    List.of("room:" + roomId + ":members", "room:" + roomId + ":created"), roomId);
             
             log.info("✅ Redis 방 데이터 정리 완료: roomId={}", roomId);
             
