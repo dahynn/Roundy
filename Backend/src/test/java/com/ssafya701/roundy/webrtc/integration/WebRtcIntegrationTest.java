@@ -33,6 +33,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -144,6 +145,16 @@ class WebRtcIntegrationTest {
         when(valueOperations.get(anyString())).thenAnswer(invocation -> assignedRoomId);
         when(redisTemplate.hasKey(anyString())).thenReturn(true);
         SetOperations<String, String> setOperations = mock(SetOperations.class);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(setOperations.isMember(anyString(), anyString())).thenReturn(true);
+
+        ValueOperations<String, String> stringValueOperations = mock(ValueOperations.class);
+        when(stringRedisTemplate.opsForValue()).thenReturn(stringValueOperations);
+        when(stringValueOperations.get(anyString())).thenAnswer(invocation -> assignedRoomId);
+        HashOperations<String, Object, Object> hashOperations = mock(HashOperations.class);
+        when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(java.util.Map.of("gender", "MALE"));
+        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
         when(stringRedisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.size(anyString())).thenReturn(6L);
         when(userRepository.findById(anyLong())).thenAnswer(invocation -> {

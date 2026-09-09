@@ -17,7 +17,7 @@ export type WsMessageType =
     | 'JOIN_ROOM'
     | 'LEAVE_ROOM'
     | 'SUBMIT_VOTE'
-    | 'SUBMIT_GAME_ANSWER'
+    | 'SUBMIT_GAME_VOTE'
     | 'FACE_REVEAL_PERMISSION' // [NEW] 최종 매칭 후 얼굴 공개 동의 여부 전송
     | 'RENDER_COMPLETE' // [NEW] 렌더링 완료 신호 전송
     // Server -> Client
@@ -138,7 +138,7 @@ export interface GameQuestionPayload {
     questionNumber: number;
     totalQuestions: number;
     question: string;         // "가장 먼저 결혼할 것 같은 사람은?"
-    timeLimitSeconds: number; // 5초
+    votingTimeSeconds: number; // 5초
     candidates: {
         userId: number;
         nickname: string;
@@ -160,12 +160,19 @@ export interface GameResultPayload {
         nickname: string;
         voteCount: number;
     }[];
+    badge?: string;
 }
 
 // 클라이언트 -> 서버 전송용 (이미지 게임 답변)
 export interface GameAnswerPayload {
-    questionIndex: number;
+    questionNumber: number;
     targetUserId: number;
+}
+
+export interface PartnerConnectionPayload {
+    partnerId: number;
+    partnerNickname: string;
+    message: string;
 }
 
 // [NEW] BREAK: 휴식 시간

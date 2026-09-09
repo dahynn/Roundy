@@ -143,7 +143,7 @@ public class SessionController {
 
                 log.info("Room members request: userId={}, roomId={}", userId, roomId);
 
-                if (sessionService.getRoomMemberInfo(userId, roomId) == null) {
+                if (!sessionService.hasActiveRoomAccess(userId, roomId)) {
                         return ResponseEntity.status(403).build();
                 }
 
@@ -164,12 +164,11 @@ public class SessionController {
 
                 log.info("My room info request: userId={}, roomId={}", userId, roomId);
 
-                RoomMemberInfo info = sessionService.getRoomMemberInfo(userId, roomId);
-
-                if (info == null) {
-                        return ResponseEntity.ok(
-                                        CommonResponse.ofSuccess(null));
+                if (!sessionService.hasActiveRoomAccess(userId, roomId)) {
+                        return ResponseEntity.status(403).build();
                 }
+
+                RoomMemberInfo info = sessionService.getRoomMemberInfo(userId, roomId);
 
                 return ResponseEntity.ok(CommonResponse.ofSuccess(info));
         }

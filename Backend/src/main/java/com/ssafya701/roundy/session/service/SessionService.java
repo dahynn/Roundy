@@ -40,6 +40,7 @@ public class SessionService {
 
     private DefaultRedisScript<List> matchRoomScript;
     private DefaultRedisScript<Long> cleanupRoomScript;
+    private DefaultRedisScript<Long> removeMemberScript;
 
     @PostConstruct
     public void init() {
@@ -51,6 +52,14 @@ public class SessionService {
         cleanupRoomScript.setScriptSource(
                 new ResourceScriptSource(new ClassPathResource("lua/cleanup-room.lua")));
         cleanupRoomScript.setResultType(Long.class);
+        removeMemberScript = new DefaultRedisScript<>("""
+                if redis.call('GET', KEYS[3]) == ARGV[1] then
+                    redis.call('DEL', KEYS[3])
+                end
+                redis.call('SREM', KEYS[1], ARGV[2])
+                redis.call('DEL', KEYS[2])
+                return 1
+                """, Long.class);
     }
 
     // 큐에 추가 + 자동 매칭 (선착순 FIFO)
@@ -128,6 +137,48 @@ public class SessionService {
                 userId, roomId, gender);
 
         return new RoomMemberInfo(roomId, gender);
+    }
+
+    /**
+     * 현재 매칭에서만 방 접근을 허용한다.
+     * 오래된 member Hash 또는 다른 방으로 바뀐 currentRoom 하나만으로는 접근되지 않는다.
+     */
+    public boolean hasActiveRoomAccess(Long userId, String roomId) {
+        if (userId == null || roomId == null || roomId.isBlank()) {
+            return false;
+        }
+
+        String currentRoom = getUserCurrentRoom(userId);
+        if (!roomId.equals(currentRoom)) {
+            return false;
+        }
+
+        Boolean isMember = redisTemplate.opsForSet()
+                .isMember("room:" + roomId + ":members", userId.toString());
+        if (!Boolean.TRUE.equals(isMember)) {
+            return false;
+        }
+
+        return !redisTemplate.opsForHash()
+                .entries("room:" + roomId + ":member:" + userId)
+                .isEmpty();
+    }
+
+    /**
+     * 사용자가 퇴장하거나 재접속 유예가 끝났을 때 해당 방 권한만 원자적으로 회수한다.
+     * 새 매칭으로 변경된 currentRoom은 삭제하지 않는다.
+     */
+    public void removeActiveRoomAccess(Long userId, String roomId) {
+        if (userId == null || roomId == null || roomId.isBlank()) {
+            return;
+        }
+
+        stringRedisTemplate.execute(removeMemberScript,
+                List.of(
+                        "room:" + roomId + ":members",
+                        "room:" + roomId + ":member:" + userId,
+                        "user:" + userId + ":currentRoom"),
+                roomId, userId.toString());
     }
 
     // 방 전체 멤버 정보 조회 (화상 UI용)

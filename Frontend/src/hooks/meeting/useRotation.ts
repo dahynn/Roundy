@@ -12,7 +12,13 @@ import type {
     ErrorPayload,
     FaceRevealStartPayload, // Import FaceRevealStartPayload
     SpeakerChangePayload, // Import SpeakerChangePayload
-    FirstVoteResultPayload
+    FirstVoteResultPayload,
+    GameQuestionPayload,
+    GameResultPayload,
+    PartnerConnectionPayload,
+    RoundStartPayload,
+    RoundEndPayload,
+    GameAnswerPayload,
 } from '../../types/meeting/rotaion';
 
 interface UserProfile {
@@ -79,6 +85,9 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                         ...prev,
                         connected: true,
                         roomId: payload.roomId,
+                        mode: payload.mode,
+                        currentRound: payload.roundInfo?.currentRound ?? 0,
+                        totalRounds: payload.roundInfo?.totalRounds ?? 0,
                         lobbyCredentials: lobbyInfo, // 로비 정보 백업
                         // 처음엔 대기실로 연결
                         currentPartner: {
@@ -174,6 +183,64 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     break;
                 }
 
+                case 'ROUND_START': {
+                    const payload = data as RoundStartPayload;
+                    setState(prev => ({
+                        ...prev,
+                        currentRound: payload.roundNumber,
+                        remainingTime: payload.durationSeconds,
+                        totalTime: payload.durationSeconds,
+                    }));
+                    break;
+                }
+
+                case 'ROUND_END': {
+                    const payload = data as RoundEndPayload;
+                    setState(prev => prev.currentRound === payload.roundNumber
+                        ? { ...prev, remainingTime: 0 }
+                        : prev);
+                    break;
+                }
+
+                case 'GAME_QUESTION': {
+                    const payload = data as GameQuestionPayload;
+                    setState(prev => ({
+                        ...prev,
+                        currentGame: {
+                            state: 'QUESTION', question: payload.question,
+                            questionNumber: payload.questionNumber,
+                            totalQuestions: payload.totalQuestions, data: payload,
+                        },
+                        remainingTime: payload.votingTimeSeconds,
+                        totalTime: payload.votingTimeSeconds,
+                    }));
+                    break;
+                }
+
+                case 'GAME_RESULT': {
+                    const payload = data as GameResultPayload;
+                    setState(prev => ({
+                        ...prev,
+                        currentGame: {
+                            state: 'RESULT', question: payload.question,
+                            questionNumber: payload.questionNumber, data: payload,
+                        },
+                    }));
+                    break;
+                }
+
+                case 'PARTNER_LEFT': {
+                    const payload = data as PartnerConnectionPayload;
+                    setState(prev => ({ ...prev, lastMessage: payload.message || '상대방의 연결이 끊겼습니다.' }));
+                    break;
+                }
+
+                case 'PARTNER_RECONNECTED': {
+                    const payload = data as PartnerConnectionPayload;
+                    setState(prev => ({ ...prev, lastMessage: payload.message || '상대방이 다시 연결되었습니다.' }));
+                    break;
+                }
+
                 case 'FACE_REVEAL_START': {
                     const payload = data as FaceRevealStartPayload;
                     setState(prev => ({
@@ -265,13 +332,14 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
                     console.error(`[WS-ERROR] ${payload.code}:`, payload.message);
 
                     // 입장 관련 에러 처리
-                    if (payload.code === 'ROOM_FULL' || payload.code === 'GAME_IN_PROGRESS') {
-                        alert(payload.message);
+                    if (payload.code === 'ROOM_FULL' || payload.code === 'GAME_IN_PROGRESS'
+                        || payload.code === 'ROOM_ACCESS_DENIED' || payload.code === 'NO_ROOM_ASSIGNED') {
                         setState(prev => ({
                             ...prev,
                             connected: false,
                             roomId: null,
-                            lastMessage: payload.message
+                            lastMessage: payload.message,
+                            redirectInfo: { message: payload.message, targetPath: '/home', remainingSeconds: 3 },
                         }));
                     } else if (payload.code === 'OPENVIDU_ERROR') {
                         // OpenVidu 에러는 치명적이지 않을 수 있으므로 경고만 표시하고 연결은 유지 시도
@@ -395,14 +463,8 @@ export const useRotationSystem = (roomId: string | null, token: string | null, u
         sendMessage('RENDER_COMPLETE', { stage, stageSequence });
     }, [sendMessage]);
 
-    // [TODO] RotationTest.tsx에서 JSON.stringify로 보내고 있어서 임시로 parsing 처리함. 추후 object로 변경 필요.
-    const submitGameAnswer = useCallback((answer: string) => {
-        try {
-            const payload = JSON.parse(answer);
-            sendMessage('SUBMIT_GAME_ANSWER', payload);
-        } catch (e) {
-            console.error('submitGameAnswer parsing error:', e);
-        }
+    const submitGameAnswer = useCallback((answer: GameAnswerPayload) => {
+        sendMessage('SUBMIT_GAME_VOTE', { ...answer });
     }, [sendMessage]);
 
     return { state, submitVote, leaveRoom, sendFaceRevealPermission, sendRenderComplete, submitGameAnswer };
