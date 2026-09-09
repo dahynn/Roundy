@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class OpenViduServiceTest {
 
@@ -61,5 +63,34 @@ class OpenViduServiceTest {
     void keepsNonUrlTokenUnchanged() {
         assertThat(service.toBrowserTokenUrl("test-token-123"))
                 .isEqualTo("test-token-123");
+    }
+
+    @Test
+    void revokesAllIssuedConnectionsWhenUserLeaves() {
+        OpenViduClient client = mock(OpenViduClient.class);
+        service = new OpenViduService(client, properties, mock(WebRtcEventLogger.class));
+        when(client.createSession("room-1"))
+                .thenReturn(new com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduSessionResponse("room-1", "session", 1L));
+        when(client.createToken("room-1"))
+                .thenReturn(new com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduTokenResponse("con-1", "connection", "token-1", 1L));
+
+        service.ensureSession("room-1");
+        service.generateToken("room-1", 7L);
+        service.revokeUserConnections(7L);
+
+        verify(client).deleteConnection("room-1", "con-1");
+    }
+
+    @Test
+    void closesServerSessionWhenRoomEnds() {
+        OpenViduClient client = mock(OpenViduClient.class);
+        service = new OpenViduService(client, properties, mock(WebRtcEventLogger.class));
+        when(client.createSession("room-1"))
+                .thenReturn(new com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduSessionResponse("room-1", "session", 1L));
+
+        service.ensureSession("room-1");
+        service.removeSession("room-1");
+
+        verify(client).deleteSession("room-1");
     }
 }

@@ -70,4 +70,26 @@ class SessionControllerTest {
         assertThat(controller.getRoomMembers("Bearer jwt-token", "someone-elses-room").getStatusCode().value()).isEqualTo(403);
         verify(sessionService, never()).getRoomMembers(anyString());
     }
+
+    @Test
+    void outsidersCannotReadTheirOwnInfoForAnotherRoom() {
+        assertThat(controller.getMyRoomInfo("Bearer jwt-token", "someone-elses-room").getStatusCode().value()).isEqualTo(403);
+        verify(sessionService, never()).getRoomMemberInfo(anyLong(), anyString());
+    }
+
+    @Test
+    void activeMemberCanReadRoomMembers() {
+        when(sessionService.hasActiveRoomAccess(7L, "room-1")).thenReturn(true);
+        when(sessionService.getRoomMembers("room-1"))
+                .thenReturn(new com.ssafya701.roundy.session.dto.response.RoomMembersResponse("room-1", List.of(), List.of()));
+
+        assertThat(controller.getRoomMembers("Bearer jwt-token", "room-1").getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @Test
+    void roomAccessRequiresTheCurrentActiveMatch() {
+        when(sessionService.hasActiveRoomAccess(7L, "ended-room")).thenReturn(false);
+
+        assertThat(controller.getMyRoomInfo("Bearer jwt-token", "ended-room").getStatusCode().value()).isEqualTo(403);
+    }
 }

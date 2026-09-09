@@ -24,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.context.ActiveProfiles;
@@ -132,6 +133,16 @@ class WebRtcWebSocketHandlerTest {
         when(valueOperations.get(anyString())).thenAnswer(invocation -> assignedRoomId);
         when(redisTemplate.hasKey(anyString())).thenReturn(true);
         SetOperations<String, String> setOperations = mock(SetOperations.class);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(setOperations.isMember(anyString(), anyString())).thenReturn(true);
+
+        ValueOperations<String, String> stringValueOperations = mock(ValueOperations.class);
+        when(stringRedisTemplate.opsForValue()).thenReturn(stringValueOperations);
+        when(stringValueOperations.get(anyString())).thenAnswer(invocation -> assignedRoomId);
+        HashOperations<String, Object, Object> hashOperations = mock(HashOperations.class);
+        when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(java.util.Map.of("gender", "MALE"));
+        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
         when(stringRedisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.size(anyString())).thenReturn(6L);
         when(userRepository.findById(anyLong())).thenAnswer(invocation -> {
@@ -414,6 +425,28 @@ class WebRtcWebSocketHandlerTest {
         ErrorMessage error = objectMapper.readValue(errorJson, ErrorMessage.class);
         assertThat(error.getType()).isEqualTo(WsMessageType.ERROR);
         assertThat(error.getCode()).isEqualTo("INVALID_MESSAGE");
+
+        client.disconnect();
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("핸드셰이크 이후 매칭이 정리되면 영상 토큰을 발급하지 않는다")
+    void deniesJoinWhenActiveRoomAccessWasRevokedAfterHandshake() throws Exception {
+        String token = jwtGenerator.generateToken(1L, "user1");
+        WebSocketTestClient client = new WebSocketTestClient(objectMapper);
+        client.connect(wsUrl, token);
+
+        ValueOperations<String, String> noCurrentRoom = mock(ValueOperations.class);
+        when(stringRedisTemplate.opsForValue()).thenReturn(noCurrentRoom);
+        when(noCurrentRoom.get(anyString())).thenReturn(null);
+
+        client.sendMessage(new JoinRoomMessage(assignedRoomId));
+
+        await().atMost(3, TimeUnit.SECONDS).until(() ->
+                client.getReceivedMessages().stream().anyMatch(msg -> msg.contains("ROOM_ACCESS_DENIED")));
+        assertThat(client.getReceivedMessages()).noneMatch(msg -> msg.contains("JOIN_OK"));
+        assertThat(roomRegistry.hasRoom(assignedRoomId)).isFalse();
 
         client.disconnect();
     }

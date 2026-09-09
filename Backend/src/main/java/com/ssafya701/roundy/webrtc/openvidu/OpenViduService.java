@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,6 +30,7 @@ public class OpenViduService {
      * Key: roomId, Value: openViduSessionId
      */
     private final Map<String, String> sessionCache = new ConcurrentHashMap<>();
+    private final Map<Long, Set<ConnectionReference>> connectionsByUser = new ConcurrentHashMap<>();
 
     /**
      * 방에 대한 OpenVidu Session을 보장하고 Session ID 반환
@@ -91,6 +93,8 @@ public class OpenViduService {
             String token = response.getToken();
 
             token = toBrowserTokenUrl(token);
+            connectionsByUser.computeIfAbsent(userId, ignored -> ConcurrentHashMap.newKeySet())
+                    .add(new ConnectionReference(sessionId, response.getId()));
 
             log.debug("OpenVidu Token 발급 완료: roomId={}, userId={}, connectionId={}",
                     roomId, userId, response.getId());
@@ -114,9 +118,34 @@ public class OpenViduService {
 
         String sessionId = sessionCache.remove(roomId);
         if (sessionId != null) {
-            log.debug("OpenVidu Session 캐시 제거 완료: roomId={}, sessionId={}", roomId, sessionId);
-            // TODO: 실제로 OpenVidu Server에서 Session을 삭제하려면 DELETE API 호출 필요
-            // 현재는 캐시만 제거하고, OpenVidu는 자동으로 빈 Session을 정리함
+            try {
+                openViduClient.deleteSession(sessionId);
+                log.info("OpenVidu Session 종료: roomId={}", roomId);
+            } catch (OpenViduClient.OpenViduClientException e) {
+                // Redis 방 권한은 이미 제거되므로, 실패 원문·토큰 없이 재시도 가능 정보만 남긴다.
+                log.warn("OpenVidu Session 종료 요청 실패: roomId={}", roomId);
+            } finally {
+                connectionsByUser.values().forEach(connections ->
+                        connections.removeIf(connection -> connection.sessionId().equals(sessionId)));
+            }
+        }
+    }
+
+    /**
+     * 퇴장한 사용자의 발급 연결을 모두 무효화한다.
+     */
+    public void revokeUserConnections(Long userId) {
+        Set<ConnectionReference> connections = connectionsByUser.remove(userId);
+        if (connections == null) {
+            return;
+        }
+
+        for (ConnectionReference connection : connections) {
+            try {
+                openViduClient.deleteConnection(connection.sessionId(), connection.connectionId());
+            } catch (OpenViduClient.OpenViduClientException e) {
+                log.warn("OpenVidu 사용자 연결 종료 요청 실패: userId={}", userId);
+            }
         }
     }
 
@@ -217,5 +246,8 @@ public class OpenViduService {
         public OpenViduServiceException(String message, Throwable cause) {
             super(message, cause);
         }
+    }
+
+    private record ConnectionReference(String sessionId, String connectionId) {
     }
 }

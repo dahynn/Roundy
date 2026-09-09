@@ -29,6 +29,7 @@ public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final MatchRepository matchRepository;
+    private final ChatMessageAbuseGuard chatMessageAbuseGuard;
 
     /**
      * 특정 매칭 방에 쪽지를 전송하고 방의 상태(마지막 메시지 정보)를 갱신함
@@ -53,6 +54,8 @@ public class ChatMessageService {
         if (match.getChatStatus() == ChatStatus.TERMINATED) {
             throw new BusinessLogicException("종료된 대화방에는 쪽지를 보낼 수 없습니다.");
         }
+
+        chatMessageAbuseGuard.validateAndRecord(senderId, request == null ? null : request.content());
 
         // 수신자 결정
         // 발신자 | 수신자
@@ -98,7 +101,7 @@ public class ChatMessageService {
         if (lastMessageId == null) {
             // case 1: 쪽지방 처음 진입 시
             // 최근 메시지부터 역순으로 size만큼 조회
-            Pageable pageable = PageRequest.of(0, size);
+            Pageable pageable = PageRequest.of(0, Math.min(Math.max(size, 1), 100));
             messages = chatMessageRepository.findByMatchIdOrderByIdDesc(matchId, pageable);
 
             // 사용자 화면에는 과거 -> 현재 순으로 보여야 하기에 리스트 역순처리

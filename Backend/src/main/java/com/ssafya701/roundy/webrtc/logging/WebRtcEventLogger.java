@@ -35,8 +35,8 @@ public class WebRtcEventLogger {
         long eventId = eventCounter.incrementAndGet();
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         
-        log.info("[EVENT#{}] [{}] [CONNECTION_ESTABLISHED] sessionId={}, userId={}, username={}", 
-                eventId, timestamp, sessionId, userId, username);
+        log.info("[EVENT#{}] [{}] [CONNECTION_ESTABLISHED] sessionId={}, userId={}",
+                eventId, timestamp, sessionId, userId);
     }
 
     /**
@@ -58,8 +58,8 @@ public class WebRtcEventLogger {
         long roomEventId = roomEventCounters.computeIfAbsent(roomId, k -> new AtomicLong(0)).incrementAndGet();
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         
-        log.info("[EVENT#{}] [{}] [ROOM_JOINED] roomId={}, roomEventId={}, userId={}, username={}, participantCount={}", 
-                eventId, timestamp, roomId, roomEventId, userId, username, participantCount);
+        log.info("[EVENT#{}] [{}] [ROOM_JOINED] roomId={}, roomEventId={}, userId={}, participantCount={}",
+                eventId, timestamp, roomId, roomEventId, userId, participantCount);
     }
 
     /**

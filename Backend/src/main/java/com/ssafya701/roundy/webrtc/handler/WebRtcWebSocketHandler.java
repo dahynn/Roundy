@@ -52,6 +52,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
     private final StageScheduler stageScheduler;
     private final WebRtcEventLogger eventLogger;
     private final DisconnectScheduler disconnectScheduler;
+    private final WebSocketMessageGuard messageGuard;
 
     private final RoomEventPublisher eventPublisher;
     private final com.ssafya701.roundy.match.repository.RoomParticipantRepository roomParticipantRepository;
@@ -85,6 +86,16 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String username = (String) session.getAttributes().get("username");
 
         try {
+            WebSocketMessageGuard.Decision decision = messageGuard.check(session.getId(), payload.length());
+            if (decision == WebSocketMessageGuard.Decision.TOO_LARGE) {
+                sendError(session, "MESSAGE_TOO_LARGE", "메시지 크기가 허용 범위를 초과했습니다.");
+                return;
+            }
+            if (decision == WebSocketMessageGuard.Decision.RATE_LIMITED) {
+                sendError(session, "RATE_LIMITED", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
+
             WsMessage wsMessage = messageSerializer.deserialize(payload);
             
             // 📨 WebSocket 메시지 로그
@@ -123,6 +134,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String roomId = (String) session.getAttributes().get("roomId");
 
         eventLogger.logConnectionClosed(session.getId(), userId, status.toString());
+        messageGuard.clear(session.getId());
         
         // 방 조회 및 ROTATION 단계
         if (roomId != null) {
@@ -143,6 +155,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                 } else {
                     // ROTATION 단계가 아니면 즉시 제거
                     log.info("🔌 연결 해제 (즉시 제거): userId={}, roomId={}", userId, roomId);
+                    openViduService.revokeUserConnections(userId);
+                    sessionService.removeActiveRoomAccess(userId, roomId);
                     roomRegistry.removeParticipantBySessionId(session.getId());
                     cleanupEmptyRoom(roomId);
                 }
@@ -188,6 +202,13 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             // 클라이언트가 보낸 roomId는 무시하고, 서버 세션(Redis 매칭)에 저장된 roomId 사용
             // (보안 및 데이터 무결성 보장)
             roomId = assignedRoomId;
+
+            // 핸드셰이크 이후 방이 정리되거나 다른 매칭으로 바뀐 경우에는 토큰을 발급하지 않는다.
+            if (!sessionService.hasActiveRoomAccess(userId, roomId)) {
+                log.warn("방 입장 거절: 활성 매칭 권한 없음 - userId={}, roomId={}", userId, roomId);
+                sendError(session, "ROOM_ACCESS_DENIED", "현재 방에 입장할 권한이 없습니다.");
+                return;
+            }
             
             // Gender enum 변환
             
@@ -339,6 +360,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
                     });
             
             // 1. 참가자 제거
+            openViduService.revokeUserConnections(userId);
+            sessionService.removeActiveRoomAccess(userId, roomId);
             roomRegistry.removeParticipant(roomId, userId);
             cleanupEmptyRoom(roomId);
 
@@ -511,7 +534,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             sendError(session, "ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
             return;
         }
-        
+
         // 투표 대상이 방에 존재하는지 확인 (null이 아닐 때만)
         if (targetUserId != null && !room.getParticipant(targetUserId).isPresent()) {
             sendError(session, "INVALID_TARGET", "투표 대상이 방에 존재하지 않습니다");
@@ -574,6 +597,16 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
             sendError(session, "ROOM_NOT_FOUND", "방을 찾을 수 없습니다");
             return;
         }
+
+        if (questionNumber < 1 || targetUserId == null) {
+            sendError(session, "INVALID_GAME_VOTE", "유효하지 않은 게임 투표입니다");
+            return;
+        }
+
+        if (!room.getParticipant(targetUserId).isPresent() || voterId.equals(targetUserId)) {
+            sendError(session, "INVALID_TARGET", "투표 대상이 방에 존재하지 않습니다");
+            return;
+        }
         
         // 현재 스테이지가 게임 단계인지 확인
         if (!room.getCurrentStage().isGameStage()) {
@@ -634,6 +667,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         if (!room.isInGracePeriod(userId, 30000)) {
             // 방에서 참가자 제거
             ParticipantState removed = room.getParticipant(userId).orElse(null);
+            openViduService.revokeUserConnections(userId);
+            sessionService.removeActiveRoomAccess(userId, roomId);
             roomRegistry.removeParticipant(roomId, userId);
             cleanupEmptyRoom(roomId);
             

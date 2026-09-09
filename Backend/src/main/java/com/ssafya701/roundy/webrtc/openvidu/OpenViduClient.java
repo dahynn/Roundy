@@ -64,7 +64,7 @@ public class OpenViduClient {
             log.error("OpenVidu 인증 실패: secret이 올바르지 않습니다");
             throw new OpenViduClientException("OpenVidu 인증 실패", e);
         } catch (WebClientResponseException e) {
-            log.error("OpenVidu Session 생성 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.error("OpenVidu Session 생성 실패: status={}", e.getStatusCode());
             throw new OpenViduClientException("OpenVidu Session 생성 실패: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("OpenVidu Session 생성 중 오류 발생", e);
@@ -110,11 +110,59 @@ public class OpenViduClient {
             log.error("OpenVidu Session을 찾을 수 없음: sessionId={}", sessionId);
             throw new OpenViduClientException("Session을 찾을 수 없습니다: " + sessionId, e);
         } catch (WebClientResponseException e) {
-            log.error("OpenVidu Token 발급 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.error("OpenVidu Token 발급 실패: status={}", e.getStatusCode());
             throw new OpenViduClientException("OpenVidu Token 발급 실패: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("OpenVidu Token 발급 중 오류 발생", e);
             throw new OpenViduClientException("OpenVidu Token 발급 중 오류 발생", e);
+        }
+    }
+
+    /**
+     * 아직 연결하지 않은 토큰을 무효화하거나, 이미 연결한 사용자를 강제 연결 해제한다.
+     */
+    public void deleteConnection(String sessionId, String connectionId) {
+        try {
+            openViduWebClient.delete()
+                    .uri("/openvidu/api/sessions/{sessionId}/connection/{connectionId}", sessionId, connectionId)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .onErrorResume(WebClientResponseException.NotFound.class, ignored -> Mono.empty())
+                    .timeout(Duration.ofSeconds(10))
+                    .block();
+        } catch (WebClientResponseException.Unauthorized e) {
+            log.error("OpenVidu 연결 삭제 인증 실패");
+            throw new OpenViduClientException("OpenVidu 연결 삭제 인증 실패", e);
+        } catch (WebClientResponseException e) {
+            log.error("OpenVidu 연결 삭제 실패: status={}", e.getStatusCode());
+            throw new OpenViduClientException("OpenVidu 연결 삭제 실패", e);
+        } catch (Exception e) {
+            log.warn("OpenVidu 연결 삭제 중 통신 오류: {}", e.getClass().getSimpleName());
+            throw new OpenViduClientException("OpenVidu 연결 삭제 중 오류 발생", e);
+        }
+    }
+
+    /**
+     * 방 종료 시 서버의 OpenVidu Session과 모든 연결을 닫는다.
+     */
+    public void deleteSession(String sessionId) {
+        try {
+            openViduWebClient.delete()
+                    .uri("/openvidu/api/sessions/{sessionId}", sessionId)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .onErrorResume(WebClientResponseException.NotFound.class, ignored -> Mono.empty())
+                    .timeout(Duration.ofSeconds(10))
+                    .block();
+        } catch (WebClientResponseException.Unauthorized e) {
+            log.error("OpenVidu Session 삭제 인증 실패");
+            throw new OpenViduClientException("OpenVidu Session 삭제 인증 실패", e);
+        } catch (WebClientResponseException e) {
+            log.error("OpenVidu Session 삭제 실패: status={}", e.getStatusCode());
+            throw new OpenViduClientException("OpenVidu Session 삭제 실패", e);
+        } catch (Exception e) {
+            log.warn("OpenVidu Session 삭제 중 통신 오류: {}", e.getClass().getSimpleName());
+            throw new OpenViduClientException("OpenVidu Session 삭제 중 오류 발생", e);
         }
     }
 

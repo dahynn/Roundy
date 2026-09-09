@@ -44,10 +44,8 @@ public class SubmitGameVoteMessage implements WsMessage {
             if (node.has("targetUserId")) {
                 this.targetUserId = node.get("targetUserId").asLong();
             }
-        } catch (Exception e) {
-            // 파싱 실패 시 기본값 또는 ERROR 처리 (로그 남김)
-            // 여기서는 조용히 넘어가고 Handler에서 0/null 체크
-            e.printStackTrace();
+        } catch (Exception ignored) {
+            // 파싱 실패는 handler가 안전한 입력 오류로 처리한다. 원문을 로그에 남기지 않는다.
         }
     }
     
