@@ -1,4 +1,4 @@
-# Roudy
+# Roundy
 
 Roudy is a comprehensive web application featuring a Spring Boot backend and a React frontend, designed with modern technologies for real-time communication and robust data management.
 
@@ -44,6 +44,8 @@ Roudy is a comprehensive web application featuring a Spring Boot backend and a R
 Docker Compose로 MySQL, Redis, MinIO, OpenVidu 개발 서버, AI, 백엔드, 프런트엔드를 함께 실행할 수 있습니다. 실행 전 확인과 장애 복구 절차는 [배포·롤백 실행 문서](docs/deployment-runbook.md)를 따릅니다.
 
 공개 HTTPS MVP용 구성은 로컬 Compose와 분리되어 있으며, [공개 배포 준비 문서](docs/public-deployment.md)를 따릅니다.
+
+코드 변경 뒤 프런트·백엔드·전용 Redis 테스트를 실행하는 방법은 [로컬 개발·검증 안내](docs/development-validation.md)를 따릅니다.
 
 ### Prerequisites
 - **Java**: JDK 21

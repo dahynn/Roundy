@@ -187,10 +187,10 @@ const RotationTest: React.FC = () => {
         }
         else if (wsState.currentStage === 'IMAGE_GAME') {
             const payload: GameAnswerPayload = {
-                questionIndex: gameRound,
+                questionNumber: gameRound + 1,
                 targetUserId: targetId
             };
-            submitGameAnswer(JSON.stringify(payload));
+            submitGameAnswer(payload);
             addLog(`📤 ${logPrefix} 게임(Q${gameRound + 1}) 전송: ${targetName}`);
 
             if (gameRound < 2) {

@@ -117,4 +117,19 @@ describe('서버 단계와 타이머 동기화', () => {
     receive({ type: 'STAGE_CHANGE', stage: 'ROTATION_SHORT', stageSequence: 2, durationSeconds: 20 });
     expect(result.current.state.firstVoteResults).toBeNull();
   });
+
+  it('서버의 이미지 게임 계약으로 questionNumber와 SUBMIT_GAME_VOTE를 전송한다', () => {
+    const { result, socket, receive } = setup();
+    receive({ type: 'GAME_QUESTION', questionNumber: 2, totalQuestions: 3, question: '질문', votingTimeSeconds: 7, candidates: [] });
+    expect(result.current.state.currentGame).toMatchObject({ state: 'QUESTION', questionNumber: 2 });
+    act(() => result.current.submitGameAnswer({ questionNumber: 2, targetUserId: 8 }));
+    expect(JSON.parse(socket.send.mock.calls[0][0])).toEqual({ type: 'SUBMIT_GAME_VOTE', questionNumber: 2, targetUserId: 8 });
+  });
+
+  it('매칭 권한이 사라진 입장 오류는 홈으로 안전하게 안내한다', () => {
+    const { result, receive } = setup();
+    receive({ type: 'ERROR', code: 'ROOM_ACCESS_DENIED', message: '현재 방에 입장할 권한이 없습니다.' });
+    expect(result.current.state.connected).toBe(false);
+    expect(result.current.state.redirectInfo).toMatchObject({ targetPath: '/home', remainingSeconds: 3 });
+  });
 });
