@@ -86,7 +86,8 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String username = (String) session.getAttributes().get("username");
 
         try {
-            WebSocketMessageGuard.Decision decision = messageGuard.check(session.getId(), payload.length());
+            String rateLimitActor = userId == null ? "session:" + session.getId() : "user:" + userId;
+            WebSocketMessageGuard.Decision decision = messageGuard.check(rateLimitActor, payload.length());
             if (decision == WebSocketMessageGuard.Decision.TOO_LARGE) {
                 sendError(session, "MESSAGE_TOO_LARGE", "메시지 크기가 허용 범위를 초과했습니다.");
                 return;
@@ -134,8 +135,7 @@ public class WebRtcWebSocketHandler extends TextWebSocketHandler {
         String roomId = (String) session.getAttributes().get("roomId");
 
         eventLogger.logConnectionClosed(session.getId(), userId, status.toString());
-        messageGuard.clear(session.getId());
-        
+
         // 방 조회 및 ROTATION 단계
         if (roomId != null) {
             roomRegistry.getRoom(roomId).ifPresent(room -> {
