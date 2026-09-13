@@ -5,6 +5,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 /**
  * OpenVidu 서버 연결 설정
  */
@@ -36,4 +38,14 @@ public class OpenViduProperties {
      * 운영 기본값은 인증서 검증 활성화(false)다.
      */
     private boolean insecureTls = false;
+
+    /**
+     * 연속 통신 실패가 이 횟수에 도달하면 외부 호출을 잠시 차단한다.
+     */
+    private int circuitFailureThreshold = 3;
+
+    /**
+     * 회로 차단 후 복구 확인 요청을 허용하기까지의 대기 시간.
+     */
+    private Duration circuitOpenDuration = Duration.ofSeconds(30);
 }

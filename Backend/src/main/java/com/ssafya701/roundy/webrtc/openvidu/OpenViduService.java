@@ -4,8 +4,8 @@ import com.ssafya701.roundy.config.OpenViduProperties;
 import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduSessionResponse;
 import com.ssafya701.roundy.webrtc.openvidu.dto.OpenViduTokenResponse;
 import com.ssafya701.roundy.webrtc.logging.WebRtcEventLogger;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -18,12 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class OpenViduService {
+
+    private static final int SESSION_LOCK_STRIPES = 128;
 
     private final OpenViduClient openViduClient;
     private final OpenViduProperties openViduProperties;
     private final WebRtcEventLogger eventLogger;
+    private final OpenViduCircuitBreaker circuitBreaker;
 
     /**
      * 방 ID별 OpenVidu Session ID 캐시F
@@ -31,6 +33,28 @@ public class OpenViduService {
      */
     private final Map<String, String> sessionCache = new ConcurrentHashMap<>();
     private final Map<Long, Set<ConnectionReference>> connectionsByUser = new ConcurrentHashMap<>();
+    private final Object[] sessionLifecycleLocks = createSessionLifecycleLocks();
+
+    @Autowired
+    public OpenViduService(
+            OpenViduClient openViduClient,
+            OpenViduProperties openViduProperties,
+            WebRtcEventLogger eventLogger,
+            OpenViduCircuitBreaker circuitBreaker
+    ) {
+        this.openViduClient = openViduClient;
+        this.openViduProperties = openViduProperties;
+        this.eventLogger = eventLogger;
+        this.circuitBreaker = circuitBreaker;
+    }
+
+    OpenViduService(
+            OpenViduClient openViduClient,
+            OpenViduProperties openViduProperties,
+            WebRtcEventLogger eventLogger
+    ) {
+        this(openViduClient, openViduProperties, eventLogger, new OpenViduCircuitBreaker(openViduProperties));
+    }
 
     /**
      * 방에 대한 OpenVidu Session을 보장하고 Session ID 반환
@@ -42,32 +66,37 @@ public class OpenViduService {
     public String ensureSession(String roomId) {
         log.debug("OpenVidu Session 보장 요청: roomId={}", roomId);
 
-        // 캐시 확인
         String cachedSessionId = sessionCache.get(roomId);
         if (cachedSessionId != null) {
             log.debug("캐시된 Session 사용: roomId={}, sessionId={}", roomId, cachedSessionId);
             return cachedSessionId;
         }
 
-        // Session 생성
-        // String customSessionId = "room-" + roomId; // 중복 prefix 방지: 호출자가 이미 고유 ID를
-        // 관리함
-        String customSessionId = roomId;
-        try {
-            OpenViduSessionResponse response = openViduClient.createSession(customSessionId);
-            String sessionId = response.getId();
+        synchronized (sessionLifecycleLock(roomId)) {
+            // 첫 요청이 외부 생성 중일 때 뒤따른 요청은 여기서 기다린 뒤 캐시를 재확인한다.
+            cachedSessionId = sessionCache.get(roomId);
+            if (cachedSessionId != null) {
+                log.debug("동시 생성 완료 Session 사용: roomId={}, sessionId={}", roomId, cachedSessionId);
+                return cachedSessionId;
+            }
 
-            // 캐시 저장
-            sessionCache.put(roomId, sessionId);
+            String customSessionId = roomId;
+            try {
+                OpenViduSessionResponse response = circuitBreaker.execute(
+                        () -> openViduClient.createSession(customSessionId));
+                String sessionId = response.getId();
 
-            log.debug("OpenVidu Session 보장 완료: roomId={}, sessionId={}", roomId, sessionId);
-            eventLogger.logOpenViduSessionCreated(roomId, sessionId);
+                sessionCache.put(roomId, sessionId);
 
-            return sessionId;
+                log.debug("OpenVidu Session 보장 완료: roomId={}, sessionId={}", roomId, sessionId);
+                eventLogger.logOpenViduSessionCreated(roomId, sessionId);
 
-        } catch (OpenViduClient.OpenViduClientException e) {
-            log.error("OpenVidu Session 생성 실패: roomId={}", roomId, e);
-            throw new OpenViduServiceException("OpenVidu Session 생성 실패: " + roomId, e);
+                return sessionId;
+
+            } catch (OpenViduClient.OpenViduClientException | OpenViduCircuitBreaker.CircuitOpenException e) {
+                log.error("OpenVidu Session 생성 실패: roomId={}", roomId, e);
+                throw new OpenViduServiceException("OpenVidu Session 생성 실패: " + roomId, e);
+            }
         }
     }
 
@@ -89,7 +118,8 @@ public class OpenViduService {
         }
 
         try {
-            OpenViduTokenResponse response = openViduClient.createToken(sessionId);
+            OpenViduTokenResponse response = circuitBreaker.execute(
+                    () -> openViduClient.createToken(sessionId));
             String token = response.getToken();
 
             token = toBrowserTokenUrl(token);
@@ -102,7 +132,7 @@ public class OpenViduService {
 
             return token;
 
-        } catch (OpenViduClient.OpenViduClientException e) {
+        } catch (OpenViduClient.OpenViduClientException | OpenViduCircuitBreaker.CircuitOpenException e) {
             log.error("OpenVidu Token 발급 실패: roomId={}, userId={}", roomId, userId, e);
             throw new OpenViduServiceException("OpenVidu Token 발급 실패: " + roomId, e);
         }
@@ -116,19 +146,33 @@ public class OpenViduService {
     public void removeSession(String roomId) {
         log.debug("OpenVidu Session 제거: roomId={}", roomId);
 
-        String sessionId = sessionCache.remove(roomId);
-        if (sessionId != null) {
-            try {
-                openViduClient.deleteSession(sessionId);
-                log.info("OpenVidu Session 종료: roomId={}", roomId);
-            } catch (OpenViduClient.OpenViduClientException e) {
-                // Redis 방 권한은 이미 제거되므로, 실패 원문·토큰 없이 재시도 가능 정보만 남긴다.
-                log.warn("OpenVidu Session 종료 요청 실패: roomId={}", roomId);
-            } finally {
-                connectionsByUser.values().forEach(connections ->
-                        connections.removeIf(connection -> connection.sessionId().equals(sessionId)));
+        synchronized (sessionLifecycleLock(roomId)) {
+            String sessionId = sessionCache.remove(roomId);
+            if (sessionId != null) {
+                try {
+                    openViduClient.deleteSession(sessionId);
+                    log.info("OpenVidu Session 종료: roomId={}", roomId);
+                } catch (OpenViduClient.OpenViduClientException e) {
+                    // Redis 방 권한은 이미 제거되므로, 실패 원문·토큰 없이 재시도 가능 정보만 남긴다.
+                    log.warn("OpenVidu Session 종료 요청 실패: roomId={}", roomId);
+                } finally {
+                    connectionsByUser.values().forEach(connections ->
+                            connections.removeIf(connection -> connection.sessionId().equals(sessionId)));
+                }
             }
         }
+    }
+
+    private Object sessionLifecycleLock(String roomId) {
+        return sessionLifecycleLocks[Math.floorMod(roomId.hashCode(), sessionLifecycleLocks.length)];
+    }
+
+    private static Object[] createSessionLifecycleLocks() {
+        Object[] locks = new Object[SESSION_LOCK_STRIPES];
+        for (int index = 0; index < locks.length; index++) {
+            locks[index] = new Object();
+        }
+        return locks;
     }
 
     /**
