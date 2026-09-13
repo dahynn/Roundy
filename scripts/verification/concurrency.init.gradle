@@ -17,4 +17,12 @@ gradle.projectsEvaluated {
         maxParallelForks = 1
         outputs.upToDateWhen { false }
     }
+    p.tasks.register('cumulativeLoadTest', Test) {
+        testClassesDirs = p.sourceSets.concurrencyTest.output.classesDirs
+        classpath = p.sourceSets.concurrencyTest.runtimeClasspath
+        useJUnitPlatform()
+        include '**/CumulativeQueueLoadExperiment.class'
+        maxParallelForks = 1
+        outputs.upToDateWhen { false }
+    }
 }
