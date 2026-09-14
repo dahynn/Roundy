@@ -17,7 +17,7 @@ fi
 mkdir -p "$output_directory"
 actor_count=$(node -e "console.log(require('$repository/scripts/load-test/generated/actors.json').length)")
 
-docker run --rm --network host \
+docker run --rm --network host --user "$(id -u):$(id -g)" \
   -e TARGET_URL \
   -e VUS="$actor_count" \
   -v "$repository:/work:ro" \
