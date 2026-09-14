@@ -1,8 +1,11 @@
 import http from 'k6/http';
 import { check, fail } from 'k6';
+import { SharedArray } from 'k6/data';
 import { Counter, Rate } from 'k6/metrics';
 
-const actors = JSON.parse(open(__ENV.ACTORS_FILE || '/work/scripts/load-test/generated/actors.json'));
+const actors = new SharedArray('matching-load-actors', function () {
+  return JSON.parse(open(__ENV.ACTORS_FILE || '/work/scripts/load-test/generated/actors.json'));
+});
 const targetUrl = (__ENV.TARGET_URL || '').replace(/\/$/, '');
 const virtualUsers = Number(__ENV.VUS || actors.length);
 
