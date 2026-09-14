@@ -71,6 +71,13 @@ services:
       MINIO_SECRET_KEY: loadtest-placeholder
       AI_SERVER_URL: http://ai.invalid:8000
       VERIFICATION_AI_SERVER_IPS: 127.0.0.1
+      # The load-test node is isolated from real traffic. Keep the higher ingress
+      # queue explicit so a connector default does not hide the application limit.
+      SERVER_TOMCAT_MAX_CONNECTIONS: ${SERVER_TOMCAT_MAX_CONNECTIONS:-12000}
+      SERVER_TOMCAT_ACCEPT_COUNT: ${SERVER_TOMCAT_ACCEPT_COUNT:-2000}
+      SERVER_TOMCAT_THREADS_MAX: ${SERVER_TOMCAT_THREADS_MAX:-400}
+      LOGGING_LEVEL_COM_SSAFYA701_ROUNDY_SESSION: ${LOAD_TEST_SESSION_LOG_LEVEL:-WARN}
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,metrics
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
     depends_on:
       mysql:

@@ -107,7 +107,7 @@ public class SessionService {
                         new TypeReference<List<String>>() {
                         });
 
-                log.info("Room matched! roomId={}, males={}, females={}",
+                log.debug("Room matched! roomId={}, males={}, females={}",
                         roomId, males, females);
 
                 return RoomMatchResult.matched(roomId, males, females);
@@ -133,7 +133,7 @@ public class SessionService {
 
         String gender = (String) memberInfo.get("gender");
 
-        log.info("Member info retrieved: userId={}, roomId={}, gender={}",
+        log.debug("Member info retrieved: userId={}, roomId={}, gender={}",
                 userId, roomId, gender);
 
         return new RoomMemberInfo(roomId, gender);

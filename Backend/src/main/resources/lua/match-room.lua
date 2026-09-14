@@ -17,9 +17,14 @@ local maleLeaseKey = KEYS[4]
 local femaleLeaseKey = KEYS[5]
 
 -- 폴링이 끊긴 사용자는 30초 후 제외한다. FIFO 점수는 최초 입장 시각을 유지한다.
+-- 전체 큐를 매 요청마다 ZINTERSTORE로 재구성하지 않고, 만료된 사용자만 제거한다.
+-- 이 스크립트에서 대기열과 lease를 함께 추가하므로 정상 경로에서는 두 ZSET의 멤버십이 일치한다.
 for _, pair in ipairs({{maleQueueKey, maleLeaseKey}, {femaleQueueKey, femaleLeaseKey}}) do
-    redis.call('ZREMRANGEBYSCORE', pair[2], '-inf', nowMillis)
-    redis.call('ZINTERSTORE', pair[1], 2, pair[1], pair[2], 'WEIGHTS', 1, 0)
+    local expiredUserIds = redis.call('ZRANGEBYSCORE', pair[2], '-inf', nowMillis)
+    for _, expiredUserId in ipairs(expiredUserIds) do
+        redis.call('ZREM', pair[1], expiredUserId)
+        redis.call('ZREM', pair[2], expiredUserId)
+    end
 end
 
 local currentRoomKey = 'user:' .. userId .. ':currentRoom'

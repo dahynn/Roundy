@@ -43,7 +43,7 @@ public class SessionController {
                 jwtTokenProvider.validateToken(token);
                 Long userId = jwtTokenProvider.getUserId(token);
 
-                log.info("Session enter request: userId={}", userId);
+                log.debug("Session enter request: userId={}", userId);
 
                 // 2. User 정보 조회 (성별 확인)
                 User user = userRepository.findById(userId)
@@ -86,7 +86,7 @@ public class SessionController {
                                         memberInfo.getRoomId(),
                                         memberInfo.getGender());
 
-                        log.info("Room matched: userId={}, roomId={}, gender={}",
+                        log.debug("Room matched: userId={}, roomId={}, gender={}",
                                         userId, memberInfo.getRoomId(), memberInfo.getGender());
 
                         return ResponseEntity.ok(CommonResponse.ofSuccess(response));
@@ -98,7 +98,7 @@ public class SessionController {
                                         "세션에 입장했습니다. 잠시 후 매칭됩니다.",
                                         queuePosition);
 
-                        log.info("Session entered, waiting: userId={}, gender={}, position={}",
+                        log.debug("Session entered, waiting: userId={}, gender={}, position={}",
                                         userId, gender, queuePosition);
 
                         return ResponseEntity.ok(CommonResponse.ofSuccess(response));
