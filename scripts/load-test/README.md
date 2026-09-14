@@ -1,13 +1,14 @@
-# AWS 3,000개 매칭 HTTP 부하 검증
+# AWS 매칭 HTTP 부하 검증
 
-이 도구는 OpenVidu·TURN·영상·음성·브라우저를 제외한다. 전용 AWS 앱 노드에서 Spring Boot, MySQL, Redis를 기동하고, 별도 AWS 발생기 노드에서 3,000개 `POST /api/session/enter` 요청을 동시에 시작한다.
+이 도구는 OpenVidu·TURN·영상·음성·브라우저를 제외한다. 전용 AWS 앱 노드에서 Spring Boot, MySQL, Redis를 기동하고, 별도 AWS 발생기 노드에서 설정한 수만큼 `POST /api/session/enter` 요청을 동시에 시작한다. 기본값은 3,000명이며 `LOAD_TEST_USERS`로 변경한다.
 
 ## 성공 기준
 
 - HTTP·애플리케이션 수락률 100%
-- 3,000명(남녀 각 1,500명)으로 500개 완전한 3:3 방 생성, 대기 0명
+- 짝수 사용자 수를 남녀 동수로 생성해 완전한 3:3 방과 대기열 0명을 검증
 - 중복 배정, 미확인 성별, 불완전 방 0
 - k6의 처리량과 p95·p99는 결과 JSON에서 기록하되 운영 SLA로 일반화하지 않음
+- 합성 사용자 목록은 실행마다 섞고, `metadata.json`에 목록 SHA-256 다이제스트를 기록
 
 ## 보안 경계
 
