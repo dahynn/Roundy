@@ -57,15 +57,16 @@ export default function () {
     return;
   }
 
+  const bodyAccepted = body && body.success === true && body.data && body.data.success === true;
   const accepted = check(response, {
     'HTTP 200': (value) => value.status === 200,
-    'application accepted request': () => body?.success === true && body?.data?.success === true,
+    'application accepted request': () => bodyAccepted,
   });
   applicationAccepted.add(accepted);
 
   if (!accepted) {
     rejectedResponses.add(1);
-  } else if (body.data.roomId) {
+  } else if (body.data && body.data.roomId) {
     matchedResponses.add(1);
   } else {
     waitingResponses.add(1);
