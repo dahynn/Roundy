@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomInt, randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -46,6 +46,16 @@ for (let index = 0; index < userCount; index += 1) {
   redisCommands.push(`SET verify:${id}:${requestId} VERIFIED EX ${ttlSeconds}`);
 }
 
+// k6 assigns actors by array index to VUs. Shuffle that order so gender-blocked
+// fixture creation cannot turn into a gender-blocked arrival burst.
+for (let index = actors.length - 1; index > 0; index -= 1) {
+  const targetIndex = randomInt(index + 1);
+  [actors[index], actors[targetIndex]] = [actors[targetIndex], actors[index]];
+}
+const actorOrderDigest = createHash('sha256')
+  .update(actors.map(({ id, gender }) => `${id}:${gender}`).join(','))
+  .digest('hex');
+
 mkdirSync(outputDirectory, { recursive: true, mode: 0o700 });
 writeFileSync(resolve(outputDirectory, 'actors.json'), JSON.stringify(actors), { mode: 0o600 });
 writeFileSync(
@@ -64,6 +74,8 @@ writeFileSync(
     expectedMaleWaiting: (userCount / 2) % 3,
     expectedFemaleWaiting: (userCount / 2) % 3,
     verificationTtlSeconds: ttlSeconds,
+    actorOrder: 'securely-shuffled',
+    actorOrderDigest,
   }, null, 2),
   { mode: 0o600 },
 );
