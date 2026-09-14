@@ -6,3 +6,8 @@
 .env.*
 !.env.example
 !.env.production.example
+!.env.matching-loadtest.example
+
+# JWT-bearing synthetic load-test actors and generated results stay off Git.
+scripts/load-test/generated/
+scripts/load-test/results/

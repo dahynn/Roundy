@@ -4,6 +4,7 @@ import com.ssafya701.roundy.config.OpenViduProperties;
 import com.ssafya701.roundy.webrtc.service.OpenViduHealthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,11 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(
+        name = "openvidu.connection-check.enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class OpenViduConnectionCheck implements ApplicationRunner {
 
     private final OpenViduHealthService openViduHealthService;
