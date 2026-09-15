@@ -10,11 +10,11 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "요청 처리량 (req/s)",
+      "title": "매칭 입장 누적 요청",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(http_server_requests_seconds_count{uri=\"/api/session/enter\"}[30s]))", "refId": "A" }],
-      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 1 }, "overrides": [] },
+      "targets": [{ "expr": "sum(http_server_requests_seconds_count{uri=\"/api/session/enter\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto" }
     },
     {
@@ -30,7 +30,7 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "매칭 입장 p95 (초)",
+      "title": "매칭 입장 서버 처리 p95 (초)",
       "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=\"/api/session/enter\"}[30s])) by (le))", "refId": "A" }],
@@ -50,17 +50,17 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "매칭 입장 요청 처리량",
+      "title": "매칭 입장 누적 요청",
       "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(http_server_requests_seconds_count{uri=\"/api/session/enter\"}[30s]))", "legendFormat": "req/s", "refId": "A" }],
-      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 1 }, "overrides": [] },
+      "targets": [{ "expr": "sum(http_server_requests_seconds_count{uri=\"/api/session/enter\"})", "legendFormat": "requests", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } }
     },
     {
       "id": 6,
       "type": "timeseries",
-      "title": "매칭 입장 p50 · p95 지연",
+      "title": "매칭 입장 서버 처리 p50 · p95",
       "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
